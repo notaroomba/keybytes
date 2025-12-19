@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "lcsc")(type "KiCad")(uri "C:/Users/Nathan Alspaugh/Documents/GitHub/keybytes/hardware/lib/lcsc.kicad_sym")(options "")(descr ""))
+)
