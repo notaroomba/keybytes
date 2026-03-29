@@ -1,3 +1,4 @@
-# Frost
+# Keybytes
 
-A computer that fits into an altoids tin!
+A truly modular keyboard
+
