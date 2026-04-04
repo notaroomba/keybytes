@@ -1,4 +1,4 @@
-28175458045775914
+28191429995309277
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -111531,12 +111531,26 @@ CRYSTAL-SMD_L2.0-W1.2
 2
 2
 lcsc
+CSPG-6_L1.6-W1.0-P0.50-TL_MLPF-WB-04D3
+
+
+0
+6
+6
+lcsc
 FILTER-SMD_6P-L1.6-W1.0-P0.50-BL
 
 
 0
 6
 6
+lcsc
+IND-SMD_L2.5-W2.0-B
+
+
+0
+2
+2
 lcsc
 IND-SMD_L2.5-W2.0_MEKK2520TR47M
 
@@ -111615,6 +111629,27 @@ QFN-16_L3.0-W3.0-P0.50-TL-EP
 17
 17
 lcsc
+SMD-1_BD2.0-H10.0
+
+
+0
+1
+1
+lcsc
+SMD_2P_YZ37215050R-02025-05
+
+
+0
+2
+2
+lcsc
+SMD_BD2.0-D0.6
+
+
+0
+5
+1
+lcsc
 SMD_BD2.0-H2.5
 
 
@@ -111628,6 +111663,13 @@ SMD_BD2.0-L2.0-W2.0_C9900001905
 0
 1
 1
+lcsc
+SOP-16_L9.9-W3.9-P1.27-LS6.0-BL
+
+
+0
+16
+16
 lcsc
 SOT-23-5_L3.0-W1.7-P0.95-LS2.8-BL
 
@@ -111656,6 +111698,27 @@ TDFN-8_L2.0-W2.0-P0.50-BL-EP1.2
 0
 9
 9
+lcsc
+TESTPOINT-SMD_BD2.0-H5.0
+
+
+0
+1
+1
+lcsc
+TQFN-48_L7.0-W7.0-P0.50-TL-EP5.6
+
+
+0
+49
+49
+lcsc
+UFQFPN-32_L5.0-W5.0-P0.50-TL-EP3.5
+
+
+0
+33
+33
 lcsc
 USB-C-SMD_TYPE-C-6PIN-2MD-073
 
