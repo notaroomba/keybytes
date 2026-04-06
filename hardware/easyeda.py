@@ -35,6 +35,7 @@ def run_easyeda2kicad_from_file(input_file, output_dir="./lib/lcsc", python_exec
             "--full",
             f"--lcsc_id={lcsc_id}",
             f"--output={output_dir}",
+            "--overwrite"
         ]
         print(f"[{idx}/{len(lines)}] Running: {' '.join(cmd)}")
         try:
