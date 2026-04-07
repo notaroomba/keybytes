@@ -1,0 +1,727 @@
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"stm32wbxx_hal_dma_ex.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c"
+  20              		.section	.text.HAL_DMAEx_ConfigMuxSync,"ax",%progbits
+  21              		.align	1
+  22              		.global	HAL_DMAEx_ConfigMuxSync
+  23              		.syntax unified
+  24              		.thumb
+  25              		.thumb_func
+  27              	HAL_DMAEx_ConfigMuxSync:
+  28              	.LVL0:
+  29              	.LFB950:
+   1:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /**
+   2:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   ******************************************************************************
+   3:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @file    stm32wbxx_hal_dma_ex.c
+   4:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @author  MCD Application Team
+   5:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @brief   DMA Extension HAL module driver
+   6:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *         This file provides firmware functions to manage the following
+   7:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *         functionalities of the DMA Extension peripheral:
+   8:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *           + Extended features functions
+   9:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *
+  10:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   ******************************************************************************
+  11:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @attention
+  12:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *
+  13:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * Copyright (c) 2019 STMicroelectronics.
+  14:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * All rights reserved.
+  15:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *
+  16:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * This software is licensed under terms that can be found in the LICENSE file
+  17:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * in the root directory of this software component.
+  18:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * If no LICENSE file comes with this software, it is provided AS-IS.
+  19:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *
+  20:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   ******************************************************************************
+  21:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   @verbatim
+  22:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   ==============================================================================
+  23:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****                         ##### How to use this driver #####
+  24:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   ==============================================================================
+  25:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   [..]
+  26:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   The DMA Extension HAL driver can be used as follows:
+  27:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+  28:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****    (+) Configure the DMA_MUX Synchronization Block using HAL_DMAEx_ConfigMuxSync function.
+  29:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****    (+) Configure the DMA_MUX Request Generator Block using HAL_DMAEx_ConfigMuxRequestGenerator func
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s 			page 2
+
+
+  30:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****        Functions HAL_DMAEx_EnableMuxRequestGenerator and HAL_DMAEx_DisableMuxRequestGenerator can t
+  31:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****        to respectively enable/disable the request generator.
+  32:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+  33:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****    (+) To handle the DMAMUX Interrupts, the function  HAL_DMAEx_MUX_IRQHandler should be called fro
+  34:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****        the DMAMUX IRQ handler i.e DMAMUX1_OVR_IRQHandler.
+  35:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****        As only one interrupt line is available for all DMAMUX channels and request generators , HAL
+  36:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****        called with, as parameter, the appropriate DMA handle as many as used DMAs in the user proje
+  37:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****       (exception done if a given DMA is not using the DMAMUX SYNC block neither a request generator
+  38:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+  39:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   @endverbatim
+  40:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   ******************************************************************************
+  41:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   */
+  42:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+  43:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /* Includes ------------------------------------------------------------------*/
+  44:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** #include "stm32wbxx_hal.h"
+  45:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+  46:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /** @addtogroup STM32WBxx_HAL_Driver
+  47:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @{
+  48:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   */
+  49:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+  50:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /** @defgroup DMAEx DMAEx
+  51:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @brief DMA Extended HAL module driver
+  52:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @{
+  53:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   */
+  54:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+  55:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** #ifdef HAL_DMA_MODULE_ENABLED
+  56:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+  57:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /* Private typedef -----------------------------------------------------------*/
+  58:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /* Private define ------------------------------------------------------------*/
+  59:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /* Private macro -------------------------------------------------------------*/
+  60:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /* Private variables ---------------------------------------------------------*/
+  61:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /* Private Constants ---------------------------------------------------------*/
+  62:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /* Private function prototypes -----------------------------------------------*/
+  63:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /* Private functions ---------------------------------------------------------*/
+  64:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+  65:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+  66:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /** @defgroup DMAEx_Exported_Functions DMAEx Exported Functions
+  67:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @{
+  68:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   */
+  69:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+  70:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /** @defgroup DMAEx_Exported_Functions_Group1 DMAEx Extended features functions
+  71:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *  @brief   Extended features functions
+  72:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *
+  73:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** @verbatim
+  74:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****  ===============================================================================
+  75:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****                 #####  Extended features functions  #####
+  76:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****  ===============================================================================
+  77:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     [..]  This section provides functions allowing to:
+  78:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+  79:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     (+) Configure the DMAMUX Synchronization Block using HAL_DMAEx_ConfigMuxSync function.
+  80:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     (+) Configure the DMAMUX Request Generator Block using HAL_DMAEx_ConfigMuxRequestGenerator func
+  81:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****        Functions HAL_DMAEx_EnableMuxRequestGenerator and HAL_DMAEx_DisableMuxRequestGenerator can t
+  82:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****        to respectively enable/disable the request generator.
+  83:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+  84:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** @endverbatim
+  85:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @{
+  86:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   */
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s 			page 3
+
+
+  87:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+  88:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /**
+  89:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @brief  Configure the DMAMUX synchronization parameters for a given DMA channel (instance).
+  90:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @param  hdma Pointer to a DMA_HandleTypeDef structure that contains
+  91:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *                     the configuration information for the specified DMA channel.
+  92:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @param  pSyncConfig Pointer to HAL_DMA_MuxSyncConfigTypeDef : contains the DMAMUX synchronizati
+  93:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @retval HAL status
+  94:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   */
+  95:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** HAL_StatusTypeDef HAL_DMAEx_ConfigMuxSync(DMA_HandleTypeDef *hdma, HAL_DMA_MuxSyncConfigTypeDef *pS
+  96:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** {
+  30              		.loc 1 96 1 view -0
+  31              		.cfi_startproc
+  32              		@ args = 0, pretend = 0, frame = 0
+  33              		@ frame_needed = 0, uses_anonymous_args = 0
+  97:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   /* Check the parameters */
+  98:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   assert_param(IS_DMA_ALL_INSTANCE(hdma->Instance));
+  34              		.loc 1 98 3 view .LVU1
+  99:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 100:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   assert_param(IS_DMAMUX_SYNC_SIGNAL_ID(pSyncConfig->SyncSignalID));
+  35              		.loc 1 100 3 view .LVU2
+ 101:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   assert_param(IS_DMAMUX_SYNC_POLARITY(pSyncConfig-> SyncPolarity));
+  36              		.loc 1 101 3 view .LVU3
+ 102:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   assert_param(IS_DMAMUX_SYNC_STATE(pSyncConfig->SyncEnable));
+  37              		.loc 1 102 3 view .LVU4
+ 103:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   assert_param(IS_DMAMUX_SYNC_EVENT(pSyncConfig->EventEnable));
+  38              		.loc 1 103 3 view .LVU5
+ 104:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   assert_param(IS_DMAMUX_SYNC_REQUEST_NUMBER(pSyncConfig->RequestNumber));
+  39              		.loc 1 104 3 view .LVU6
+ 105:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 106:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   /*Check if the DMA state is ready */
+ 107:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   if (hdma->State == HAL_DMA_STATE_READY)
+  40              		.loc 1 107 3 view .LVU7
+  41              		.loc 1 107 11 is_stmt 0 view .LVU8
+  42 0000 90F82530 		ldrb	r3, [r0, #37]	@ zero_extendqisi2
+  43              		.loc 1 107 6 view .LVU9
+  44 0004 012B     		cmp	r3, #1
+  45 0006 24D1     		bne	.L3
+ 108:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   {
+ 109:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     /* Process Locked */
+ 110:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     __HAL_LOCK(hdma);
+  46              		.loc 1 110 5 is_stmt 1 view .LVU10
+  47              		.loc 1 110 5 view .LVU11
+  48 0008 90F82430 		ldrb	r3, [r0, #36]	@ zero_extendqisi2
+  49 000c 012B     		cmp	r3, #1
+  50 000e 22D0     		beq	.L4
+  96:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   /* Check the parameters */
+  51              		.loc 1 96 1 is_stmt 0 view .LVU12
+  52 0010 10B5     		push	{r4, lr}
+  53              		.cfi_def_cfa_offset 8
+  54              		.cfi_offset 4, -8
+  55              		.cfi_offset 14, -4
+  56              		.loc 1 110 5 is_stmt 1 discriminator 2 view .LVU13
+  57 0012 0123     		movs	r3, #1
+  58 0014 80F82430 		strb	r3, [r0, #36]
+  59              		.loc 1 110 5 view .LVU14
+ 111:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 112:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     /* Set the new synchronization parameters (and keep the request ID filled during the Init)*/
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s 			page 4
+
+
+ 113:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     MODIFY_REG(hdma->DMAmuxChannel->CCR, \
+  60              		.loc 1 113 5 view .LVU15
+  61 0018 D0F848E0 		ldr	lr, [r0, #72]
+  62 001c DEF80030 		ldr	r3, [lr]
+  63 0020 0E4A     		ldr	r2, .L9
+  64 0022 1A40     		ands	r2, r2, r3
+  65 0024 0B68     		ldr	r3, [r1]
+  66 0026 CC68     		ldr	r4, [r1, #12]
+  67 0028 04F1FF3C 		add	ip, r4, #-1
+  68 002c 43EACC43 		orr	r3, r3, ip, lsl #19
+  69 0030 4C68     		ldr	r4, [r1, #4]
+  70 0032 2343     		orrs	r3, r3, r4
+  71 0034 91F808C0 		ldrb	ip, [r1, #8]	@ zero_extendqisi2
+  72 0038 43EA0C43 		orr	r3, r3, ip, lsl #16
+  73 003c 497A     		ldrb	r1, [r1, #9]	@ zero_extendqisi2
+  74              	.LVL1:
+  75              		.loc 1 113 5 is_stmt 0 view .LVU16
+  76 003e 43EA4123 		orr	r3, r3, r1, lsl #9
+  77 0042 1A43     		orrs	r2, r2, r3
+  78 0044 CEF80020 		str	r2, [lr]
+ 114:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****                (DMAMUX_CxCR_SYNC_ID | DMAMUX_CxCR_NBREQ | DMAMUX_CxCR_SPOL | DMAMUX_CxCR_SE | DMAMU
+ 115:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****                (pSyncConfig->SyncSignalID                                       | \
+ 116:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****                 ((pSyncConfig->RequestNumber - 1U) << DMAMUX_CxCR_NBREQ_Pos)    | \
+ 117:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****                 pSyncConfig->SyncPolarity                                       | \
+ 118:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****                 ((uint32_t)pSyncConfig->SyncEnable << DMAMUX_CxCR_SE_Pos)                 | \
+ 119:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****                 ((uint32_t)pSyncConfig->EventEnable << DMAMUX_CxCR_EGE_Pos)));
+ 120:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 121:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     /* Process UnLocked */
+ 122:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     __HAL_UNLOCK(hdma);
+  79              		.loc 1 122 5 is_stmt 1 view .LVU17
+  80              		.loc 1 122 5 view .LVU18
+  81 0048 0023     		movs	r3, #0
+  82 004a 80F82430 		strb	r3, [r0, #36]
+  83              		.loc 1 122 5 view .LVU19
+ 123:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 124:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     return HAL_OK;
+  84              		.loc 1 124 5 view .LVU20
+  85              		.loc 1 124 12 is_stmt 0 view .LVU21
+  86 004e 1846     		mov	r0, r3
+  87              	.LVL2:
+ 125:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   }
+ 126:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   else
+ 127:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   {
+ 128:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     /*DMA State not Ready*/
+ 129:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     return HAL_ERROR;
+ 130:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   }
+ 131:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** }
+  88              		.loc 1 131 1 view .LVU22
+  89 0050 10BD     		pop	{r4, pc}
+  90              	.LVL3:
+  91              	.L3:
+  92              		.cfi_def_cfa_offset 0
+  93              		.cfi_restore 4
+  94              		.cfi_restore 14
+ 129:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   }
+  95              		.loc 1 129 12 view .LVU23
+  96 0052 0120     		movs	r0, #1
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s 			page 5
+
+
+  97              	.LVL4:
+ 129:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   }
+  98              		.loc 1 129 12 view .LVU24
+  99 0054 7047     		bx	lr
+ 100              	.LVL5:
+ 101              	.L4:
+ 110:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 102              		.loc 1 110 5 discriminator 1 view .LVU25
+ 103 0056 0220     		movs	r0, #2
+ 104              	.LVL6:
+ 105              		.loc 1 131 1 view .LVU26
+ 106 0058 7047     		bx	lr
+ 107              	.L10:
+ 108 005a 00BF     		.align	2
+ 109              	.L9:
+ 110 005c FFFD00E0 		.word	-536805889
+ 111              		.cfi_endproc
+ 112              	.LFE950:
+ 114              		.section	.text.HAL_DMAEx_ConfigMuxRequestGenerator,"ax",%progbits
+ 115              		.align	1
+ 116              		.global	HAL_DMAEx_ConfigMuxRequestGenerator
+ 117              		.syntax unified
+ 118              		.thumb
+ 119              		.thumb_func
+ 121              	HAL_DMAEx_ConfigMuxRequestGenerator:
+ 122              	.LVL7:
+ 123              	.LFB951:
+ 132:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 133:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /**
+ 134:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @brief  Configure the DMAMUX request generator block used by the given DMA channel (instance).
+ 135:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @param  hdma Pointer to a DMA_HandleTypeDef structure that contains
+ 136:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *                     the configuration information for the specified DMA channel.
+ 137:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @param  pRequestGeneratorConfig Pointer to HAL_DMA_MuxRequestGeneratorConfigTypeDef :
+ 138:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *         contains the request generator parameters.
+ 139:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *
+ 140:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @retval HAL status
+ 141:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   */
+ 142:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** HAL_StatusTypeDef HAL_DMAEx_ConfigMuxRequestGenerator(DMA_HandleTypeDef *hdma,
+ 143:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****                                                       const HAL_DMA_MuxRequestGeneratorConfigTypeDe
+ 144:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** {
+ 124              		.loc 1 144 1 is_stmt 1 view -0
+ 125              		.cfi_startproc
+ 126              		@ args = 0, pretend = 0, frame = 0
+ 127              		@ frame_needed = 0, uses_anonymous_args = 0
+ 128              		@ link register save eliminated.
+ 129              		.loc 1 144 1 is_stmt 0 view .LVU28
+ 130 0000 0346     		mov	r3, r0
+ 145:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   /* Check the parameters */
+ 146:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   assert_param(IS_DMA_ALL_INSTANCE(hdma->Instance));
+ 131              		.loc 1 146 3 is_stmt 1 view .LVU29
+ 147:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 148:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   assert_param(IS_DMAMUX_REQUEST_GEN_SIGNAL_ID(pRequestGeneratorConfig->SignalID));
+ 132              		.loc 1 148 3 view .LVU30
+ 149:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   assert_param(IS_DMAMUX_REQUEST_GEN_POLARITY(pRequestGeneratorConfig->Polarity));
+ 133              		.loc 1 149 3 view .LVU31
+ 150:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   assert_param(IS_DMAMUX_REQUEST_GEN_REQUEST_NUMBER(pRequestGeneratorConfig->RequestNumber));
+ 134              		.loc 1 150 3 view .LVU32
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s 			page 6
+
+
+ 151:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 152:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   /* check if the DMA state is ready
+ 153:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****      and DMA is using a DMAMUX request generator block
+ 154:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   */
+ 155:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   if ((hdma->State == HAL_DMA_STATE_READY) && (hdma->DMAmuxRequestGen != 0U))
+ 135              		.loc 1 155 3 view .LVU33
+ 136              		.loc 1 155 12 is_stmt 0 view .LVU34
+ 137 0002 90F82520 		ldrb	r2, [r0, #37]	@ zero_extendqisi2
+ 138 0006 D0B2     		uxtb	r0, r2
+ 139              	.LVL8:
+ 140              		.loc 1 155 6 view .LVU35
+ 141 0008 012A     		cmp	r2, #1
+ 142 000a 18D1     		bne	.L13
+ 143              		.loc 1 155 52 discriminator 1 view .LVU36
+ 144 000c D3F854C0 		ldr	ip, [r3, #84]
+ 145              		.loc 1 155 44 discriminator 1 view .LVU37
+ 146 0010 BCF1000F 		cmp	ip, #0
+ 147 0014 16D0     		beq	.L12
+ 156:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   {
+ 157:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     /* Process Locked */
+ 158:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     __HAL_LOCK(hdma);
+ 148              		.loc 1 158 5 is_stmt 1 view .LVU38
+ 149              		.loc 1 158 5 view .LVU39
+ 150 0016 93F82420 		ldrb	r2, [r3, #36]	@ zero_extendqisi2
+ 151 001a 012A     		cmp	r2, #1
+ 152 001c 11D0     		beq	.L14
+ 153              		.loc 1 158 5 discriminator 2 view .LVU40
+ 154 001e 0122     		movs	r2, #1
+ 155 0020 83F82420 		strb	r2, [r3, #36]
+ 156              		.loc 1 158 5 view .LVU41
+ 159:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 160:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     /* Set the request generator new parameters*/
+ 161:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     WRITE_REG(hdma->DMAmuxRequestGen->RGCR, (pRequestGeneratorConfig->SignalID       | \
+ 157              		.loc 1 161 5 view .LVU42
+ 158 0024 0A68     		ldr	r2, [r1]
+ 159 0026 4868     		ldr	r0, [r1, #4]
+ 160 0028 0243     		orrs	r2, r2, r0
+ 161 002a 8968     		ldr	r1, [r1, #8]
+ 162              	.LVL9:
+ 163              		.loc 1 161 5 is_stmt 0 view .LVU43
+ 164 002c 0139     		subs	r1, r1, #1
+ 165 002e 42EAC142 		orr	r2, r2, r1, lsl #19
+ 166 0032 CCF80020 		str	r2, [ip]
+ 162:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****                                              pRequestGeneratorConfig->Polarity       | \
+ 163:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****                                              ((pRequestGeneratorConfig->RequestNumber - 1U) << DMAM
+ 164:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 165:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     /* Process UnLocked */
+ 166:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     __HAL_UNLOCK(hdma);
+ 167              		.loc 1 166 5 is_stmt 1 view .LVU44
+ 168              		.loc 1 166 5 view .LVU45
+ 169 0036 0020     		movs	r0, #0
+ 170 0038 83F82400 		strb	r0, [r3, #36]
+ 171              		.loc 1 166 5 view .LVU46
+ 167:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 168:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     return HAL_OK;
+ 172              		.loc 1 168 5 view .LVU47
+ 173              		.loc 1 168 12 is_stmt 0 view .LVU48
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s 			page 7
+
+
+ 174 003c 7047     		bx	lr
+ 175              	.LVL10:
+ 176              	.L13:
+ 169:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   }
+ 170:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   else
+ 171:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   {
+ 172:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     return HAL_ERROR;
+ 177              		.loc 1 172 12 view .LVU49
+ 178 003e 0120     		movs	r0, #1
+ 179 0040 7047     		bx	lr
+ 180              	.L14:
+ 158:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 181              		.loc 1 158 5 discriminator 1 view .LVU50
+ 182 0042 0220     		movs	r0, #2
+ 183              	.L12:
+ 173:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   }
+ 174:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** }
+ 184              		.loc 1 174 1 view .LVU51
+ 185 0044 7047     		bx	lr
+ 186              		.cfi_endproc
+ 187              	.LFE951:
+ 189              		.section	.text.HAL_DMAEx_EnableMuxRequestGenerator,"ax",%progbits
+ 190              		.align	1
+ 191              		.global	HAL_DMAEx_EnableMuxRequestGenerator
+ 192              		.syntax unified
+ 193              		.thumb
+ 194              		.thumb_func
+ 196              	HAL_DMAEx_EnableMuxRequestGenerator:
+ 197              	.LVL11:
+ 198              	.LFB952:
+ 175:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 176:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /**
+ 177:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @brief  Enable the DMAMUX request generator block used by the given DMA channel (instance).
+ 178:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @param  hdma Pointer to a DMA_HandleTypeDef structure that contains
+ 179:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *                     the configuration information for the specified DMA channel.
+ 180:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @retval HAL status
+ 181:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   */
+ 182:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** HAL_StatusTypeDef HAL_DMAEx_EnableMuxRequestGenerator(DMA_HandleTypeDef *hdma)
+ 183:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** {
+ 199              		.loc 1 183 1 is_stmt 1 view -0
+ 200              		.cfi_startproc
+ 201              		@ args = 0, pretend = 0, frame = 0
+ 202              		@ frame_needed = 0, uses_anonymous_args = 0
+ 203              		@ link register save eliminated.
+ 184:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   /* Check the parameters */
+ 185:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   assert_param(IS_DMA_ALL_INSTANCE(hdma->Instance));
+ 204              		.loc 1 185 3 view .LVU53
+ 186:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 187:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   /* check if the DMA state is ready
+ 188:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****      and DMA is using a DMAMUX request generator block
+ 189:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   */
+ 190:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   if ((hdma->State != HAL_DMA_STATE_RESET) && (hdma->DMAmuxRequestGen != 0U))
+ 205              		.loc 1 190 3 view .LVU54
+ 206              		.loc 1 190 12 is_stmt 0 view .LVU55
+ 207 0000 90F82530 		ldrb	r3, [r0, #37]	@ zero_extendqisi2
+ 208              		.loc 1 190 6 view .LVU56
+ 209 0004 3BB1     		cbz	r3, .L17
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s 			page 8
+
+
+ 210              		.loc 1 190 52 discriminator 1 view .LVU57
+ 211 0006 436D     		ldr	r3, [r0, #84]
+ 212              		.loc 1 190 44 discriminator 1 view .LVU58
+ 213 0008 3BB1     		cbz	r3, .L18
+ 191:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   {
+ 192:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     /* Enable the request generator*/
+ 193:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     SET_BIT(hdma->DMAmuxRequestGen->RGCR, DMAMUX_RGxCR_GE);
+ 214              		.loc 1 193 5 is_stmt 1 view .LVU59
+ 215 000a 1A68     		ldr	r2, [r3]
+ 216 000c 42F48032 		orr	r2, r2, #65536
+ 217 0010 1A60     		str	r2, [r3]
+ 194:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 195:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     return HAL_OK;
+ 218              		.loc 1 195 5 view .LVU60
+ 219              		.loc 1 195 12 is_stmt 0 view .LVU61
+ 220 0012 0020     		movs	r0, #0
+ 221              	.LVL12:
+ 222              		.loc 1 195 12 view .LVU62
+ 223 0014 7047     		bx	lr
+ 224              	.LVL13:
+ 225              	.L17:
+ 196:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   }
+ 197:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   else
+ 198:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   {
+ 199:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     return HAL_ERROR;
+ 226              		.loc 1 199 12 view .LVU63
+ 227 0016 0120     		movs	r0, #1
+ 228              	.LVL14:
+ 229              		.loc 1 199 12 view .LVU64
+ 230 0018 7047     		bx	lr
+ 231              	.LVL15:
+ 232              	.L18:
+ 233              		.loc 1 199 12 view .LVU65
+ 234 001a 0120     		movs	r0, #1
+ 235              	.LVL16:
+ 200:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   }
+ 201:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** }
+ 236              		.loc 1 201 1 view .LVU66
+ 237 001c 7047     		bx	lr
+ 238              		.cfi_endproc
+ 239              	.LFE952:
+ 241              		.section	.text.HAL_DMAEx_DisableMuxRequestGenerator,"ax",%progbits
+ 242              		.align	1
+ 243              		.global	HAL_DMAEx_DisableMuxRequestGenerator
+ 244              		.syntax unified
+ 245              		.thumb
+ 246              		.thumb_func
+ 248              	HAL_DMAEx_DisableMuxRequestGenerator:
+ 249              	.LVL17:
+ 250              	.LFB953:
+ 202:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 203:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /**
+ 204:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @brief  Disable the DMAMUX request generator block used by the given DMA channel (instance).
+ 205:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @param  hdma Pointer to a DMA_HandleTypeDef structure that contains
+ 206:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *                     the configuration information for the specified DMA channel.
+ 207:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @retval HAL status
+ 208:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   */
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s 			page 9
+
+
+ 209:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** HAL_StatusTypeDef HAL_DMAEx_DisableMuxRequestGenerator(DMA_HandleTypeDef *hdma)
+ 210:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** {
+ 251              		.loc 1 210 1 is_stmt 1 view -0
+ 252              		.cfi_startproc
+ 253              		@ args = 0, pretend = 0, frame = 0
+ 254              		@ frame_needed = 0, uses_anonymous_args = 0
+ 255              		@ link register save eliminated.
+ 211:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   /* Check the parameters */
+ 212:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   assert_param(IS_DMA_ALL_INSTANCE(hdma->Instance));
+ 256              		.loc 1 212 3 view .LVU68
+ 213:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 214:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   /* check if the DMA state is ready
+ 215:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****      and DMA is using a DMAMUX request generator block
+ 216:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   */
+ 217:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   if ((hdma->State != HAL_DMA_STATE_RESET) && (hdma->DMAmuxRequestGen != 0))
+ 257              		.loc 1 217 3 view .LVU69
+ 258              		.loc 1 217 12 is_stmt 0 view .LVU70
+ 259 0000 90F82530 		ldrb	r3, [r0, #37]	@ zero_extendqisi2
+ 260              		.loc 1 217 6 view .LVU71
+ 261 0004 3BB1     		cbz	r3, .L21
+ 262              		.loc 1 217 52 discriminator 1 view .LVU72
+ 263 0006 436D     		ldr	r3, [r0, #84]
+ 264              		.loc 1 217 44 discriminator 1 view .LVU73
+ 265 0008 3BB1     		cbz	r3, .L22
+ 218:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   {
+ 219:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     /* Disable the request generator*/
+ 220:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     CLEAR_BIT(hdma->DMAmuxRequestGen->RGCR, DMAMUX_RGxCR_GE);
+ 266              		.loc 1 220 5 is_stmt 1 view .LVU74
+ 267 000a 1A68     		ldr	r2, [r3]
+ 268 000c 22F48032 		bic	r2, r2, #65536
+ 269 0010 1A60     		str	r2, [r3]
+ 221:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 222:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     return HAL_OK;
+ 270              		.loc 1 222 5 view .LVU75
+ 271              		.loc 1 222 12 is_stmt 0 view .LVU76
+ 272 0012 0020     		movs	r0, #0
+ 273              	.LVL18:
+ 274              		.loc 1 222 12 view .LVU77
+ 275 0014 7047     		bx	lr
+ 276              	.LVL19:
+ 277              	.L21:
+ 223:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   }
+ 224:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   else
+ 225:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   {
+ 226:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     return HAL_ERROR;
+ 278              		.loc 1 226 12 view .LVU78
+ 279 0016 0120     		movs	r0, #1
+ 280              	.LVL20:
+ 281              		.loc 1 226 12 view .LVU79
+ 282 0018 7047     		bx	lr
+ 283              	.LVL21:
+ 284              	.L22:
+ 285              		.loc 1 226 12 view .LVU80
+ 286 001a 0120     		movs	r0, #1
+ 287              	.LVL22:
+ 227:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   }
+ 228:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** }
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s 			page 10
+
+
+ 288              		.loc 1 228 1 view .LVU81
+ 289 001c 7047     		bx	lr
+ 290              		.cfi_endproc
+ 291              	.LFE953:
+ 293              		.section	.text.HAL_DMAEx_MUX_IRQHandler,"ax",%progbits
+ 294              		.align	1
+ 295              		.global	HAL_DMAEx_MUX_IRQHandler
+ 296              		.syntax unified
+ 297              		.thumb
+ 298              		.thumb_func
+ 300              	HAL_DMAEx_MUX_IRQHandler:
+ 301              	.LVL23:
+ 302              	.LFB954:
+ 229:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 230:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** /**
+ 231:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @brief  Handles DMAMUX interrupt request.
+ 232:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @param  hdma Pointer to a DMA_HandleTypeDef structure that contains
+ 233:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   *               the configuration information for the specified DMA channel.
+ 234:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   * @retval None
+ 235:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   */
+ 236:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** void HAL_DMAEx_MUX_IRQHandler(DMA_HandleTypeDef *hdma)
+ 237:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** {
+ 303              		.loc 1 237 1 is_stmt 1 view -0
+ 304              		.cfi_startproc
+ 305              		@ args = 0, pretend = 0, frame = 0
+ 306              		@ frame_needed = 0, uses_anonymous_args = 0
+ 307              		.loc 1 237 1 is_stmt 0 view .LVU83
+ 308 0000 10B5     		push	{r4, lr}
+ 309              		.cfi_def_cfa_offset 8
+ 310              		.cfi_offset 4, -8
+ 311              		.cfi_offset 14, -4
+ 312 0002 0446     		mov	r4, r0
+ 238:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   /* Check for DMAMUX Synchronization overrun */
+ 239:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   if ((hdma->DMAmuxChannelStatus->CSR & hdma->DMAmuxChannelStatusMask) != 0U)
+ 313              		.loc 1 239 3 is_stmt 1 view .LVU84
+ 314              		.loc 1 239 12 is_stmt 0 view .LVU85
+ 315 0004 C36C     		ldr	r3, [r0, #76]
+ 316              		.loc 1 239 33 view .LVU86
+ 317 0006 1A68     		ldr	r2, [r3]
+ 318              		.loc 1 239 45 view .LVU87
+ 319 0008 036D     		ldr	r3, [r0, #80]
+ 320              		.loc 1 239 6 view .LVU88
+ 321 000a 1A42     		tst	r2, r3
+ 322 000c 0ED0     		beq	.L24
+ 240:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   {
+ 241:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     /* Disable the synchro overrun interrupt */
+ 242:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     CLEAR_BIT(hdma->DMAmuxChannel->CCR, DMAMUX_CxCR_SOIE);
+ 323              		.loc 1 242 5 is_stmt 1 view .LVU89
+ 324 000e 826C     		ldr	r2, [r0, #72]
+ 325 0010 1368     		ldr	r3, [r2]
+ 326 0012 23F48073 		bic	r3, r3, #256
+ 327 0016 1360     		str	r3, [r2]
+ 243:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 244:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     /* Clear the DMAMUX synchro overrun flag */
+ 245:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     WRITE_REG(hdma->DMAmuxChannelStatus->CFR, hdma->DMAmuxChannelStatusMask);
+ 328              		.loc 1 245 5 view .LVU90
+ 329 0018 C36C     		ldr	r3, [r0, #76]
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s 			page 11
+
+
+ 330 001a 026D     		ldr	r2, [r0, #80]
+ 331 001c 5A60     		str	r2, [r3, #4]
+ 246:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 247:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     /* Update error code */
+ 248:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     hdma->ErrorCode |= HAL_DMA_ERROR_SYNC;
+ 332              		.loc 1 248 5 view .LVU91
+ 333              		.loc 1 248 9 is_stmt 0 view .LVU92
+ 334 001e C36B     		ldr	r3, [r0, #60]
+ 335              		.loc 1 248 21 view .LVU93
+ 336 0020 43F40073 		orr	r3, r3, #512
+ 337 0024 C363     		str	r3, [r0, #60]
+ 249:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 250:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     if (hdma->XferErrorCallback != NULL)
+ 338              		.loc 1 250 5 is_stmt 1 view .LVU94
+ 339              		.loc 1 250 13 is_stmt 0 view .LVU95
+ 340 0026 436B     		ldr	r3, [r0, #52]
+ 341              		.loc 1 250 8 view .LVU96
+ 342 0028 03B1     		cbz	r3, .L24
+ 251:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     {
+ 252:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****       /* Transfer error callback */
+ 253:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****       hdma->XferErrorCallback(hdma);
+ 343              		.loc 1 253 7 is_stmt 1 view .LVU97
+ 344 002a 9847     		blx	r3
+ 345              	.LVL24:
+ 346              	.L24:
+ 254:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     }
+ 255:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   }
+ 256:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 257:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   if (hdma->DMAmuxRequestGen != 0U)
+ 347              		.loc 1 257 3 view .LVU98
+ 348              		.loc 1 257 11 is_stmt 0 view .LVU99
+ 349 002c 636D     		ldr	r3, [r4, #84]
+ 350              		.loc 1 257 6 view .LVU100
+ 351 002e 9BB1     		cbz	r3, .L23
+ 258:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   {
+ 259:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     /* if using a DMAMUX request generator block Check for DMAMUX request generator overrun */
+ 260:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     if ((hdma->DMAmuxRequestGenStatus->RGSR & hdma->DMAmuxRequestGenStatusMask) != 0U)
+ 352              		.loc 1 260 5 is_stmt 1 view .LVU101
+ 353              		.loc 1 260 14 is_stmt 0 view .LVU102
+ 354 0030 A26D     		ldr	r2, [r4, #88]
+ 355              		.loc 1 260 38 view .LVU103
+ 356 0032 1168     		ldr	r1, [r2]
+ 357              		.loc 1 260 51 view .LVU104
+ 358 0034 E26D     		ldr	r2, [r4, #92]
+ 359              		.loc 1 260 8 view .LVU105
+ 360 0036 1142     		tst	r1, r2
+ 361 0038 0ED0     		beq	.L23
+ 261:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     {
+ 262:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****       /* Disable the request gen overrun interrupt */
+ 263:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****       CLEAR_BIT(hdma->DMAmuxRequestGen->RGCR, DMAMUX_RGxCR_OIE);
+ 362              		.loc 1 263 7 is_stmt 1 view .LVU106
+ 363 003a 1A68     		ldr	r2, [r3]
+ 364 003c 22F48072 		bic	r2, r2, #256
+ 365 0040 1A60     		str	r2, [r3]
+ 264:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 265:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****       /* Clear the DMAMUX request generator overrun flag */
+ 266:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****       WRITE_REG(hdma->DMAmuxRequestGenStatus->RGCFR, hdma->DMAmuxRequestGenStatusMask);
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s 			page 12
+
+
+ 366              		.loc 1 266 7 view .LVU107
+ 367 0042 A36D     		ldr	r3, [r4, #88]
+ 368 0044 E26D     		ldr	r2, [r4, #92]
+ 369 0046 5A60     		str	r2, [r3, #4]
+ 267:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 268:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****       /* Update error code */
+ 269:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****       hdma->ErrorCode |= HAL_DMA_ERROR_REQGEN;
+ 370              		.loc 1 269 7 view .LVU108
+ 371              		.loc 1 269 11 is_stmt 0 view .LVU109
+ 372 0048 E36B     		ldr	r3, [r4, #60]
+ 373              		.loc 1 269 23 view .LVU110
+ 374 004a 43F48063 		orr	r3, r3, #1024
+ 375 004e E363     		str	r3, [r4, #60]
+ 270:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** 
+ 271:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****       if (hdma->XferErrorCallback != NULL)
+ 376              		.loc 1 271 7 is_stmt 1 view .LVU111
+ 377              		.loc 1 271 15 is_stmt 0 view .LVU112
+ 378 0050 636B     		ldr	r3, [r4, #52]
+ 379              		.loc 1 271 10 view .LVU113
+ 380 0052 0BB1     		cbz	r3, .L23
+ 272:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****       {
+ 273:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****         /* Transfer error callback */
+ 274:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****         hdma->XferErrorCallback(hdma);
+ 381              		.loc 1 274 9 is_stmt 1 view .LVU114
+ 382 0054 2046     		mov	r0, r4
+ 383 0056 9847     		blx	r3
+ 384              	.LVL25:
+ 385              	.L23:
+ 275:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****       }
+ 276:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****     }
+ 277:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c ****   }
+ 278:Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c **** }
+ 386              		.loc 1 278 1 is_stmt 0 view .LVU115
+ 387 0058 10BD     		pop	{r4, pc}
+ 388              		.loc 1 278 1 view .LVU116
+ 389              		.cfi_endproc
+ 390              	.LFE954:
+ 392              		.text
+ 393              	.Letext0:
+ 394              		.file 2 "C:/Users/Nathan/AppData/Roaming/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-dev-t
+ 395              		.file 3 "C:/Users/Nathan/AppData/Roaming/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-dev-t
+ 396              		.file 4 "Drivers/CMSIS/Device/ST/STM32WBxx/Include/stm32wb55xx.h"
+ 397              		.file 5 "Drivers/CMSIS/Device/ST/STM32WBxx/Include/stm32wbxx.h"
+ 398              		.file 6 "Drivers/STM32WBxx_HAL_Driver/Inc/stm32wbxx_hal_def.h"
+ 399              		.file 7 "Drivers/STM32WBxx_HAL_Driver/Inc/stm32wbxx_hal_dma.h"
+ 400              		.file 8 "Drivers/STM32WBxx_HAL_Driver/Inc/stm32wbxx_hal_dma_ex.h"
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s 			page 13
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 stm32wbxx_hal_dma_ex.c
+C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s:21     .text.HAL_DMAEx_ConfigMuxSync:00000000 $t
+C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s:27     .text.HAL_DMAEx_ConfigMuxSync:00000000 HAL_DMAEx_ConfigMuxSync
+C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s:110    .text.HAL_DMAEx_ConfigMuxSync:0000005c $d
+C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s:115    .text.HAL_DMAEx_ConfigMuxRequestGenerator:00000000 $t
+C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s:121    .text.HAL_DMAEx_ConfigMuxRequestGenerator:00000000 HAL_DMAEx_ConfigMuxRequestGenerator
+C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s:190    .text.HAL_DMAEx_EnableMuxRequestGenerator:00000000 $t
+C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s:196    .text.HAL_DMAEx_EnableMuxRequestGenerator:00000000 HAL_DMAEx_EnableMuxRequestGenerator
+C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s:242    .text.HAL_DMAEx_DisableMuxRequestGenerator:00000000 $t
+C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s:248    .text.HAL_DMAEx_DisableMuxRequestGenerator:00000000 HAL_DMAEx_DisableMuxRequestGenerator
+C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s:294    .text.HAL_DMAEx_MUX_IRQHandler:00000000 $t
+C:\Users\Nathan\AppData\Local\Temp\ccUpSWL6.s:300    .text.HAL_DMAEx_MUX_IRQHandler:00000000 HAL_DMAEx_MUX_IRQHandler
+
+NO UNDEFINED SYMBOLS

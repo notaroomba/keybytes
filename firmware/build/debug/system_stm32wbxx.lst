@@ -1,0 +1,819 @@
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"system_stm32wbxx.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "Core/Src/system_stm32wbxx.c"
+  20              		.section	.text.SystemInit,"ax",%progbits
+  21              		.align	1
+  22              		.global	SystemInit
+  23              		.syntax unified
+  24              		.thumb
+  25              		.thumb_func
+  27              	SystemInit:
+  28              	.LFB950:
+   1:Core/Src/system_stm32wbxx.c **** /**
+   2:Core/Src/system_stm32wbxx.c ****   ******************************************************************************
+   3:Core/Src/system_stm32wbxx.c ****   * @file    system_stm32wbxx.c
+   4:Core/Src/system_stm32wbxx.c ****   * @author  MCD Application Team
+   5:Core/Src/system_stm32wbxx.c ****   * @brief   CMSIS Cortex Device Peripheral Access Layer System Source File
+   6:Core/Src/system_stm32wbxx.c ****   *
+   7:Core/Src/system_stm32wbxx.c ****   *   This file provides two functions and one global variable to be called from
+   8:Core/Src/system_stm32wbxx.c ****   *   user application:
+   9:Core/Src/system_stm32wbxx.c ****   *      - SystemInit(): This function is called at startup just after reset and
+  10:Core/Src/system_stm32wbxx.c ****   *                      before branch to main program. This call is made inside
+  11:Core/Src/system_stm32wbxx.c ****   *                      the "startup_stm32wbxx.s" file.
+  12:Core/Src/system_stm32wbxx.c ****   *
+  13:Core/Src/system_stm32wbxx.c ****   *      - SystemCoreClock variable: Contains the core clock (HCLK), it can be used
+  14:Core/Src/system_stm32wbxx.c ****   *                                  by the user application to setup the SysTick
+  15:Core/Src/system_stm32wbxx.c ****   *                                  timer or configure other parameters.
+  16:Core/Src/system_stm32wbxx.c ****   *
+  17:Core/Src/system_stm32wbxx.c ****   *      - SystemCoreClockUpdate(): Updates the variable SystemCoreClock and must
+  18:Core/Src/system_stm32wbxx.c ****   *                                 be called whenever the core clock is changed
+  19:Core/Src/system_stm32wbxx.c ****   *                                 during program execution.
+  20:Core/Src/system_stm32wbxx.c ****   *
+  21:Core/Src/system_stm32wbxx.c ****   *   After each device reset the MSI (4 MHz) is used as system clock source.
+  22:Core/Src/system_stm32wbxx.c ****   *   Then SystemInit() function is called, in "startup_stm32wbxx.s" file, to
+  23:Core/Src/system_stm32wbxx.c ****   *   configure the system clock before to branch to main program.
+  24:Core/Src/system_stm32wbxx.c ****   *
+  25:Core/Src/system_stm32wbxx.c ****   *   This file configures the system clock as follows:
+  26:Core/Src/system_stm32wbxx.c ****   *=============================================================================
+  27:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  28:Core/Src/system_stm32wbxx.c ****   *        System Clock source                    | MSI
+  29:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  30:Core/Src/system_stm32wbxx.c ****   *        SYSCLK(Hz)                             | 4000000
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 2
+
+
+  31:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  32:Core/Src/system_stm32wbxx.c ****   *        HCLK(Hz)                               | 4000000
+  33:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  34:Core/Src/system_stm32wbxx.c ****   *        AHB Prescaler                          | 1
+  35:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  36:Core/Src/system_stm32wbxx.c ****   *        APB1 Prescaler                         | 1
+  37:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  38:Core/Src/system_stm32wbxx.c ****   *        APB2 Prescaler                         | 1
+  39:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  40:Core/Src/system_stm32wbxx.c ****   *        PLL_M                                  | 1
+  41:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  42:Core/Src/system_stm32wbxx.c ****   *        PLL_N                                  | 8
+  43:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  44:Core/Src/system_stm32wbxx.c ****   *        PLL_P                                  | 7
+  45:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  46:Core/Src/system_stm32wbxx.c ****   *        PLL_Q                                  | 2
+  47:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  48:Core/Src/system_stm32wbxx.c ****   *        PLL_R                                  | 2
+  49:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  50:Core/Src/system_stm32wbxx.c ****   *        PLLSAI1_P                              | NA
+  51:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  52:Core/Src/system_stm32wbxx.c ****   *        PLLSAI1_Q                              | NA
+  53:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  54:Core/Src/system_stm32wbxx.c ****   *        PLLSAI1_R                              | NA
+  55:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  56:Core/Src/system_stm32wbxx.c ****   *        Require 48MHz for USB OTG FS,          | Disabled
+  57:Core/Src/system_stm32wbxx.c ****   *        SDIO and RNG clock                     |
+  58:Core/Src/system_stm32wbxx.c ****   *-----------------------------------------------------------------------------
+  59:Core/Src/system_stm32wbxx.c ****   *=============================================================================
+  60:Core/Src/system_stm32wbxx.c ****   ******************************************************************************
+  61:Core/Src/system_stm32wbxx.c ****   * @attention
+  62:Core/Src/system_stm32wbxx.c ****   *
+  63:Core/Src/system_stm32wbxx.c ****   * Copyright (c) 2019-2021 STMicroelectronics.
+  64:Core/Src/system_stm32wbxx.c ****   * All rights reserved.
+  65:Core/Src/system_stm32wbxx.c ****   *
+  66:Core/Src/system_stm32wbxx.c ****   * This software is licensed under terms that can be found in the LICENSE file
+  67:Core/Src/system_stm32wbxx.c ****   * in the root directory of this software component.
+  68:Core/Src/system_stm32wbxx.c ****   * If no LICENSE file comes with this software, it is provided AS-IS.
+  69:Core/Src/system_stm32wbxx.c ****   *
+  70:Core/Src/system_stm32wbxx.c ****   ******************************************************************************
+  71:Core/Src/system_stm32wbxx.c ****   */
+  72:Core/Src/system_stm32wbxx.c **** 
+  73:Core/Src/system_stm32wbxx.c **** /** @addtogroup CMSIS
+  74:Core/Src/system_stm32wbxx.c ****   * @{
+  75:Core/Src/system_stm32wbxx.c ****   */
+  76:Core/Src/system_stm32wbxx.c **** 
+  77:Core/Src/system_stm32wbxx.c **** /** @addtogroup stm32WBxx_system
+  78:Core/Src/system_stm32wbxx.c ****   * @{
+  79:Core/Src/system_stm32wbxx.c ****   */
+  80:Core/Src/system_stm32wbxx.c **** 
+  81:Core/Src/system_stm32wbxx.c **** /** @addtogroup stm32WBxx_System_Private_Includes
+  82:Core/Src/system_stm32wbxx.c ****   * @{
+  83:Core/Src/system_stm32wbxx.c ****   */
+  84:Core/Src/system_stm32wbxx.c **** 
+  85:Core/Src/system_stm32wbxx.c **** #include "stm32wbxx.h"
+  86:Core/Src/system_stm32wbxx.c **** 
+  87:Core/Src/system_stm32wbxx.c **** #if !defined  (HSE_VALUE)
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 3
+
+
+  88:Core/Src/system_stm32wbxx.c **** #define HSE_VALUE    (32000000UL) /*!< Value of the External oscillator in Hz */
+  89:Core/Src/system_stm32wbxx.c **** #endif /* HSE_VALUE */
+  90:Core/Src/system_stm32wbxx.c **** 
+  91:Core/Src/system_stm32wbxx.c **** #if !defined  (MSI_VALUE)
+  92:Core/Src/system_stm32wbxx.c **** #define MSI_VALUE    (4000000UL) /*!< Value of the Internal oscillator in Hz*/
+  93:Core/Src/system_stm32wbxx.c **** #endif /* MSI_VALUE */
+  94:Core/Src/system_stm32wbxx.c **** 
+  95:Core/Src/system_stm32wbxx.c **** #if !defined  (HSI_VALUE)
+  96:Core/Src/system_stm32wbxx.c **** #define HSI_VALUE    (16000000UL) /*!< Value of the Internal oscillator in Hz*/
+  97:Core/Src/system_stm32wbxx.c **** #endif /* HSI_VALUE */
+  98:Core/Src/system_stm32wbxx.c **** 
+  99:Core/Src/system_stm32wbxx.c **** #if !defined  (LSI_VALUE)
+ 100:Core/Src/system_stm32wbxx.c **** #define LSI_VALUE  (32000UL)       /*!< Value of LSI in Hz*/
+ 101:Core/Src/system_stm32wbxx.c **** #endif /* LSI_VALUE */
+ 102:Core/Src/system_stm32wbxx.c **** 
+ 103:Core/Src/system_stm32wbxx.c **** #if !defined  (LSE_VALUE)
+ 104:Core/Src/system_stm32wbxx.c **** #if defined(STM32WB5Mxx)
+ 105:Core/Src/system_stm32wbxx.c ****   #define LSE_VALUE    32774U     /*!< Value of the LSE oscillator in Hz */
+ 106:Core/Src/system_stm32wbxx.c **** #else
+ 107:Core/Src/system_stm32wbxx.c ****   #define LSE_VALUE    32768U     /*!< Value of the LSE oscillator in Hz */
+ 108:Core/Src/system_stm32wbxx.c **** #endif /* STM32WB5Mxx */
+ 109:Core/Src/system_stm32wbxx.c **** #endif /* LSE_VALUE */
+ 110:Core/Src/system_stm32wbxx.c **** 
+ 111:Core/Src/system_stm32wbxx.c **** /**
+ 112:Core/Src/system_stm32wbxx.c ****   * @}
+ 113:Core/Src/system_stm32wbxx.c ****   */
+ 114:Core/Src/system_stm32wbxx.c **** 
+ 115:Core/Src/system_stm32wbxx.c **** /** @addtogroup STM32WBxx_System_Private_TypesDefinitions
+ 116:Core/Src/system_stm32wbxx.c ****   * @{
+ 117:Core/Src/system_stm32wbxx.c ****   */
+ 118:Core/Src/system_stm32wbxx.c **** 
+ 119:Core/Src/system_stm32wbxx.c **** /**
+ 120:Core/Src/system_stm32wbxx.c ****   * @}
+ 121:Core/Src/system_stm32wbxx.c ****   */
+ 122:Core/Src/system_stm32wbxx.c **** 
+ 123:Core/Src/system_stm32wbxx.c **** /** @addtogroup STM32WBxx_System_Private_Defines
+ 124:Core/Src/system_stm32wbxx.c ****   * @{
+ 125:Core/Src/system_stm32wbxx.c ****   */
+ 126:Core/Src/system_stm32wbxx.c **** 
+ 127:Core/Src/system_stm32wbxx.c **** /* Note: Following vector table addresses must be defined in line with linker
+ 128:Core/Src/system_stm32wbxx.c ****          configuration. */
+ 129:Core/Src/system_stm32wbxx.c **** /*!< Uncomment the following line if you need to relocate CPU1 CM4 and/or CPU2
+ 130:Core/Src/system_stm32wbxx.c ****      CM0+ vector table anywhere in Sram or Flash. Else vector table will be kept
+ 131:Core/Src/system_stm32wbxx.c ****      at address 0x00 which correspond to automatic remap of boot address selected */
+ 132:Core/Src/system_stm32wbxx.c **** /* #define USER_VECT_TAB_ADDRESS */
+ 133:Core/Src/system_stm32wbxx.c **** #if defined(USER_VECT_TAB_ADDRESS)
+ 134:Core/Src/system_stm32wbxx.c **** /*!< Uncomment this line for user vector table remap in Sram else user remap
+ 135:Core/Src/system_stm32wbxx.c ****      will be done in Flash. */
+ 136:Core/Src/system_stm32wbxx.c **** /* #define VECT_TAB_SRAM */
+ 137:Core/Src/system_stm32wbxx.c **** #if defined(VECT_TAB_SRAM)
+ 138:Core/Src/system_stm32wbxx.c **** #define VECT_TAB_BASE_ADDRESS   SRAM1_BASE      /*!< Vector Table base address field.
+ 139:Core/Src/system_stm32wbxx.c ****                                                      This value must be a multiple of 0x200. */
+ 140:Core/Src/system_stm32wbxx.c **** #if !defined(VECT_TAB_OFFSET)
+ 141:Core/Src/system_stm32wbxx.c **** #define VECT_TAB_OFFSET         0x00000000U     /*!< Vector Table offset field.
+ 142:Core/Src/system_stm32wbxx.c ****                                                      This value must be a multiple of 0x200. */
+ 143:Core/Src/system_stm32wbxx.c **** #endif /* VECT_TAB_OFFSET */
+ 144:Core/Src/system_stm32wbxx.c **** 
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 4
+
+
+ 145:Core/Src/system_stm32wbxx.c **** #else
+ 146:Core/Src/system_stm32wbxx.c **** #define VECT_TAB_BASE_ADDRESS   FLASH_BASE      /*!< Vector Table base address field.
+ 147:Core/Src/system_stm32wbxx.c ****                                                      This value must be a multiple of 0x200. */
+ 148:Core/Src/system_stm32wbxx.c **** #if !defined(VECT_TAB_OFFSET)
+ 149:Core/Src/system_stm32wbxx.c **** #define VECT_TAB_OFFSET         0x00000000U     /*!< Vector Table offset field.
+ 150:Core/Src/system_stm32wbxx.c ****                                                      This value must be a multiple of 0x200. */
+ 151:Core/Src/system_stm32wbxx.c **** #endif /* VECT_TAB_OFFSET */
+ 152:Core/Src/system_stm32wbxx.c **** 
+ 153:Core/Src/system_stm32wbxx.c **** #endif /* VECT_TAB_SRAM */
+ 154:Core/Src/system_stm32wbxx.c **** #endif /* USER_VECT_TAB_ADDRESS */
+ 155:Core/Src/system_stm32wbxx.c **** 
+ 156:Core/Src/system_stm32wbxx.c **** /**
+ 157:Core/Src/system_stm32wbxx.c ****   * @}
+ 158:Core/Src/system_stm32wbxx.c ****   */
+ 159:Core/Src/system_stm32wbxx.c **** 
+ 160:Core/Src/system_stm32wbxx.c **** /** @addtogroup STM32WBxx_System_Private_Macros
+ 161:Core/Src/system_stm32wbxx.c ****   * @{
+ 162:Core/Src/system_stm32wbxx.c ****   */
+ 163:Core/Src/system_stm32wbxx.c **** 
+ 164:Core/Src/system_stm32wbxx.c **** /**
+ 165:Core/Src/system_stm32wbxx.c ****   * @}
+ 166:Core/Src/system_stm32wbxx.c ****   */
+ 167:Core/Src/system_stm32wbxx.c **** 
+ 168:Core/Src/system_stm32wbxx.c **** /** @addtogroup STM32WBxx_System_Private_Variables
+ 169:Core/Src/system_stm32wbxx.c ****   * @{
+ 170:Core/Src/system_stm32wbxx.c ****   */
+ 171:Core/Src/system_stm32wbxx.c **** /* The SystemCoreClock variable is updated in three ways:
+ 172:Core/Src/system_stm32wbxx.c ****     1) by calling CMSIS function SystemCoreClockUpdate()
+ 173:Core/Src/system_stm32wbxx.c ****     2) by calling HAL API function HAL_RCC_GetHCLKFreq()
+ 174:Core/Src/system_stm32wbxx.c ****     3) each time HAL_RCC_ClockConfig() is called to configure the system clock frequency
+ 175:Core/Src/system_stm32wbxx.c ****        Note: If you use this function to configure the system clock; then there
+ 176:Core/Src/system_stm32wbxx.c ****              is no need to call the 2 first functions listed above, since SystemCoreClock
+ 177:Core/Src/system_stm32wbxx.c ****              variable is updated automatically.
+ 178:Core/Src/system_stm32wbxx.c **** */
+ 179:Core/Src/system_stm32wbxx.c **** uint32_t SystemCoreClock = 4000000UL ; /*CPU1: M4 on MSI clock after startup (4MHz)*/
+ 180:Core/Src/system_stm32wbxx.c **** 
+ 181:Core/Src/system_stm32wbxx.c **** const uint32_t AHBPrescTable[16UL] = {1UL, 3UL, 5UL, 1UL, 1UL, 6UL, 10UL, 32UL, 2UL, 4UL, 8UL, 16UL
+ 182:Core/Src/system_stm32wbxx.c **** 
+ 183:Core/Src/system_stm32wbxx.c **** const uint32_t APBPrescTable[8UL]  = {0UL, 0UL, 0UL, 0UL, 1UL, 2UL, 3UL, 4UL};
+ 184:Core/Src/system_stm32wbxx.c **** 
+ 185:Core/Src/system_stm32wbxx.c **** const uint32_t MSIRangeTable[16UL] = {100000UL, 200000UL, 400000UL, 800000UL, 1000000UL, 2000000UL,
+ 186:Core/Src/system_stm32wbxx.c ****                                       4000000UL, 8000000UL, 16000000UL, 24000000UL, 32000000UL, 480
+ 187:Core/Src/system_stm32wbxx.c ****                                      }; /* 0UL values are incorrect cases */
+ 188:Core/Src/system_stm32wbxx.c **** 
+ 189:Core/Src/system_stm32wbxx.c **** #if defined(STM32WB55xx) || defined(STM32WB5Mxx) || defined(STM32WB35xx) || defined (STM32WB15xx) |
+ 190:Core/Src/system_stm32wbxx.c **** const uint32_t SmpsPrescalerTable[4UL][6UL] = {{1UL, 3UL, 2UL, 2UL, 1UL, 2UL}, \
+ 191:Core/Src/system_stm32wbxx.c ****   {2UL, 6UL, 4UL, 3UL, 2UL, 4UL}, \
+ 192:Core/Src/system_stm32wbxx.c ****   {4UL, 12UL, 8UL, 6UL, 4UL, 8UL}, \
+ 193:Core/Src/system_stm32wbxx.c ****   {4UL, 12UL, 8UL, 6UL, 4UL, 8UL}
+ 194:Core/Src/system_stm32wbxx.c **** };
+ 195:Core/Src/system_stm32wbxx.c **** #endif /* STM32WB55xx || STM32WB5Mxx || STM32WB35xx || STM32WB15xx || STM32WB1Mxx */
+ 196:Core/Src/system_stm32wbxx.c **** 
+ 197:Core/Src/system_stm32wbxx.c **** /**
+ 198:Core/Src/system_stm32wbxx.c ****   * @}
+ 199:Core/Src/system_stm32wbxx.c ****   */
+ 200:Core/Src/system_stm32wbxx.c **** 
+ 201:Core/Src/system_stm32wbxx.c **** /** @addtogroup STM32WBxx_System_Private_FunctionPrototypes
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 5
+
+
+ 202:Core/Src/system_stm32wbxx.c ****   * @{
+ 203:Core/Src/system_stm32wbxx.c ****   */
+ 204:Core/Src/system_stm32wbxx.c **** 
+ 205:Core/Src/system_stm32wbxx.c **** /**
+ 206:Core/Src/system_stm32wbxx.c ****   * @}
+ 207:Core/Src/system_stm32wbxx.c ****   */
+ 208:Core/Src/system_stm32wbxx.c **** 
+ 209:Core/Src/system_stm32wbxx.c **** /** @addtogroup STM32WBxx_System_Private_Functions
+ 210:Core/Src/system_stm32wbxx.c ****   * @{
+ 211:Core/Src/system_stm32wbxx.c ****   */
+ 212:Core/Src/system_stm32wbxx.c **** 
+ 213:Core/Src/system_stm32wbxx.c **** /**
+ 214:Core/Src/system_stm32wbxx.c ****   * @brief  Setup the microcontroller system.
+ 215:Core/Src/system_stm32wbxx.c ****   * @param  None
+ 216:Core/Src/system_stm32wbxx.c ****   * @retval None
+ 217:Core/Src/system_stm32wbxx.c ****   */
+ 218:Core/Src/system_stm32wbxx.c **** void SystemInit(void)
+ 219:Core/Src/system_stm32wbxx.c **** {
+  29              		.loc 1 219 1 view -0
+  30              		.cfi_startproc
+  31              		@ args = 0, pretend = 0, frame = 0
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33              		@ link register save eliminated.
+ 220:Core/Src/system_stm32wbxx.c **** #if defined(USER_VECT_TAB_ADDRESS)
+ 221:Core/Src/system_stm32wbxx.c ****   /* Configure the Vector Table location add offset address ------------------*/
+ 222:Core/Src/system_stm32wbxx.c ****   SCB->VTOR = VECT_TAB_BASE_ADDRESS | VECT_TAB_OFFSET;
+ 223:Core/Src/system_stm32wbxx.c **** #endif /* USER_VECT_TAB_ADDRESS */
+ 224:Core/Src/system_stm32wbxx.c **** 
+ 225:Core/Src/system_stm32wbxx.c ****   /* FPU settings ------------------------------------------------------------*/
+ 226:Core/Src/system_stm32wbxx.c **** #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
+ 227:Core/Src/system_stm32wbxx.c ****   SCB->CPACR |= ((3UL << (10UL * 2UL)) | (3UL << (11UL * 2UL))); /* set CP10 and CP11 Full Access *
+  34              		.loc 1 227 3 view .LVU1
+  35              		.loc 1 227 6 is_stmt 0 view .LVU2
+  36 0000 164A     		ldr	r2, .L2
+  37 0002 D2F88830 		ldr	r3, [r2, #136]
+  38              		.loc 1 227 14 view .LVU3
+  39 0006 43F47003 		orr	r3, r3, #15728640
+  40 000a C2F88830 		str	r3, [r2, #136]
+ 228:Core/Src/system_stm32wbxx.c **** #endif /* FPU */
+ 229:Core/Src/system_stm32wbxx.c **** 
+ 230:Core/Src/system_stm32wbxx.c ****   /* Reset the RCC clock configuration to the default reset state ------------*/
+ 231:Core/Src/system_stm32wbxx.c ****   /* Set MSION bit */
+ 232:Core/Src/system_stm32wbxx.c ****   RCC->CR |= RCC_CR_MSION;
+  41              		.loc 1 232 3 is_stmt 1 view .LVU4
+  42              		.loc 1 232 6 is_stmt 0 view .LVU5
+  43 000e 4FF0B043 		mov	r3, #1476395008
+  44 0012 1A68     		ldr	r2, [r3]
+  45              		.loc 1 232 11 view .LVU6
+  46 0014 42F00102 		orr	r2, r2, #1
+  47 0018 1A60     		str	r2, [r3]
+ 233:Core/Src/system_stm32wbxx.c **** 
+ 234:Core/Src/system_stm32wbxx.c ****   /* Reset CFGR register */
+ 235:Core/Src/system_stm32wbxx.c ****   RCC->CFGR = 0x00070000U;
+  48              		.loc 1 235 3 is_stmt 1 view .LVU7
+  49              		.loc 1 235 13 is_stmt 0 view .LVU8
+  50 001a 4FF4E022 		mov	r2, #458752
+  51 001e 9A60     		str	r2, [r3, #8]
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 6
+
+
+ 236:Core/Src/system_stm32wbxx.c **** 
+ 237:Core/Src/system_stm32wbxx.c ****   /* Reset PLLSAI1ON, PLLON, HSECSSON, HSEON, HSION, and MSIPLLON bits */
+ 238:Core/Src/system_stm32wbxx.c ****   RCC->CR &= (uint32_t)0xFAF6FEFBU;
+  52              		.loc 1 238 3 is_stmt 1 view .LVU9
+  53              		.loc 1 238 6 is_stmt 0 view .LVU10
+  54 0020 1968     		ldr	r1, [r3]
+  55              		.loc 1 238 11 view .LVU11
+  56 0022 A2F1A262 		sub	r2, r2, #84934656
+  57 0026 A2F20512 		subw	r2, r2, #261
+  58 002a 0A40     		ands	r2, r2, r1
+  59 002c 1A60     		str	r2, [r3]
+ 239:Core/Src/system_stm32wbxx.c **** 
+ 240:Core/Src/system_stm32wbxx.c ****   /*!< Reset LSI1 and LSI2 bits */
+ 241:Core/Src/system_stm32wbxx.c ****   RCC->CSR &= (uint32_t)0xFFFFFFFAU;
+  60              		.loc 1 241 3 is_stmt 1 view .LVU12
+  61              		.loc 1 241 6 is_stmt 0 view .LVU13
+  62 002e D3F89420 		ldr	r2, [r3, #148]
+  63              		.loc 1 241 12 view .LVU14
+  64 0032 22F00502 		bic	r2, r2, #5
+  65 0036 C3F89420 		str	r2, [r3, #148]
+ 242:Core/Src/system_stm32wbxx.c **** 
+ 243:Core/Src/system_stm32wbxx.c ****   /*!< Reset HSI48ON  bit */
+ 244:Core/Src/system_stm32wbxx.c ****   RCC->CRRCR &= (uint32_t)0xFFFFFFFEU;
+  66              		.loc 1 244 3 is_stmt 1 view .LVU15
+  67              		.loc 1 244 6 is_stmt 0 view .LVU16
+  68 003a D3F89820 		ldr	r2, [r3, #152]
+  69              		.loc 1 244 14 view .LVU17
+  70 003e 22F00102 		bic	r2, r2, #1
+  71 0042 C3F89820 		str	r2, [r3, #152]
+ 245:Core/Src/system_stm32wbxx.c **** 
+ 246:Core/Src/system_stm32wbxx.c ****   /* Reset PLLCFGR register */
+ 247:Core/Src/system_stm32wbxx.c ****   RCC->PLLCFGR = 0x22041000U;
+  72              		.loc 1 247 3 is_stmt 1 view .LVU18
+  73              		.loc 1 247 16 is_stmt 0 view .LVU19
+  74 0046 064A     		ldr	r2, .L2+4
+  75 0048 DA60     		str	r2, [r3, #12]
+ 248:Core/Src/system_stm32wbxx.c **** 
+ 249:Core/Src/system_stm32wbxx.c **** #if defined(STM32WB55xx) || defined(STM32WB5Mxx)
+ 250:Core/Src/system_stm32wbxx.c ****   /* Reset PLLSAI1CFGR register */
+ 251:Core/Src/system_stm32wbxx.c ****   RCC->PLLSAI1CFGR = 0x22041000U;
+  76              		.loc 1 251 3 is_stmt 1 view .LVU20
+  77              		.loc 1 251 20 is_stmt 0 view .LVU21
+  78 004a 1A61     		str	r2, [r3, #16]
+ 252:Core/Src/system_stm32wbxx.c **** #endif /* STM32WB55xx || STM32WB5Mxx */
+ 253:Core/Src/system_stm32wbxx.c **** 
+ 254:Core/Src/system_stm32wbxx.c ****   /* Reset HSEBYP bit */
+ 255:Core/Src/system_stm32wbxx.c ****   RCC->CR &= 0xFFFBFFFFU;
+  79              		.loc 1 255 3 is_stmt 1 view .LVU22
+  80              		.loc 1 255 6 is_stmt 0 view .LVU23
+  81 004c 1A68     		ldr	r2, [r3]
+  82              		.loc 1 255 11 view .LVU24
+  83 004e 22F48022 		bic	r2, r2, #262144
+  84 0052 1A60     		str	r2, [r3]
+ 256:Core/Src/system_stm32wbxx.c **** 
+ 257:Core/Src/system_stm32wbxx.c ****   /* Disable all interrupts */
+ 258:Core/Src/system_stm32wbxx.c ****   RCC->CIER = 0x00000000;
+  85              		.loc 1 258 3 is_stmt 1 view .LVU25
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 7
+
+
+  86              		.loc 1 258 13 is_stmt 0 view .LVU26
+  87 0054 0022     		movs	r2, #0
+  88 0056 9A61     		str	r2, [r3, #24]
+ 259:Core/Src/system_stm32wbxx.c **** }
+  89              		.loc 1 259 1 view .LVU27
+  90 0058 7047     		bx	lr
+  91              	.L3:
+  92 005a 00BF     		.align	2
+  93              	.L2:
+  94 005c 00ED00E0 		.word	-536810240
+  95 0060 00100422 		.word	570691584
+  96              		.cfi_endproc
+  97              	.LFE950:
+  99              		.section	.text.SystemCoreClockUpdate,"ax",%progbits
+ 100              		.align	1
+ 101              		.global	SystemCoreClockUpdate
+ 102              		.syntax unified
+ 103              		.thumb
+ 104              		.thumb_func
+ 106              	SystemCoreClockUpdate:
+ 107              	.LFB951:
+ 260:Core/Src/system_stm32wbxx.c **** 
+ 261:Core/Src/system_stm32wbxx.c **** /**
+ 262:Core/Src/system_stm32wbxx.c ****   * @brief  Update SystemCoreClock variable according to Clock Register Values.
+ 263:Core/Src/system_stm32wbxx.c ****   *         The SystemCoreClock variable contains the core clock (HCLK), it can
+ 264:Core/Src/system_stm32wbxx.c ****   *         be used by the user application to setup the SysTick timer or configure
+ 265:Core/Src/system_stm32wbxx.c ****   *         other parameters.
+ 266:Core/Src/system_stm32wbxx.c ****   *
+ 267:Core/Src/system_stm32wbxx.c ****   * @note   Each time the core clock (HCLK) changes, this function must be called
+ 268:Core/Src/system_stm32wbxx.c ****   *         to update SystemCoreClock variable value. Otherwise, any configuration
+ 269:Core/Src/system_stm32wbxx.c ****   *         based on this variable will be incorrect.
+ 270:Core/Src/system_stm32wbxx.c ****   *
+ 271:Core/Src/system_stm32wbxx.c ****   * @note   - The system frequency computed by this function is not the real
+ 272:Core/Src/system_stm32wbxx.c ****   *           frequency in the chip. It is calculated based on the predefined
+ 273:Core/Src/system_stm32wbxx.c ****   *           constant and the selected clock source:
+ 274:Core/Src/system_stm32wbxx.c ****   *
+ 275:Core/Src/system_stm32wbxx.c ****   *           - If SYSCLK source is MSI, SystemCoreClock will contain the MSI_VALUE(*)
+ 276:Core/Src/system_stm32wbxx.c ****   *
+ 277:Core/Src/system_stm32wbxx.c ****   *           - If SYSCLK source is HSI, SystemCoreClock will contain the HSI_VALUE(**)
+ 278:Core/Src/system_stm32wbxx.c ****   *
+ 279:Core/Src/system_stm32wbxx.c ****   *           - If SYSCLK source is HSE, SystemCoreClock will contain the HSE_VALUE(***)
+ 280:Core/Src/system_stm32wbxx.c ****   *
+ 281:Core/Src/system_stm32wbxx.c ****   *           - If SYSCLK source is PLL, SystemCoreClock will contain the HSE_VALUE(***)
+ 282:Core/Src/system_stm32wbxx.c ****   *             or HSI_VALUE(*) or MSI_VALUE(*) multiplied/divided by the PLL factors.
+ 283:Core/Src/system_stm32wbxx.c ****   *
+ 284:Core/Src/system_stm32wbxx.c ****   *         (*) MSI_VALUE is a constant defined in stm32wbxx_hal.h file (default value
+ 285:Core/Src/system_stm32wbxx.c ****   *             4 MHz) but the real value may vary depending on the variations
+ 286:Core/Src/system_stm32wbxx.c ****   *             in voltage and temperature.
+ 287:Core/Src/system_stm32wbxx.c ****   *
+ 288:Core/Src/system_stm32wbxx.c ****   *         (**) HSI_VALUE is a constant defined in stm32wbxx_hal_conf.h file (default value
+ 289:Core/Src/system_stm32wbxx.c ****   *              16 MHz) but the real value may vary depending on the variations
+ 290:Core/Src/system_stm32wbxx.c ****   *              in voltage and temperature.
+ 291:Core/Src/system_stm32wbxx.c ****   *
+ 292:Core/Src/system_stm32wbxx.c ****   *         (***) HSE_VALUE is a constant defined in stm32wbxx_hal_conf.h file (default value
+ 293:Core/Src/system_stm32wbxx.c ****   *              32 MHz), user has to ensure that HSE_VALUE is same as the real
+ 294:Core/Src/system_stm32wbxx.c ****   *              frequency of the crystal used. Otherwise, this function may
+ 295:Core/Src/system_stm32wbxx.c ****   *              have wrong result.
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 8
+
+
+ 296:Core/Src/system_stm32wbxx.c ****   *
+ 297:Core/Src/system_stm32wbxx.c ****   *         - The result of this function could be not correct when using fractional
+ 298:Core/Src/system_stm32wbxx.c ****   *           value for HSE crystal.
+ 299:Core/Src/system_stm32wbxx.c ****   *
+ 300:Core/Src/system_stm32wbxx.c ****   * @param  None
+ 301:Core/Src/system_stm32wbxx.c ****   * @retval None
+ 302:Core/Src/system_stm32wbxx.c ****   */
+ 303:Core/Src/system_stm32wbxx.c **** void SystemCoreClockUpdate(void)
+ 304:Core/Src/system_stm32wbxx.c **** {
+ 108              		.loc 1 304 1 is_stmt 1 view -0
+ 109              		.cfi_startproc
+ 110              		@ args = 0, pretend = 0, frame = 0
+ 111              		@ frame_needed = 0, uses_anonymous_args = 0
+ 112              		@ link register save eliminated.
+ 305:Core/Src/system_stm32wbxx.c ****   uint32_t tmp, msirange, pllvco, pllr, pllsource, pllm;
+ 113              		.loc 1 305 3 view .LVU29
+ 306:Core/Src/system_stm32wbxx.c **** 
+ 307:Core/Src/system_stm32wbxx.c ****   /* Get MSI Range frequency--------------------------------------------------*/
+ 308:Core/Src/system_stm32wbxx.c **** 
+ 309:Core/Src/system_stm32wbxx.c ****   /*MSI frequency range in Hz*/
+ 310:Core/Src/system_stm32wbxx.c ****   msirange = MSIRangeTable[(RCC->CR & RCC_CR_MSIRANGE) >> RCC_CR_MSIRANGE_Pos];
+ 114              		.loc 1 310 3 view .LVU30
+ 115              		.loc 1 310 32 is_stmt 0 view .LVU31
+ 116 0000 4FF0B042 		mov	r2, #1476395008
+ 117 0004 1368     		ldr	r3, [r2]
+ 118              		.loc 1 310 56 view .LVU32
+ 119 0006 C3F30313 		ubfx	r3, r3, #4, #4
+ 120              		.loc 1 310 12 view .LVU33
+ 121 000a 2749     		ldr	r1, .L17
+ 122 000c 51F82310 		ldr	r1, [r1, r3, lsl #2]
+ 123              	.LVL0:
+ 311:Core/Src/system_stm32wbxx.c **** 
+ 312:Core/Src/system_stm32wbxx.c ****   /* Get SYSCLK source -------------------------------------------------------*/
+ 313:Core/Src/system_stm32wbxx.c ****   switch (RCC->CFGR & RCC_CFGR_SWS)
+ 124              		.loc 1 313 3 is_stmt 1 view .LVU34
+ 125              		.loc 1 313 14 is_stmt 0 view .LVU35
+ 126 0010 9368     		ldr	r3, [r2, #8]
+ 127              		.loc 1 313 21 view .LVU36
+ 128 0012 03F00C03 		and	r3, r3, #12
+ 129              		.loc 1 313 3 view .LVU37
+ 130 0016 082B     		cmp	r3, #8
+ 131 0018 37D0     		beq	.L5
+ 132 001a 06D8     		bhi	.L6
+ 133 001c 2BB3     		cbz	r3, .L7
+ 134 001e 042B     		cmp	r3, #4
+ 135 0020 3FD1     		bne	.L9
+ 314:Core/Src/system_stm32wbxx.c ****   {
+ 315:Core/Src/system_stm32wbxx.c ****     case 0x00: /* MSI used as system clock source */
+ 316:Core/Src/system_stm32wbxx.c ****       SystemCoreClock = msirange;
+ 317:Core/Src/system_stm32wbxx.c ****       break;
+ 318:Core/Src/system_stm32wbxx.c **** 
+ 319:Core/Src/system_stm32wbxx.c ****     case 0x04: /* HSI used as system clock source */
+ 320:Core/Src/system_stm32wbxx.c ****       /* HSI used as system clock source */
+ 321:Core/Src/system_stm32wbxx.c ****       SystemCoreClock = HSI_VALUE;
+ 136              		.loc 1 321 7 is_stmt 1 view .LVU38
+ 137              		.loc 1 321 23 is_stmt 0 view .LVU39
+ 138 0022 224B     		ldr	r3, .L17+4
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 9
+
+
+ 139 0024 224A     		ldr	r2, .L17+8
+ 140 0026 1A60     		str	r2, [r3]
+ 322:Core/Src/system_stm32wbxx.c ****       break;
+ 141              		.loc 1 322 7 is_stmt 1 view .LVU40
+ 142 0028 21E0     		b	.L11
+ 143              	.L6:
+ 313:Core/Src/system_stm32wbxx.c ****   {
+ 144              		.loc 1 313 3 is_stmt 0 view .LVU41
+ 145 002a 0C2B     		cmp	r3, #12
+ 146 002c 39D1     		bne	.L9
+ 323:Core/Src/system_stm32wbxx.c **** 
+ 324:Core/Src/system_stm32wbxx.c ****     case 0x08:  /* HSE used as system clock source */
+ 325:Core/Src/system_stm32wbxx.c ****       SystemCoreClock = HSE_VALUE;
+ 326:Core/Src/system_stm32wbxx.c ****       break;
+ 327:Core/Src/system_stm32wbxx.c **** 
+ 328:Core/Src/system_stm32wbxx.c ****     case 0x0C: /* PLL used as system clock  source */
+ 329:Core/Src/system_stm32wbxx.c ****       /* PLL_VCO = (HSE_VALUE or HSI_VALUE or MSI_VALUE/ PLLM) * PLLN
+ 330:Core/Src/system_stm32wbxx.c ****          SYSCLK = PLL_VCO / PLLR
+ 331:Core/Src/system_stm32wbxx.c ****          */
+ 332:Core/Src/system_stm32wbxx.c ****       pllsource = (RCC->PLLCFGR & RCC_PLLCFGR_PLLSRC);
+ 147              		.loc 1 332 7 is_stmt 1 view .LVU42
+ 148              		.loc 1 332 23 is_stmt 0 view .LVU43
+ 149 002e 4FF0B043 		mov	r3, #1476395008
+ 150 0032 DA68     		ldr	r2, [r3, #12]
+ 151              		.loc 1 332 17 view .LVU44
+ 152 0034 02F00302 		and	r2, r2, #3
+ 153              	.LVL1:
+ 333:Core/Src/system_stm32wbxx.c ****       pllm = ((RCC->PLLCFGR & RCC_PLLCFGR_PLLM) >> RCC_PLLCFGR_PLLM_Pos) + 1UL ;
+ 154              		.loc 1 333 7 is_stmt 1 view .LVU45
+ 155              		.loc 1 333 19 is_stmt 0 view .LVU46
+ 156 0038 DB68     		ldr	r3, [r3, #12]
+ 157              		.loc 1 333 49 view .LVU47
+ 158 003a C3F30213 		ubfx	r3, r3, #4, #3
+ 159              		.loc 1 333 12 view .LVU48
+ 160 003e 0133     		adds	r3, r3, #1
+ 161              	.LVL2:
+ 334:Core/Src/system_stm32wbxx.c **** 
+ 335:Core/Src/system_stm32wbxx.c ****       if (pllsource == 0x02UL) /* HSI used as PLL clock source */
+ 162              		.loc 1 335 7 is_stmt 1 view .LVU49
+ 163              		.loc 1 335 10 is_stmt 0 view .LVU50
+ 164 0040 022A     		cmp	r2, #2
+ 165 0042 26D0     		beq	.L15
+ 336:Core/Src/system_stm32wbxx.c ****       {
+ 337:Core/Src/system_stm32wbxx.c ****         pllvco = (HSI_VALUE / pllm);
+ 338:Core/Src/system_stm32wbxx.c ****       }
+ 339:Core/Src/system_stm32wbxx.c ****       else if (pllsource == 0x03UL) /* HSE used as PLL clock source */
+ 166              		.loc 1 339 12 is_stmt 1 view .LVU51
+ 167              		.loc 1 339 15 is_stmt 0 view .LVU52
+ 168 0044 032A     		cmp	r2, #3
+ 169 0046 28D0     		beq	.L16
+ 340:Core/Src/system_stm32wbxx.c ****       {
+ 341:Core/Src/system_stm32wbxx.c ****         pllvco = (HSE_VALUE / pllm);
+ 342:Core/Src/system_stm32wbxx.c ****       }
+ 343:Core/Src/system_stm32wbxx.c ****       else /* MSI used as PLL clock source */
+ 344:Core/Src/system_stm32wbxx.c ****       {
+ 345:Core/Src/system_stm32wbxx.c ****         pllvco = (msirange / pllm);
+ 170              		.loc 1 345 9 is_stmt 1 view .LVU53
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 10
+
+
+ 171              		.loc 1 345 16 is_stmt 0 view .LVU54
+ 172 0048 B1FBF3F2 		udiv	r2, r1, r3
+ 173              	.LVL3:
+ 174              	.L13:
+ 346:Core/Src/system_stm32wbxx.c ****       }
+ 347:Core/Src/system_stm32wbxx.c **** 
+ 348:Core/Src/system_stm32wbxx.c ****       pllvco = pllvco * ((RCC->PLLCFGR & RCC_PLLCFGR_PLLN) >> RCC_PLLCFGR_PLLN_Pos);
+ 175              		.loc 1 348 7 is_stmt 1 view .LVU55
+ 176              		.loc 1 348 30 is_stmt 0 view .LVU56
+ 177 004c 4FF0B041 		mov	r1, #1476395008
+ 178              	.LVL4:
+ 179              		.loc 1 348 30 view .LVU57
+ 180 0050 CB68     		ldr	r3, [r1, #12]
+ 181              	.LVL5:
+ 182              		.loc 1 348 60 view .LVU58
+ 183 0052 C3F30623 		ubfx	r3, r3, #8, #7
+ 184              		.loc 1 348 14 view .LVU59
+ 185 0056 02FB03F3 		mul	r3, r2, r3
+ 186              	.LVL6:
+ 349:Core/Src/system_stm32wbxx.c ****       pllr = (((RCC->PLLCFGR & RCC_PLLCFGR_PLLR) >> RCC_PLLCFGR_PLLR_Pos) + 1UL);
+ 187              		.loc 1 349 7 is_stmt 1 view .LVU60
+ 188              		.loc 1 349 20 is_stmt 0 view .LVU61
+ 189 005a CA68     		ldr	r2, [r1, #12]
+ 190              		.loc 1 349 50 view .LVU62
+ 191 005c 520F     		lsrs	r2, r2, #29
+ 192              		.loc 1 349 12 view .LVU63
+ 193 005e 0132     		adds	r2, r2, #1
+ 194              	.LVL7:
+ 350:Core/Src/system_stm32wbxx.c **** 
+ 351:Core/Src/system_stm32wbxx.c ****       SystemCoreClock = pllvco / pllr;
+ 195              		.loc 1 351 7 is_stmt 1 view .LVU64
+ 196              		.loc 1 351 32 is_stmt 0 view .LVU65
+ 197 0060 B3FBF2F3 		udiv	r3, r3, r2
+ 198              	.LVL8:
+ 199              		.loc 1 351 23 view .LVU66
+ 200 0064 114A     		ldr	r2, .L17+4
+ 201              	.LVL9:
+ 202              		.loc 1 351 23 view .LVU67
+ 203 0066 1360     		str	r3, [r2]
+ 352:Core/Src/system_stm32wbxx.c ****       break;
+ 204              		.loc 1 352 7 is_stmt 1 view .LVU68
+ 205 0068 01E0     		b	.L11
+ 206              	.LVL10:
+ 207              	.L7:
+ 316:Core/Src/system_stm32wbxx.c ****       break;
+ 208              		.loc 1 316 7 view .LVU69
+ 316:Core/Src/system_stm32wbxx.c ****       break;
+ 209              		.loc 1 316 23 is_stmt 0 view .LVU70
+ 210 006a 104B     		ldr	r3, .L17+4
+ 211 006c 1960     		str	r1, [r3]
+ 317:Core/Src/system_stm32wbxx.c **** 
+ 212              		.loc 1 317 7 is_stmt 1 view .LVU71
+ 213              	.LVL11:
+ 214              	.L11:
+ 353:Core/Src/system_stm32wbxx.c **** 
+ 354:Core/Src/system_stm32wbxx.c ****     default:
+ 355:Core/Src/system_stm32wbxx.c ****       SystemCoreClock = msirange;
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 11
+
+
+ 356:Core/Src/system_stm32wbxx.c ****       break;
+ 357:Core/Src/system_stm32wbxx.c ****   }
+ 358:Core/Src/system_stm32wbxx.c **** 
+ 359:Core/Src/system_stm32wbxx.c ****   /* Compute HCLK clock frequency --------------------------------------------*/
+ 360:Core/Src/system_stm32wbxx.c ****   /* Get HCLK1 prescaler */
+ 361:Core/Src/system_stm32wbxx.c ****   tmp = AHBPrescTable[((RCC->CFGR & RCC_CFGR_HPRE) >> RCC_CFGR_HPRE_Pos)];
+ 215              		.loc 1 361 3 view .LVU72
+ 216              		.loc 1 361 28 is_stmt 0 view .LVU73
+ 217 006e 4FF0B043 		mov	r3, #1476395008
+ 218 0072 9B68     		ldr	r3, [r3, #8]
+ 219              		.loc 1 361 52 view .LVU74
+ 220 0074 C3F30313 		ubfx	r3, r3, #4, #4
+ 221              		.loc 1 361 7 view .LVU75
+ 222 0078 0E4A     		ldr	r2, .L17+12
+ 223 007a 52F82310 		ldr	r1, [r2, r3, lsl #2]
+ 224              	.LVL12:
+ 362:Core/Src/system_stm32wbxx.c **** 
+ 363:Core/Src/system_stm32wbxx.c ****   /* HCLK clock frequency */
+ 364:Core/Src/system_stm32wbxx.c ****   SystemCoreClock = SystemCoreClock / tmp;
+ 225              		.loc 1 364 3 is_stmt 1 view .LVU76
+ 226              		.loc 1 364 37 is_stmt 0 view .LVU77
+ 227 007e 0B4A     		ldr	r2, .L17+4
+ 228 0080 1368     		ldr	r3, [r2]
+ 229 0082 B3FBF1F3 		udiv	r3, r3, r1
+ 230              		.loc 1 364 19 view .LVU78
+ 231 0086 1360     		str	r3, [r2]
+ 365:Core/Src/system_stm32wbxx.c **** }
+ 232              		.loc 1 365 1 view .LVU79
+ 233 0088 7047     		bx	lr
+ 234              	.LVL13:
+ 235              	.L5:
+ 325:Core/Src/system_stm32wbxx.c ****       break;
+ 236              		.loc 1 325 7 is_stmt 1 view .LVU80
+ 325:Core/Src/system_stm32wbxx.c ****       break;
+ 237              		.loc 1 325 23 is_stmt 0 view .LVU81
+ 238 008a 084B     		ldr	r3, .L17+4
+ 239 008c 0A4A     		ldr	r2, .L17+16
+ 240 008e 1A60     		str	r2, [r3]
+ 326:Core/Src/system_stm32wbxx.c **** 
+ 241              		.loc 1 326 7 is_stmt 1 view .LVU82
+ 242 0090 EDE7     		b	.L11
+ 243              	.LVL14:
+ 244              	.L15:
+ 337:Core/Src/system_stm32wbxx.c ****       }
+ 245              		.loc 1 337 9 view .LVU83
+ 337:Core/Src/system_stm32wbxx.c ****       }
+ 246              		.loc 1 337 16 is_stmt 0 view .LVU84
+ 247 0092 074A     		ldr	r2, .L17+8
+ 248              	.LVL15:
+ 337:Core/Src/system_stm32wbxx.c ****       }
+ 249              		.loc 1 337 16 view .LVU85
+ 250 0094 B2FBF3F2 		udiv	r2, r2, r3
+ 251              	.LVL16:
+ 337:Core/Src/system_stm32wbxx.c ****       }
+ 252              		.loc 1 337 16 view .LVU86
+ 253 0098 D8E7     		b	.L13
+ 254              	.LVL17:
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 12
+
+
+ 255              	.L16:
+ 341:Core/Src/system_stm32wbxx.c ****       }
+ 256              		.loc 1 341 9 is_stmt 1 view .LVU87
+ 341:Core/Src/system_stm32wbxx.c ****       }
+ 257              		.loc 1 341 16 is_stmt 0 view .LVU88
+ 258 009a 074A     		ldr	r2, .L17+16
+ 259              	.LVL18:
+ 341:Core/Src/system_stm32wbxx.c ****       }
+ 260              		.loc 1 341 16 view .LVU89
+ 261 009c B2FBF3F2 		udiv	r2, r2, r3
+ 262              	.LVL19:
+ 341:Core/Src/system_stm32wbxx.c ****       }
+ 263              		.loc 1 341 16 view .LVU90
+ 264 00a0 D4E7     		b	.L13
+ 265              	.LVL20:
+ 266              	.L9:
+ 355:Core/Src/system_stm32wbxx.c ****       break;
+ 267              		.loc 1 355 7 is_stmt 1 view .LVU91
+ 355:Core/Src/system_stm32wbxx.c ****       break;
+ 268              		.loc 1 355 23 is_stmt 0 view .LVU92
+ 269 00a2 024B     		ldr	r3, .L17+4
+ 270 00a4 1960     		str	r1, [r3]
+ 356:Core/Src/system_stm32wbxx.c ****   }
+ 271              		.loc 1 356 7 is_stmt 1 view .LVU93
+ 272 00a6 E2E7     		b	.L11
+ 273              	.L18:
+ 274              		.align	2
+ 275              	.L17:
+ 276 00a8 00000000 		.word	MSIRangeTable
+ 277 00ac 00000000 		.word	SystemCoreClock
+ 278 00b0 0024F400 		.word	16000000
+ 279 00b4 00000000 		.word	AHBPrescTable
+ 280 00b8 0048E801 		.word	32000000
+ 281              		.cfi_endproc
+ 282              	.LFE951:
+ 284              		.global	SmpsPrescalerTable
+ 285              		.section	.rodata.SmpsPrescalerTable,"a"
+ 286              		.align	2
+ 289              	SmpsPrescalerTable:
+ 290 0000 01000000 		.word	1
+ 291 0004 03000000 		.word	3
+ 292 0008 02000000 		.word	2
+ 293 000c 02000000 		.word	2
+ 294 0010 01000000 		.word	1
+ 295 0014 02000000 		.word	2
+ 296 0018 02000000 		.word	2
+ 297 001c 06000000 		.word	6
+ 298 0020 04000000 		.word	4
+ 299 0024 03000000 		.word	3
+ 300 0028 02000000 		.word	2
+ 301 002c 04000000 		.word	4
+ 302 0030 04000000 		.word	4
+ 303 0034 0C000000 		.word	12
+ 304 0038 08000000 		.word	8
+ 305 003c 06000000 		.word	6
+ 306 0040 04000000 		.word	4
+ 307 0044 08000000 		.word	8
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 13
+
+
+ 308 0048 04000000 		.word	4
+ 309 004c 0C000000 		.word	12
+ 310 0050 08000000 		.word	8
+ 311 0054 06000000 		.word	6
+ 312 0058 04000000 		.word	4
+ 313 005c 08000000 		.word	8
+ 314              		.global	MSIRangeTable
+ 315              		.section	.rodata.MSIRangeTable,"a"
+ 316              		.align	2
+ 319              	MSIRangeTable:
+ 320 0000 A0860100 		.word	100000
+ 321 0004 400D0300 		.word	200000
+ 322 0008 801A0600 		.word	400000
+ 323 000c 00350C00 		.word	800000
+ 324 0010 40420F00 		.word	1000000
+ 325 0014 80841E00 		.word	2000000
+ 326 0018 00093D00 		.word	4000000
+ 327 001c 00127A00 		.word	8000000
+ 328 0020 0024F400 		.word	16000000
+ 329 0024 00366E01 		.word	24000000
+ 330 0028 0048E801 		.word	32000000
+ 331 002c 006CDC02 		.word	48000000
+ 332 0030 00000000 		.word	0
+ 333 0034 00000000 		.word	0
+ 334 0038 00000000 		.word	0
+ 335 003c 00000000 		.word	0
+ 336              		.global	APBPrescTable
+ 337              		.section	.rodata.APBPrescTable,"a"
+ 338              		.align	2
+ 341              	APBPrescTable:
+ 342 0000 00000000 		.word	0
+ 343 0004 00000000 		.word	0
+ 344 0008 00000000 		.word	0
+ 345 000c 00000000 		.word	0
+ 346 0010 01000000 		.word	1
+ 347 0014 02000000 		.word	2
+ 348 0018 03000000 		.word	3
+ 349 001c 04000000 		.word	4
+ 350              		.global	AHBPrescTable
+ 351              		.section	.rodata.AHBPrescTable,"a"
+ 352              		.align	2
+ 355              	AHBPrescTable:
+ 356 0000 01000000 		.word	1
+ 357 0004 03000000 		.word	3
+ 358 0008 05000000 		.word	5
+ 359 000c 01000000 		.word	1
+ 360 0010 01000000 		.word	1
+ 361 0014 06000000 		.word	6
+ 362 0018 0A000000 		.word	10
+ 363 001c 20000000 		.word	32
+ 364 0020 02000000 		.word	2
+ 365 0024 04000000 		.word	4
+ 366 0028 08000000 		.word	8
+ 367 002c 10000000 		.word	16
+ 368 0030 40000000 		.word	64
+ 369 0034 80000000 		.word	128
+ 370 0038 00010000 		.word	256
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 14
+
+
+ 371 003c 00020000 		.word	512
+ 372              		.global	SystemCoreClock
+ 373              		.section	.data.SystemCoreClock,"aw"
+ 374              		.align	2
+ 377              	SystemCoreClock:
+ 378 0000 00093D00 		.word	4000000
+ 379              		.text
+ 380              	.Letext0:
+ 381              		.file 2 "C:/Users/Nathan/AppData/Roaming/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-dev-t
+ 382              		.file 3 "C:/Users/Nathan/AppData/Roaming/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-dev-t
+ 383              		.file 4 "Drivers/CMSIS/Include/core_cm4.h"
+ 384              		.file 5 "Drivers/CMSIS/Device/ST/STM32WBxx/Include/system_stm32wbxx.h"
+ 385              		.file 6 "Drivers/CMSIS/Device/ST/STM32WBxx/Include/stm32wb55xx.h"
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s 			page 15
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 system_stm32wbxx.c
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:21     .text.SystemInit:00000000 $t
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:27     .text.SystemInit:00000000 SystemInit
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:94     .text.SystemInit:0000005c $d
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:100    .text.SystemCoreClockUpdate:00000000 $t
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:106    .text.SystemCoreClockUpdate:00000000 SystemCoreClockUpdate
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:276    .text.SystemCoreClockUpdate:000000a8 $d
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:319    .rodata.MSIRangeTable:00000000 MSIRangeTable
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:377    .data.SystemCoreClock:00000000 SystemCoreClock
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:355    .rodata.AHBPrescTable:00000000 AHBPrescTable
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:289    .rodata.SmpsPrescalerTable:00000000 SmpsPrescalerTable
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:286    .rodata.SmpsPrescalerTable:00000000 $d
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:316    .rodata.MSIRangeTable:00000000 $d
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:341    .rodata.APBPrescTable:00000000 APBPrescTable
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:338    .rodata.APBPrescTable:00000000 $d
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:352    .rodata.AHBPrescTable:00000000 $d
+C:\Users\Nathan\AppData\Local\Temp\ccGPt4cf.s:374    .data.SystemCoreClock:00000000 $d
+
+NO UNDEFINED SYMBOLS

@@ -1,0 +1,7 @@
+# environment variable file used by stm32-for-vscode and the STM32Make.make makefile
+# Other environment variables can be added here. If wanting to use the generated makefile in CI/CD context please
+# configure the following variables: GCC_PATH, OPENOCD
+
+ARM_GCC_PATH = c:\Users\Nathan\AppData\Roaming\Code\User\globalStorage\bmd.stm32-for-vscode\@xpack-dev-tools\arm-none-eabi-gcc\15.2.1-1.1.1\.content\bin
+OPENOCD = c:\Users\Nathan\AppData\Roaming\Code\User\globalStorage\bmd.stm32-for-vscode\@xpack-dev-tools\openocd\0.12.0-7.1\.content\bin\openocd.EXE
+ 

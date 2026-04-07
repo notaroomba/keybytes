@@ -1,0 +1,30 @@
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccfmSNub.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"stm32wbxx_hal_hsem.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_hsem.c"
+  20              	.Letext0:
+ARM GAS  C:\Users\Nathan\AppData\Local\Temp\ccfmSNub.s 			page 2
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 stm32wbxx_hal_hsem.c
+
+NO UNDEFINED SYMBOLS

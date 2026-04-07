@@ -1,0 +1,112 @@
+# Configuration file for the STM32 for VSCode extension
+# Arrays can be inputted in two ways. One is: [entry_1, entry_2, ..., entry_final]
+# or by adding an indented list below the variable name e.g.:
+# VARIABLE:
+# - entry_1
+# - entry_2
+
+# The project name
+target: keyword
+# Can be C or C++
+language: C
+
+optimization: Og
+
+# MCU settings
+targetMCU: stm32wbx
+cpu: cortex-m4 # type of cpu e.g. cortex-m4
+fpu: fpv4-sp-d16 # Defines how floating points are defined. Can be left empty.
+floatAbi: -mfloat-abi=hard
+ldscript: stm32wb55xx_flash_cm4.ld # linker script
+
+# Compiler definitions. The -D prefix for the compiler will be automatically added.
+cDefinitions: []
+cxxDefinitions: []
+asDefinitions: []
+
+# Compiler definition files. you can add a single files or an array of files for different definitions.
+# The file is expected to have a definition each new line.
+# This allows to include for example a .definition file which can be ignored in git and can contain
+# This can be convenient for passing along secrets at compile time, or generating a file for per device setup.
+cDefinitionsFile:
+cxxDefinitionsFile:
+asDefinitionsFile:
+
+# Compiler flags
+cFlags: 
+  - -Wall
+  - -fdata-sections
+  - -ffunction-sections
+
+cxxFlags: 
+  - -fno-rtti
+  - -fno-exceptions
+
+assemblyFlags: 
+  - -Wall
+  - -fdata-sections
+  - -ffunction-sections
+
+linkerFlags: 
+  - -Wl,--print-memory-usage
+
+
+# libraries to be included. The -l prefix to the library will be automatically added.
+libraries: 
+  - c
+  - m
+
+# Library directories. Folders can be added here that contain custom libraries.
+libraryDirectories: []
+
+# Files or folders that will be excluded from compilation.
+# Glob patterns (https://www.wikiwand.com/en/Glob_(programming)) can be used.
+# Do mind that double stars are reserved in yaml
+# these should be escaped with a: \ or the name should be in double quotes e.g. "**.test.**"
+excludes: 
+  - "**/Examples/**"
+  - "**/examples/**"
+  - "**/Example/**"
+  - "**/example/**"
+  - "**_template.*"
+
+
+# Include directories (directories containing .h or .hpp files)
+# If a CubeMX makefile is present it will automatically include the include directories from that makefile.
+includeDirectories: 
+  - Inc/**
+  - Core/Inc/**
+  - Core/Lib/**
+  - Src/**
+  - Core/Src/**
+  - Core/Lib/**
+
+
+# Files that should be included in the compilation.
+# If a CubeMX makefile is present it will automatically include the  c and cpp/cxx files from that makefile.
+# Glob patterns (https://www.wikiwand.com/en/Glob_(programming)) can be used.
+# Do mind that double stars are reserved in yaml
+# these should be escaped with a: \ or the name should be in double quotes e.g. "HARDWARE_DRIVER*.c"
+sourceFiles:  
+  - Src/**
+  - Core/Src/**
+  - Core/Lib/**
+
+
+# When no makefile is present it will show a warning pop-up.
+# However when compilation without the CubeMX Makefile is desired, this can be turned of.
+suppressMakefileWarning: false
+
+# Custom makefile rules
+# Here custom makefile rules can be added to the STM32Make.make file
+# an example of how this can be used is commented out below.
+customMakefileRules:
+# - command: sayhello
+#   rule: echo "hello"
+#   dependsOn: $(BUILD_DIR)/$(TARGET).elf # can be left out    
+
+# Additional flags which will be used when invoking the make command
+makeFlags:
+# - -O  # use this option when the output of make is mixed up only works for make version 4.0 and upwards
+# - --silent # use this option to silence the output of the build
+    
