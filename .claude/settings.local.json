@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip show:*)",
+      "Bash(pip3 show:*)",
+      "Bash(grep -E \"\\\\.kicad_pcb$\")",
+      "Bash(sort -t, -k1 -n)",
+      "Bash(sort -t, -k1 -rn)",
+      "Bash(where kicad:*)",
+      "Bash(where kicad-cli:*)",
+      "Read(//c/Program Files/KiCad//**)",
+      "Read(//c/Program Files/KiCad/**)",
+      "Bash(python -c \"import pcbnew; print\\('pcbnew available'\\)\")",
+      "Bash(ls \"/c/Program Files/KiCad/9.0/bin/python\"*)",
+      "Bash(ls \"/c/Program Files/KiCad/9.0/bin/\"*python*)",
+      "Bash(ls \"/c/Program Files/KiCad/9.0/lib/python\"*)",
+      "Bash(\"/c/Program Files/KiCad/9.0/bin/python.exe\" -c \"import pcbnew; print\\('pcbnew version:', pcbnew.Version\\(\\)\\)\")",
+      "Bash(\"/c/Program Files/KiCad/9.0/bin/python.exe\" -m pip install kikit)",
+      "Bash('/c/Program Files/KiCad/9.0/bin/python.exe' -c ':*)",
+      "Bash(\"/c/Program Files/KiCad/9.0/bin/python.exe\" panelize.py)"
+    ]
+  }
+}
