@@ -29,7 +29,7 @@ A truly modular keyboard — rearrange every key, any time, and let the board fi
   <a href="#license">License</a>
 </p>
 
-<img src="https://stasis.hackclub-assets.com/images/1775446958195-0ybbic.png" alt="Keybytes" width="800"/>
+<img src="assets/render.png" alt="Keybytes — keybit and keyword modules with pogo pins and magnetic keycap" width="800"/>
 
 ## Key Features
 
