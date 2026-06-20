@@ -47,12 +47,12 @@ A truly modular keyboard — rearrange every key, any time, and let the board fi
 
 Keybytes is split into two kinds of board:
 
-| Board | Role | Brains |
-|-------|------|--------|
-| **Keybit** | A single, swappable key module | CH32V003 (RISC-V) |
+| Board       | Role                                 | Brains                          |
+| ----------- | ------------------------------------ | ------------------------------- |
+| **Keybit**  | A single, swappable key module       | CH32V003 (RISC-V)               |
 | **Keyword** | The central hub every key plugs into | STM32WB55RGV6 (Bluetooth + USB) |
 
-Each **keybit** carries its own switch, RGB LED, and microcontroller. Instead of a fixed switch matrix, every keybit talks to the **keyword** over a shared **I²C** bus through pogo-pin contacts. Because each key is individually addressed, the board doesn't care *where* a key physically sits — you can pull keys off and rearrange the whole layout at will, and the keyword maps it back to keystrokes over USB-HID or Bluetooth.
+Each **keybit** carries its own switch and microcontroller. Instead of a fixed switch matrix, every keybit talks to the **keyword** over a shared **I²C** bus through pogo-pin contacts. Because each key is individually addressed, the board doesn't care _where_ a key physically sits — you can pull keys off and rearrange the whole layout at will, and the keyword maps it back to keystrokes over USB-HID or Bluetooth.
 
 The keyword can also reprogram every keybit in place over its single-wire debug line, so firmware updates don't mean desoldering anything.
 
@@ -81,52 +81,6 @@ Cases, keycaps, and clamps are modeled in [OnShape](https://www.onshape.com/) an
 <img src="https://stasis.hackclub-assets.com/images/1775792561658-u0t4fh.png" alt="Keycap design" width="800"/>
 <img src="https://stasis.hackclub-assets.com/images/1775792667844-tdun0b.png" alt="Keycap magnet pockets and latch" width="800"/>
 <img src="https://stasis.hackclub-assets.com/images/1775793071456-4ktbyd.png" alt="Printed keycap" width="800"/>
-
-## Firmware
-
-The keyword firmware lives in [`/firmware`](firmware) and targets the **STM32WB55** using the STM32 HAL, generated with [STM32CubeMX](https://www.st.com/en/development-tools/stm32cubemx.html) and built with the included `Makefile` / [STM32-for-VSCode](https://marketplace.visualstudio.com/items?itemName=bmd.stm32-for-vscode) config.
-
-Key peripherals configured:
-
-- **USB** device (HID)
-- **I²C3** — the bus to all the keybits
-- **QUADSPI** — external flash
-- **RF** — Bluetooth LE radio
-- **RGB** status LED + single-wire keybit programming (`BB_SWIO`)
-
-```bash
-cd firmware
-make            # build
-make flash      # flash over OpenOCD (see openocd.cfg)
-```
-
-## Repository Layout
-
-```
-keybytes/
-├── assets/          # banner + images
-├── blender/         # .blend scene, .glb / .pcb3d models, renders
-├── cad/             # OnShape STEP exports (case, keycap, clamp) + glb converter
-├── firmware/        # STM32WB55 firmware (CubeMX + Makefile)
-├── hardware/
-│   ├── keybit/      # KiCad project for the per-key module
-│   ├── keyword/     # KiCad project for the main board (top/bottom)
-│   └── lib/         # shared symbol / footprint / 3D libraries
-└── BOM.csv          # bill of materials
-```
-
-## Bill of Materials
-
-The interconnect and magnet parts that make the modular system work — see [`BOM.csv`](BOM.csv) for sources:
-
-| Item | Price | Source |
-|------|-------|--------|
-| Magnets 2×0.5mm (1000 pcs) | $8.83 | [AliExpress](https://es.aliexpress.com/item/1005009461785489.html) |
-| Pogo Pads 1u | $0.04 | [LCSC](https://www.lcsc.com/product-detail/C2826547.html) |
-| Pogo Pins 1u | $0.09 | [LCSC](https://www.lcsc.com/product-detail/C42419351.html) |
-| Pogo Headers 4P | $1.75 | [LCSC](https://www.lcsc.com/product-detail/C5296819.html) |
-| Pogo Headers 2P | $0.75 | [LCSC](https://www.lcsc.com/product-detail/C5296818.html) |
-| Pogo Headers 2P (longer) | $0.87 | [LCSC](https://www.lcsc.com/product-detail/C5296817.html) |
 
 ## Credits
 
