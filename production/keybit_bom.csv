@@ -1,0 +1,7 @@
+﻿Designator,Footprint,Quantity,Value,LCSC Part #
+C1,0402,1,100nF,
+"R1, R11, R2, R3, R4, R5, R6, R8",0402,8,4.7K,
+SW1,SW_Cherry_MX_1.00u_PCB,1,SW_Push,
+"TP1, TP2, TP3, TP4",TestPoint_Pad_D2.0mm,4,TestPoint,
+U1,QFN-20-1EP_3x3mm_P0.4mm_EP1.65x1.65mm,1,CH32V003FxUx,
+"U2, U3, U4, U5, U6, U7, U8, U9",CONN-SMD_YZ13515055F-02025-02,8,YZ13515055F-02025-02,C5296817
