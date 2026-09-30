@@ -5,7 +5,7 @@
 </h1>
 
 <h4 align="center">
-A truly modular keyboard - rearrange every key, any time, and let the board figure itself out.
+A truly modular keyboard with rearrangeable keys, magnetic keycaps and Bluetooth!
 </h4>
 
 <div align="center">
@@ -20,82 +20,89 @@ A truly modular keyboard - rearrange every key, any time, and let the board figu
 
 <p align="center">
   <a href="#key-features">Key Features</a> •
-  <a href="#how-it-works">How It Works</a> •
-  <a href="#hardware">Hardware</a> •
-  <a href="#case--keycaps">Case &amp; Keycaps</a> •
-  <a href="#firmware">Firmware</a> •
-  <a href="#repository-layout">Layout</a> •
+  <a href="#pcb">PCB</a> •
+  <a href="#case-and-keycaps">Case &amp; Keycaps</a> •
   <a href="#credits">Credits</a> •
   <a href="#license">License</a>
 </p>
 
-<img src="assets/render.png" alt="Keybytes - keybit and keyword modules with pogo pins and magnetic keycap" width="800"/>
+<img src="assets/render.png" alt="Keybytes Render" width="800"/>
 
 ## Key Features
 
-- **Truly modular** - every key is its own self-contained board. Pop them off, rearrange the layout, and snap them back wherever you want.
-- **Magnetic keycaps** - caps hold on with embedded **2×0.5mm magnets** and latch onto the switch's side rails. No tools, no soldering.
-- **Pogo-pin interconnect** - keys link to the main board (and each other) through spring-loaded pogo pins and pads, so there's nothing to plug in.
-- **Smart per-key MCU** - each module runs a cheap **CH32V003 RISC-V** microcontroller and reports over a shared **I²C** bus.
-- **Bluetooth + USB main board** - the central board is built around an **STM32WB55RGV6** (Cortex-M4 + radio) with USB-HID and Bluetooth LE.
-- **In-system programming** - the main board can flash the keybit MCUs directly through pogo pins (single-wire `BB_SWIO`).
-- **External QUADSPI flash** for layouts, graphics, and key data.
-- **RGB status LED** for connection and mode feedback.
-- **Battery support** for going wireless.
+- **Rearrangeable layout** where every key is its own 1u PCB
+- **CH32V003** RISC-V microcontroller on every key
+- **STM32WB55RGV6** main board with Bluetooth and USB
+- **Pogo pins on all 4 sides** of every key for power and I2C
+- **Magnetic keycaps** with 2mm x 0.5mm magnets
+- **Key programming** from the main board over pogo pins
+- **2MB QSPI flash** (W25Q16JV) to store the key firmware
+- **Battery charging** with the BQ25895 and solder pads for a 1S LiPo
+- **Buck-Boost converter** (TPS631000)
+- **RGB status LED**
+- **USB-C** with ESD protection
+- **Ceramic Bluetooth antenna**
 
-## How It Works
+## PCB
 
-Keybytes is split into two kinds of board:
-
-| Board       | Role                                 | Brains                          |
-| ----------- | ------------------------------------ | ------------------------------- |
-| **Keybit**  | A single, swappable key module       | CH32V003 (RISC-V)               |
-| **Keyword** | The central hub every key plugs into | STM32WB55RGV6 (Bluetooth + USB) |
-
-Each **keybit** carries its own switch and microcontroller. Instead of a fixed switch matrix, every keybit talks to the **keyword** over a shared **I²C** bus through pogo-pin contacts. Because each key is individually addressed, the board doesn't care _where_ a key physically sits - you can pull keys off and rearrange the whole layout at will, and the keyword maps it back to keystrokes over USB-HID or Bluetooth.
-
-The keyword can also reprogram every keybit in place over its single-wire debug line, so firmware updates don't mean desoldering anything.
-
-## Hardware
-
-Designed in [KiCad](https://www.kicad.org/). The repo holds the full schematics, PCB layouts, 3D models, and JLCPCB-ready fabrication outputs for both boards.
+Designed in KiCad! There are two boards, the Keybit and the Keyword, and both are 1u (19.05mm x 19.05mm).
 
 ### Keybit
 
-The per-key module: a tiny board with a hot-swap switch footprint, an RGB LED, the CH32V003, I²C pull-ups, and pogo pads for power, data, and programming.
+A single key with a Cherry MX switch and a CH32V003. Every side has pogo pins for 3.3V, GND and I2C so it can connect to the keyword or to other keybits, and the pads on the corners are for programming.
 
-<img src="https://stasis.hackclub-assets.com/images/1775416826793-5lrrwe.png" alt="Keybit routing" width="800"/>
+**Schematic:**
+
+<img src="https://stasis.hackclub-assets.com/images/1775426460134-qt999o.png" alt="Keybit Schematic" width="800"/>
+
+**Layout:**
+
+<img src="https://stasis.hackclub-assets.com/images/1775416826793-5lrrwe.png" alt="Keybit Layout" width="800"/>
 
 ### Keyword
 
-The main board / hub. Built around the STM32WB55RGV6 for Bluetooth LE and USB, with external QUADSPI flash, an RGB status LED, battery support, and the pogo-pin field that the keybits connect into. It also drives the single-wire programming line for in-system flashing of the keys.
+The main board that the keybits connect to. It is split into two PCBs that stack on top of each other. The top one has the STM32WB55RGV6, the antenna and the flash, and the bottom one has the USB-C, the charger and the buck-boost converter. The 3 pogo pins on the top are for programming the keybits.
 
-<img src="https://stasis.hackclub-assets.com/images/1775347277075-v4u04k.png" alt="Keyword routing" width="800"/>
-<img src="https://stasis.hackclub-assets.com/images/1775419082878-wwvq7s.png" alt="Keyword with pogo programming and flash" width="800"/>
+**Schematic:**
 
-## Case & Keycaps
+<img src="https://stasis.hackclub-assets.com/images/1775426515419-d7ntz6.png" alt="Keyword Schematic" width="800"/>
 
-Cases, keycaps, and clamps are modeled in [OnShape](https://www.onshape.com/) and exported as STEP files in [`/cad`](cad). Keycaps print with internal pockets for the magnets and clip directly onto the switch side latches - no glue required.
+**Layout:**
 
-<img src="https://stasis.hackclub-assets.com/images/1775792561658-u0t4fh.png" alt="Keycap design" width="800"/>
-<img src="https://stasis.hackclub-assets.com/images/1775792667844-tdun0b.png" alt="Keycap magnet pockets and latch" width="800"/>
-<img src="https://stasis.hackclub-assets.com/images/1775793071456-4ktbyd.png" alt="Printed keycap" width="800"/>
+<img src="https://stasis.hackclub-assets.com/images/1775347277075-v4u04k.png" alt="Keyword Layout" width="800"/>
+
+**3D View:**
+
+<img src="https://stasis.hackclub-assets.com/images/1775426542816-taq9ky.png" alt="Keyword 3D View" width="800"/>
+<img src="https://stasis.hackclub-assets.com/images/1775426579651-lg5zme.png" alt="Keyword 3D View" width="800"/>
+
+## Case and Keycaps
+
+Custom designed cases and keycaps in OnShape, the STEP files are in the [`cad`](cad) folder.
+
+<img src="https://stasis.hackclub-assets.com/images/1781815993601-r86dm5.png" alt="Case" width="800"/>
+
+The keycaps have internal holes for the magnets and latch on to the side latches of the key switch.
+
+<img src="https://stasis.hackclub-assets.com/images/1775792561658-u0t4fh.png" alt="Keycap Design" width="800"/>
+<img src="https://stasis.hackclub-assets.com/images/1775792667844-tdun0b.png" alt="Keycap Latch" width="800"/>
+<img src="https://stasis.hackclub-assets.com/images/1775793071456-4ktbyd.png" alt="Printed Keycap" width="400"/>
 
 ## Credits
 
 This project uses:
 
-- [KiCad](https://www.kicad.org/) for the schematics and PCBs
-- [OnShape](https://www.onshape.com/) for the cases and keycaps
+- [KiCad](https://www.kicad.org/)
+- [OnShape](https://www.onshape.com/) for case design
 - [Blender](https://www.blender.org/) for 3D renders
-- [STM32CubeMX](https://www.st.com/en/development-tools/stm32cubemx.html) for the keyword firmware
-- [WCH CH32V003](https://www.wch-ic.com/products/CH32V003.html) - the RISC-V brain in every keybit
-- [KiCad Fabrication Toolkit](https://github.com/bennymeg/Fabrication-Toolkit) for JLCPCB production files
+- [STM32CubeMX](https://www.st.com/en/development-tools/stm32cubemx.html)
+- [KiCad Fabrication Toolkit](https://github.com/bennymeg/Fabrication-Toolkit) for the JLCPCB files
+- [Hack Club Stasis](https://stasis.hackclub.com/)
 
 ## You may also like...
 
 - [Ember](https://github.com/NotARoomba/ember) - A USB-C powered reflow hotplate with Bluetooth
-- [Cyberboard](https://github.com/NotARoomba/Cyberboard) - A Raspberry Pi Pico-sized STM32 dev board with Bluetooth
+- [Cyberboard](https://github.com/NotARoomba/Cyberboard) - A Raspberry Pi Pico-sized STM32 development board with Bluetooth
 - [Trace](https://github.com/NotARoomba/Trace) - A comprehensive PCB ruler with reference footprints
 - [Linea](https://github.com/NotARoomba/Linea) - An EMR tablet
 
@@ -107,4 +114,3 @@ MIT
 
 > [notaroomba.dev](https://notaroomba.dev) &nbsp;&middot;&nbsp;
 > GitHub [@NotARoomba](https://github.com/NotARoomba) &nbsp;&middot;&nbsp;
-> Built for [Hack Club](https://hackclub.com)
