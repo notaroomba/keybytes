@@ -16,12 +16,12 @@ the biggest one was on the keybit, one of the pogo header GND pads wasnt connect
 
 on the keyword a bunch of the resistors all had the same lcsc number which was a 150 ohm resistor with 0 stock so jlc would have put the wrong values on the charger so i cleared those, and the pads that the pogo pins land on were in the bom as pogo pins so I set them to dnp
 
+![image](assets/journal/keyword_fixed_top.png)
+
+![image](assets/journal/keyword_fixed_bottom.png)
+
 I also fixed all the library and 3d model paths since they were hardcoded to my windows pc and didnt work on the mac, now they are relative to the project. Then I added the jlcpcb order and shipping to the bom
 
-![image](assets/journal/jlcpcb_order.png)
-
-![image](assets/journal/keybit_fixed_bottom.png)
-![image](assets/journal/keybit_fixed_top.png)
 ![image](assets/journal/jlcpcb_order.png)
 
 # 6/18/2026 8 PM - Finish CAD
@@ -32,46 +32,31 @@ So i did a thing with clay and finished the case andx yea, this took a long time
 
 ![image](assets/journal/1781815993601-r86dm5.png)
 
-![image](assets/journal/1781815993601-r86dm5.png)
-
 # 4/10/2026 3 AM - More Cad and finished Keybit Case
 
 _Time spent: 7h_
 
 So after messing around with a few designs in onshape, I got a better Keycap design
 
-
 ![image](assets/journal/1775792561658-u0t4fh.png)
-
 
 there are internal holes for the magnets and the thing latches on to the key switches side latches as shown here
 
-
 ![image](assets/journal/1775792667844-tdun0b.png)
 
-
 ![image](assets/journal/1775792934823-axlxi9.png)
-
 
 i then printed it out and did a thing and got this
 
-
 ![image](assets/journal/1775793071456-4ktbyd.png)
-
 
 and yea thats basically it, Ill plan on continuing the cad for the main pcb and make it cleaner
-
-![image](assets/journal/1775792561658-u0t4fh.png)
-![image](assets/journal/1775792667844-tdun0b.png)
-![image](assets/journal/1775792934823-axlxi9.png)
-![image](assets/journal/1775793071456-4ktbyd.png)
 
 # 4/8/2026 12 AM - CAD + Case
 
 _Time spent: 7h_
 
 Idk how to cad but I tried to do it and ended with soemthing like this:
-
 
 ![image](assets/journal/1775447209619-5e1ha0.png)
 
@@ -81,20 +66,13 @@ which got printed and it kinda works but the corners are too small and yea
 
 I printed a few out and showed them to clay and he liked them and yea, altho its thin I plan on making the walls thicker and yea, aside from that I think its pretty much done
 
-![image](assets/journal/1775447209619-5e1ha0.png)
-![image](assets/journal/1775447251699-e0oyw0.png)
-
 # 4/6/2026 3 AM - Flash and LED and Touchups
 
 _Time spent: 7h_
 
 So I kinda want to be able to program the CH300v chips from the main board so I needed to add in some pogo pins and then I would also need flash to store the code so I added that in and updated the STM32 MX for that
 
-
 ![image](assets/journal/1775419082878-wwvq7s.png)
-
-
-
 
 Then after that I finished routing up everything and also replaced the old LED with a RGB one.
 
@@ -102,18 +80,10 @@ Then after that I finished routing up everything and also replaced the old LED w
 
 ![image](assets/journal/1775426579651-lg5zme.png)
 
-
 Then I updated the schematics to look better and yea
 
 ![image](assets/journal/1775426460134-qt999o.png)
 
-
-![image](assets/journal/1775426515419-d7ntz6.png)
-
-![image](assets/journal/1775419082878-wwvq7s.png)
-![image](assets/journal/1775426542816-taq9ky.png)
-![image](assets/journal/1775426579651-lg5zme.png)
-![image](assets/journal/1775426460134-qt999o.png)
 ![image](assets/journal/1775426515419-d7ntz6.png)
 
 # 4/5/2026 7 PM - Routing
@@ -122,18 +92,13 @@ _Time spent: 7h_
 
 So I locked in for a day and finished up the routing for both PCB's. I also had to add in some I2C pullup resistors and had fun with laying them out on both sides and yea
 
-
 ![image](assets/journal/1775347277075-v4u04k.png)
 
 I also did the same for the keybit and ended up with this
 
-
 ![image](assets/journal/1775416826793-5lrrwe.png)
 
 it took me a while as I forgot that I had to add in pullup resistors and then had to move things around to add space for them
-
-![image](assets/journal/1775347277075-v4u04k.png)
-![image](assets/journal/1775416826793-5lrrwe.png)
 
 # 4/5/2026 12 AM - Keyword and Routing
 
@@ -141,18 +106,10 @@ _Time spent: 7h_
 
 So I had a bunch of back and forth between the 2 different STM32 chips, I oringlaly planned on having eherythign on one boar dbut with bluetooht then that would be way complicated so I decided to go on St's website to try and find any stm32s that would support bluetooth and I found a small one bue that meant using a usb to hid converter but the smallest one I could find would take up half the board so I decided to split the boards, and in doing so I rediecided that if I was going to have more area, I might as well have a bigger stm32 chip and just add more stuff to it so I did that and ended up with this:
 
-
 ![image](assets/journal/1774761472182-pa7dar.png)
 
 I was still placing the components so I decided to do that some more and got this
 
-
-
-
-
-![image](assets/journal/1775347199014-2i36z5.png)
-
-![image](assets/journal/1774761472182-pa7dar.png)
 ![image](assets/journal/1775347199014-2i36z5.png)
 
 # 3/27/2026 2 AM - Ideation and Schematic
@@ -169,15 +126,9 @@ I decided on using a cheap risc-v processor and i2c to communicate between the k
 
 I started on the keybit design (ha ha) and got this:
 
-
-
 ![image](assets/journal/1774578078192-fmrf1k.png)
 
 I then also started on the other design for the keyword
 
-
-
 ![image](assets/journal/1774578096201-ez05dt.png)
 
-![image](assets/journal/1774578078192-fmrf1k.png)
-![image](assets/journal/1774578096201-ez05dt.png)
