@@ -25,7 +25,7 @@
 	(fp_circle (center -1.00 1.00) (end -0.97 1.00) (layer F.Fab) (width 0.06))
 	(fp_circle (center -0.75 1.43) (end -0.65 1.43) (layer F.SilkS) (width 0.20))
 	(fp_circle (center -0.75 1.43) (end -0.65 1.43) (layer Cmts.User) (width 0.20))
-	(model "/hardware/lib/lcsc.3dshapes/TDFN-8_L2.0-W2.0-P0.50-BL-EP1.2.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/TDFN-8_L2.0-W2.0-P0.50-BL-EP1.2.wrl"
 		(offset (xyz 0.000 -0.000 -0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

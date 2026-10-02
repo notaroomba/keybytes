@@ -34,7 +34,7 @@
 	(fp_circle (center -1.50 -1.25) (end -1.47 -1.25) (layer F.Fab) (width 0.06))
 	(fp_circle (center -1.40 -0.76) (end -1.33 -0.76) (layer Cmts.User) (width 0.15))
 	(fp_circle (center -1.91 -0.76) (end -1.84 -0.76) (layer F.SilkS) (width 0.15))
-	(model "/hardware/lib/lcsc.3dshapes/LGA-14_L2.5-W3.0-H0.9-P0.50.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/LGA-14_L2.5-W3.0-H0.9-P0.50.wrl"
 		(offset (xyz 0.240 -0.370 -0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

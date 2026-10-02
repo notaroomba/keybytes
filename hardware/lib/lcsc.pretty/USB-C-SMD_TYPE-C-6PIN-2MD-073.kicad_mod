@@ -35,7 +35,7 @@
 	(fp_circle (center -4.45 -2.65) (end -4.42 -2.65) (layer F.Fab) (width 0.06))
 	(fp_circle (center -2.89 -1.30) (end -2.77 -1.30) (layer Cmts.User) (width 0.25))
 	(fp_circle (center 2.89 -1.30) (end 3.01 -1.30) (layer Cmts.User) (width 0.25))
-	(model "/hardware/lib/lcsc.3dshapes/USB-C-SMD_TYPE-C-6PIN-2MD-073.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/USB-C-SMD_TYPE-C-6PIN-2MD-073.wrl"
 		(offset (xyz 0.000 -1.200 0.900))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

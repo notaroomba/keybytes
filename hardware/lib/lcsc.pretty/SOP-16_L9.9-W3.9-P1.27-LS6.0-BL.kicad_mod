@@ -33,7 +33,7 @@
 	(fp_circle (center -4.45 3.40) (end -4.30 3.40) (layer Cmts.User) (width 0.30))
 	(fp_circle (center -4.45 0.77) (end -4.30 0.77) (layer F.SilkS) (width 0.30))
 	(fp_circle (center -5.18 2.77) (end -5.03 2.77) (layer F.SilkS) (width 0.30))
-	(model "/hardware/lib/lcsc.3dshapes/SOP-16_L9.9-W3.9-P1.27-LS6.0-BL.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/SOP-16_L9.9-W3.9-P1.27-LS6.0-BL.wrl"
 		(offset (xyz 0.000 -0.000 -0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

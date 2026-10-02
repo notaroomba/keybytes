@@ -22,7 +22,7 @@
 	(fp_circle (center -2.65 1.25) (end -2.62 1.25) (layer F.Fab) (width 0.06))
 	(fp_circle (center -1.25 0.00) (end -0.70 0.00) (layer F.Fab) (width 1.10))
 	(fp_circle (center 1.25 0.00) (end 1.80 0.00) (layer F.Fab) (width 1.10))
-	(model "/hardware/lib/lcsc.3dshapes/SMD_2P_YZ37215050R-02025-05.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/SMD_2P_YZ37215050R-02025-05.wrl"
 		(offset (xyz -0.000 -0.000 -0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

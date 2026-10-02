@@ -44,7 +44,7 @@
 	(fp_circle (center -5.50 1.15) (end -5.47 1.15) (layer F.Fab) (width 0.06))
 	(fp_circle (center -5.25 -0.35) (end -5.13 -0.35) (layer Cmts.User) (width 0.25))
 	(fp_circle (center 5.25 -0.35) (end 5.37 -0.35) (layer Cmts.User) (width 0.25))
-	(model "/hardware/lib/lcsc.3dshapes/CONN-SMD_4P-L11.0-W5.5-P2.50_YZ165615055F-04025-01.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/CONN-SMD_4P-L11.0-W5.5-P2.50_YZ165615055F-04025-01.wrl"
 		(offset (xyz 0.000 1.640 0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

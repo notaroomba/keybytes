@@ -30,7 +30,7 @@
 	(fp_arc (start 5.49 2.95) (end 5.50 2.95) (angle -90.00) (layer F.SilkS) (width 0.25))
 	(fp_arc (start 0.00 0.00) (end 5.50 -0.80) (angle 0.00) (layer F.SilkS) (width 0.25))
 	(fp_arc (start 0.57 -3.63) (end -2.00 -2.95) (angle -60.67) (layer F.SilkS) (width 0.25))
-	(model "/hardware/lib/lcsc.3dshapes/SMD_KEYBOARD-SW.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/SMD_KEYBOARD-SW.wrl"
 		(offset (xyz 0.000 -0.000 1.200))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

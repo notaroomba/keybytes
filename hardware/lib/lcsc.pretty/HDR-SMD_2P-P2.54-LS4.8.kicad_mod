@@ -19,7 +19,7 @@
 	(pad 1 smd rect (at -1.27 1.27 0.00) (size 1.02 2.54) (layers F.Cu F.Paste F.Mask))
 	(fp_circle (center -2.54 2.16) (end -2.39 2.16) (layer F.SilkS) (width 0.30))
 	(fp_circle (center -2.54 2.40) (end -2.51 2.40) (layer F.Fab) (width 0.06))
-	(model "/hardware/lib/lcsc.3dshapes/HDR-SMD_2P-P2.54_XKB_X6511WVS-02H-C60D48R2.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/HDR-SMD_2P-P2.54_XKB_X6511WVS-02H-C60D48R2.wrl"
 		(offset (xyz 0.000 -0.000 -0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

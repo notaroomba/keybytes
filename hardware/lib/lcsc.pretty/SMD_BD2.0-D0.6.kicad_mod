@@ -49,7 +49,7 @@
 	(fp_circle (center 1.14 1.14) (end 1.17 1.14) (layer F.Fab) (width 0.06))
 	(fp_circle (center 0.00 0.00) (end 0.15 0.00) (layer Cmts.User) (width 0.30))
 	(fp_circle (center 0.00 0.00) (end 1.40 0.00) (layer F.SilkS) (width 0.15))
-	(model "/hardware/lib/lcsc.3dshapes/SMD_BD2.0-D0.6.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/SMD_BD2.0-D0.6.wrl"
 		(offset (xyz 0.000 -0.000 1.400))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

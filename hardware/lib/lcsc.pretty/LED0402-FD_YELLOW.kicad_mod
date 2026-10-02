@@ -22,7 +22,7 @@
 	(fp_circle (center -0.50 0.25) (end -0.47 0.25) (layer F.Fab) (width 0.06))
 	(fp_circle (center 0.00 0.50) (end 0.04 0.50) (layer F.SilkS) (width 0.08))
 	(fp_circle (center 0.00 -0.50) (end 0.04 -0.50) (layer F.SilkS) (width 0.08))
-	(model "/hardware/lib/lcsc.3dshapes/LED0402-FD_YELLOW.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/LED0402-FD_YELLOW.wrl"
 		(offset (xyz 0.000 -0.000 0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

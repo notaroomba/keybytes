@@ -20,7 +20,7 @@
 	(pad 1 thru_hole circle (at 1.25 0.00 180.00) (size 1.70 1.70) (layers *.Cu *.Mask)(drill 0.9999979999999999))
 	(pad 2 thru_hole circle (at -1.25 0.00 180.00) (size 1.70 1.70) (layers *.Cu *.Mask)(drill 0.9999979999999999))
 	(fp_circle (center 3.73 -3.53) (end 3.76 -3.53) (layer F.Fab) (width 0.06))
-	(model "/hardware/lib/lcsc.3dshapes/XH2.5-2A.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/XH2.5-2A.wrl"
 		(offset (xyz 0.000 0.480 0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 180))

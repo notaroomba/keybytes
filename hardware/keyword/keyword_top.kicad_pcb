@@ -1042,7 +1042,7 @@
 			(uuid "c344cdc7-0b89-4702-b07c-251d39ba58af")
 		)
 		(embedded_fonts no)
-		(model "C:/Users/Nathan/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/ANT-SMD_L3.2-W1.6-H1.3.step"
+		(model "${KIPRJMOD}/../lib/lcsc.3dshapes/ANT-SMD_L3.2-W1.6-H1.3.step"
 			(offset
 				(xyz 0 -0 -0)
 			)
@@ -4257,7 +4257,7 @@
 			(uuid "444157d9-5144-49b1-a33e-4539dc4c22fa")
 		)
 		(embedded_fonts no)
-		(model "C:/Users/Nathan/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/CRYSTAL-SMD_L2.0-W1.2.step"
+		(model "${KIPRJMOD}/../lib/lcsc.3dshapes/CRYSTAL-SMD_L2.0-W1.2.step"
 			(offset
 				(xyz 0 -0 -0)
 			)
@@ -4726,7 +4726,7 @@
 			(uuid "99a9ff00-a788-4b3f-b052-9a2f60fcb693")
 		)
 		(embedded_fonts no)
-		(model "C:/Users/Nathan/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/OSC-SMD_4P-L2.0-W1.6-H0.8.step"
+		(model "${KIPRJMOD}/../lib/lcsc.3dshapes/OSC-SMD_4P-L2.0-W1.6-H0.8.step"
 			(offset
 				(xyz 0.06 0 -0)
 			)
@@ -5569,7 +5569,7 @@
 			(uuid "30b1a580-cb1b-4607-9c71-d9b579f84125")
 		)
 		(embedded_fonts no)
-		(model "C:/Users/Nathan/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/CSPG-6_L1.6-W1.0-P0.50-TL_MLPF-WB-04D3.step"
+		(model "${KIPRJMOD}/../lib/lcsc.3dshapes/CSPG-6_L1.6-W1.0-P0.50-TL_MLPF-WB-04D3.step"
 			(offset
 				(xyz 0 -0 -0)
 			)
@@ -6141,7 +6141,7 @@
 			(uuid "9c840e72-0cc9-445c-b6d4-96dbb9c2650a")
 		)
 		(embedded_fonts no)
-		(model "C:/Users/Nathan/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/TESTPOINT-SMD_BD2.0-H5.0.step"
+		(model "${KIPRJMOD}/../lib/lcsc.3dshapes/TESTPOINT-SMD_BD2.0-H5.0.step"
 			(offset
 				(xyz 0 -0 -0)
 			)
@@ -7176,7 +7176,7 @@
 			(uuid "2c05dc7a-703a-4591-94a4-1986ff8bcc4e")
 		)
 		(embedded_fonts no)
-		(model "C:/Users/Nathan/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/TESTPOINT-SMD_BD2.0-H5.0.step"
+		(model "${KIPRJMOD}/../lib/lcsc.3dshapes/TESTPOINT-SMD_BD2.0-H5.0.step"
 			(offset
 				(xyz 0 -0 -0)
 			)
@@ -7465,7 +7465,7 @@
 			(uuid "25753464-01c2-4f8d-9fe2-86e0c8a66eef")
 		)
 		(embedded_fonts no)
-		(model "C:/Users/Nathan/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/TESTPOINT-SMD_BD2.0-H5.0.step"
+		(model "${KIPRJMOD}/../lib/lcsc.3dshapes/TESTPOINT-SMD_BD2.0-H5.0.step"
 			(offset
 				(xyz 0 -0 -0)
 			)
@@ -7642,7 +7642,7 @@
 			(uuid "312b812b-7624-438a-8ae5-4bd0960ea8cf")
 		)
 		(embedded_fonts no)
-		(model "C:/Users/Nathan/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/LED-SMD_4P-L2.1-W1.6-H0.6.wrl"
+		(model "${KIPRJMOD}/../lib/lcsc.3dshapes/LED-SMD_4P-L2.1-W1.6-H0.6.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
