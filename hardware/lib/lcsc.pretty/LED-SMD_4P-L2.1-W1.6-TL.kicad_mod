@@ -21,7 +21,7 @@
 	(fp_text user + (at 1.05 -1.71 90.00) (layer F.SilkS)
 		(effects (font (size 1.00 1.00) (thickness 0.10)) (justify left))
 	)
-	(model "/hardware/lib/lcsc.3dshapes/LED-SMD_4P-L2.1-W1.6-H0.6.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/LED-SMD_4P-L2.1-W1.6-H0.6.wrl"
 		(offset (xyz 0.000 -0.000 -0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

@@ -19,7 +19,7 @@
 	(fp_text user + (at 1.96 -0.80 180.00) (layer F.SilkS)
 		(effects (font (size 1.00 1.00) (thickness 0.08)) (justify left))
 	)
-	(model "/hardware/lib/lcsc.3dshapes/LED-ARRAY-SMD_4P-L1.6-W1.5-BR_XL-1615RGBC-RF.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/LED-ARRAY-SMD_4P-L1.6-W1.5-BR_XL-1615RGBC-RF.wrl"
 		(offset (xyz 0.000 -0.000 -0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

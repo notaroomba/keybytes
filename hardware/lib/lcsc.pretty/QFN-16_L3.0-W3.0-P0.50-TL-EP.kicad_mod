@@ -37,7 +37,7 @@
 	(fp_circle (center -1.50 -1.50) (end -1.47 -1.50) (layer F.Fab) (width 0.06))
 	(fp_circle (center -1.88 -0.72) (end -1.78 -0.72) (layer Cmts.User) (width 0.20))
 	(fp_arc (start -2.08 -1.52) (end -2.08 -1.52) (angle -359.00) (layer F.SilkS) (width 0.30))
-	(model "/hardware/lib/lcsc.3dshapes/QFN-16_L3.0-W3.0-H0.9-P0.50.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/QFN-16_L3.0-W3.0-H0.9-P0.50.wrl"
 		(offset (xyz 0.000 -0.000 -0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

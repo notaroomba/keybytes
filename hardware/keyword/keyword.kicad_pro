@@ -689,7 +689,7 @@
       {
         "filename": "keyword.kicad_sch",
         "name": "keyword",
-        "uuid": "00000000-0000-0000-0000-000000000000"
+        "uuid": "6b197c77-b191-41dc-bab3-b05e50d107a2"
       }
     ],
     "used_designators": "",
@@ -698,7 +698,7 @@
   "sheets": [
     [
       "6b197c77-b191-41dc-bab3-b05e50d107a2",
-      "Root"
+      "keyword"
     ]
   ],
   "text_variables": {},

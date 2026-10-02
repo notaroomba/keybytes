@@ -18,7 +18,7 @@
 	(pad 1 smd rect (at -1.58 0.00 0.00) (size 1.00 1.75) (layers F.Cu F.Paste F.Mask))
 	(pad 2 smd rect (at 1.58 0.00 0.00) (size 1.00 1.75) (layers F.Cu F.Paste F.Mask))
 	(fp_circle (center -1.60 0.80) (end -1.57 0.80) (layer F.Fab) (width 0.06))
-	(model "/hardware/lib/lcsc.3dshapes/ANT-SMD_L3.2-W1.6-H1.3.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/ANT-SMD_L3.2-W1.6-H1.3.wrl"
 		(offset (xyz 0.000 -0.000 -0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 180))

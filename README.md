@@ -53,11 +53,11 @@ A single key with a Cherry MX switch and a CH32V003. Every side has pogo pins fo
 
 **Schematic:**
 
-<img src="https://stasis.hackclub-assets.com/images/1775426460134-qt999o.png" alt="Keybit Schematic" width="800"/>
+<img src="assets/journal/1775426460134-qt999o.png" alt="Keybit Schematic" width="800"/>
 
 **Layout:**
 
-<img src="https://stasis.hackclub-assets.com/images/1775416826793-5lrrwe.png" alt="Keybit Layout" width="800"/>
+<img src="assets/journal/1775416826793-5lrrwe.png" alt="Keybit Layout" width="800"/>
 
 ### Keyword
 
@@ -65,28 +65,28 @@ The main board that the keybits connect to. It is split into two PCBs that stack
 
 **Schematic:**
 
-<img src="https://stasis.hackclub-assets.com/images/1775426515419-d7ntz6.png" alt="Keyword Schematic" width="800"/>
+<img src="assets/journal/1775426515419-d7ntz6.png" alt="Keyword Schematic" width="800"/>
 
 **Layout:**
 
-<img src="https://stasis.hackclub-assets.com/images/1775347277075-v4u04k.png" alt="Keyword Layout" width="800"/>
+<img src="assets/journal/1775347277075-v4u04k.png" alt="Keyword Layout" width="800"/>
 
 **3D View:**
 
-<img src="https://stasis.hackclub-assets.com/images/1775426542816-taq9ky.png" alt="Keyword 3D View" width="800"/>
-<img src="https://stasis.hackclub-assets.com/images/1775426579651-lg5zme.png" alt="Keyword 3D View" width="800"/>
+<img src="assets/journal/1775426542816-taq9ky.png" alt="Keyword 3D View" width="800"/>
+<img src="assets/journal/1775426579651-lg5zme.png" alt="Keyword 3D View" width="800"/>
 
 ## Case and Keycaps
 
 Custom designed cases and keycaps in OnShape, the STEP files are in the [`cad`](cad) folder.
 
-<img src="https://stasis.hackclub-assets.com/images/1781815993601-r86dm5.png" alt="Case" width="800"/>
+<img src="assets/journal/1781815993601-r86dm5.png" alt="Case" width="800"/>
 
 The keycaps have internal holes for the magnets and latch on to the side latches of the key switch.
 
-<img src="https://stasis.hackclub-assets.com/images/1775792561658-u0t4fh.png" alt="Keycap Design" width="800"/>
-<img src="https://stasis.hackclub-assets.com/images/1775792667844-tdun0b.png" alt="Keycap Latch" width="800"/>
-<img src="https://stasis.hackclub-assets.com/images/1775793071456-4ktbyd.png" alt="Printed Keycap" width="400"/>
+<img src="assets/journal/1775792561658-u0t4fh.png" alt="Keycap Design" width="800"/>
+<img src="assets/journal/1775792667844-tdun0b.png" alt="Keycap Latch" width="800"/>
+<img src="assets/journal/1775793071456-4ktbyd.png" alt="Printed Keycap" width="400"/>
 
 ## Credits
 

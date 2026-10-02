@@ -29,7 +29,7 @@
 	(fp_circle (center 0.25 -0.00) (end 0.31 -0.00) (layer F.Fab) (width 0.13))
 	(fp_circle (center -0.25 0.58) (end -0.19 0.58) (layer F.Fab) (width 0.13))
 	(fp_circle (center 0.25 0.58) (end 0.31 0.58) (layer F.Fab) (width 0.13))
-	(model "/hardware/lib/lcsc.3dshapes/CSPG-6_L1.6-W1.0-P0.50-TL_MLPF-WB-04D3.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/CSPG-6_L1.6-W1.0-P0.50-TL_MLPF-WB-04D3.wrl"
 		(offset (xyz 0.000 -0.000 -0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))
