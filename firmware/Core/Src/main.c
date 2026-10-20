@@ -31,6 +31,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+/* U14 (XL-1608RGBC) is common anode to +3.3V, so a pin driven LOW lights its colour. */
+#define LED_STEP_MS 500
 
 /* USER CODE END PD */
 
@@ -59,11 +61,18 @@ static void MX_USB_PCD_Init(void);
 static void MX_QUADSPI_Init(void);
 static void MX_RF_Init(void);
 /* USER CODE BEGIN PFP */
+static void LED_Set(uint8_t r, uint8_t g, uint8_t b);
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+static void LED_Set(uint8_t r, uint8_t g, uint8_t b)
+{
+  HAL_GPIO_WritePin(STATUS_R_GPIO_Port, STATUS_R_Pin, r ? GPIO_PIN_RESET : GPIO_PIN_SET);
+  HAL_GPIO_WritePin(STATUS_G_GPIO_Port, STATUS_G_Pin, g ? GPIO_PIN_RESET : GPIO_PIN_SET);
+  HAL_GPIO_WritePin(STATUS_B_GPIO_Port, STATUS_B_Pin, b ? GPIO_PIN_RESET : GPIO_PIN_SET);
+}
 
 /* USER CODE END 0 */
 
@@ -104,6 +113,13 @@ int main(void)
   MX_QUADSPI_Init();
   MX_RF_Init();
   /* USER CODE BEGIN 2 */
+  /* red, yellow, green, cyan, blue, magenta, white, off */
+  static const uint8_t colours[][3] = {
+    {1, 0, 0}, {1, 1, 0}, {0, 1, 0}, {0, 1, 1},
+    {0, 0, 1}, {1, 0, 1}, {1, 1, 1}, {0, 0, 0},
+  };
+  uint32_t step = 0;
+  LED_Set(0, 0, 0);
 
   /* USER CODE END 2 */
 
@@ -114,6 +130,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    const uint8_t *c = colours[step++ % (sizeof(colours) / sizeof(colours[0]))];
+    LED_Set(c[0], c[1], c[2]);
+    HAL_Delay(LED_STEP_MS);
   }
   /* USER CODE END 3 */
 }
@@ -406,9 +425,25 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
+  /* Fast red blink so a failed init (e.g. a crystal not starting) is visible. */
   __disable_irq();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Pin = STATUS_B_Pin;
+  HAL_GPIO_Init(STATUS_B_GPIO_Port, &GPIO_InitStruct);
+  GPIO_InitStruct.Pin = STATUS_G_Pin | STATUS_R_Pin;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+  LED_Set(0, 0, 0);
   while (1)
   {
+    HAL_GPIO_TogglePin(STATUS_R_GPIO_Port, STATUS_R_Pin);
+    for (volatile uint32_t i = 0; i < 200000; i++)
+    {
+    }
   }
   /* USER CODE END Error_Handler_Debug */
 }
