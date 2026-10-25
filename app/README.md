@@ -3,8 +3,8 @@
 A desktop app for the Keyword. It connects over USB serial or Bluetooth and lets you:
 
 - see which sides of the Keyword have a Keybit, live
-- assign any key or shortcut to each Keybit
-- keep keymap profiles, and switch between, import and export them
+- assign any key, shortcut, media key, macro or computer action to each Keybit, with an optional hold action
+- keep keymap profiles, switch them automatically by app, and import or export them
 
 It's built with Electron, so it runs on macOS, Windows and Linux. It uses Chromium's Web Serial and Web Bluetooth, so there are no native modules to compile.
 
@@ -16,29 +16,80 @@ npm install
 npm start
 ```
 
-**Demo** works without hardware. Click a side of the Keyword to attach or remove a Keybit, and click **Tap** to simulate a key press.
+**Demo** works without hardware and pretends to be a Keyword with every optional feature (battery, hold, macros, reflashing):
 
-To run the tests:
+- Click a side of the Keyword to attach or remove a Keybit.
+- Click **Tap** on a key to simulate a press.
 
-```sh
-npm test
-```
+To build a standalone app, run `npm run dist`. It writes a `.dmg` on macOS, an installer on Windows or an AppImage on Linux, into `dist/`. The build includes the Bluetooth permission text that macOS requires.
 
-They cover the protocol parser, the HID key table and profile import/export.
+Run the tests with `npm test`. They cover the protocol parser, the HID tables and text-to-macro, profiles, undo history and the template library.
 
-## Using it
+## Connecting
 
-- **USB serial / Bluetooth:** pick the Keyword from the list. Bluetooth pairs the first time, which the Keyword requires. ST devices (USB VID 0483) and BLE names starting with `Keyword` are highlighted.
-- **Keys:** every Keybit the Keyword reports, with its side, its UID and what it's assigned to.
-  - A key lights up while it's held.
-  - Keys from the profile that aren't attached right now show greyed out.
-- **Assign…:** press the key or shortcut you want, for example `Ctrl+Shift+K`, `Cmd+Space` or `F13`. Modifiers on their own work too.
-  - Media keys (play/pause, volume, mute, brightness and so on) are in the key list under **Media**, or you can press them.
-  - For combos the OS grabs first, like Cmd+Tab, tick the modifiers and pick the key from the list instead.
-  - You can also give the key a name.
-- **Profiles:** edits save automatically to `profiles.json` in the app's user-data folder. Switching profiles sends the new keymap to the Keyword.
-  - **Export…** writes a `.keyword.json` file and **Import…** reads one back.
-- **Activity:** shows connects, disconnects and assignments as they happen. The raw protocol log is at the bottom.
+- **Picking a device:** choose **USB serial** or **Bluetooth**, then the Keyword from the list.
+  - ST devices (USB VID 0483) and BLE names starting with `Keyword` are highlighted.
+  - Bluetooth pairs the first time, which the Keyword requires.
+- **Auto-reconnect** is on by default.
+  - If the link drops, the app keeps retrying with backoff.
+  - A Keyword plugged back in over USB reconnects straight away.
+  - On launch, the app reconnects to the last Keyword if its permission is still granted.
+- **The status bar** shows the Keyword firmware version and, if the firmware reports it, the battery level. A low-battery warning pops up at 15%.
+
+## Keys
+
+- **The key list** shows every Keybit the Keyword reports: its side, its UID (click to copy), its Keybit firmware version and how often it's been pressed. A key lights up while it's held.
+- **Keys you've set up that aren't attached** show greyed out. **Forget** removes them from the profile. **Move to…** hands their setup to a connected Keybit that has nothing assigned yet, which is handy after swapping a Keybit out.
+- **Find a key** (`Cmd/Ctrl+F`) filters the list by name, action or UID.
+- **Firmware updates:** a Keybit on older firmware than the Keyword carries gets an **Update** button, which reflashes it over SWIO, with progress shown.
+- **Opening Assign:** use **Assign…**, double-click a key, or click it on the board diagram.
+
+## Assigning
+
+The Assign dialog has three tabs.
+
+- **Key or shortcut:** click the box and press anything, for example `Ctrl+Shift+K`, `Cmd+Space`, `F13` or a media key.
+  - The box catches combos that would normally close or quit the app.
+  - You can also search ("volume", "page down", "f13") or tick modifiers and pick from the list.
+- **Macro:** up to 16 taps in a row.
+  - Record them by pressing keys, or type text and click **Add text**, which uses a US layout.
+- **Computer action:** runs on this computer while the app is open, and the Keyword sends no key for it. You can:
+  - open a website or link
+  - open an app
+  - run a shell command
+  - switch to the next profile, or to a specific one
+  - **Test** runs the action straight away.
+- **When held:** an optional second action that fires when the key is held past a delay. A quick tap still sends the main action.
+- **Name:** a label shown in the list and on the board.
+
+Macros and hold actions need firmware support. If the connected Keyword doesn't list them in its capabilities, the app says so and doesn't send them.
+
+## Profiles
+
+- **Saving:** edits save automatically. Everything is undoable with `Cmd/Ctrl+Z` and redoable with `Cmd+Shift+Z` or `Ctrl+Y`, and deletes show an **Undo** toast.
+- **Switching:** use the dropdown, `Cmd/Ctrl+1…9`, `Cmd/Ctrl+[` and `Cmd/Ctrl+]`, or the tray / menu bar icon.
+- **Library…:** ready-made layouts, such as media controls, editing, meetings (Zoom/Meet), streaming (F13+), screenshots, browser, VS Code and system.
+  - Each one is handed out to your Keybits in order: left, top edge, right.
+  - Use it as a new profile, or apply it to the current one.
+- **Per-app profiles:** turn on **Switch profiles by the app in front** in Settings, then use **+ Add app** on a profile.
+  - That profile is used whenever that app is in front.
+  - Leaving the app switches back to the profile you picked by hand.
+  - On macOS this uses `lsappinfo` and needs no extra permission.
+- **Import and export:** **Export…** saves one profile, and **Export all profiles** (in Settings or the File menu) saves them all to one file. **Import…** takes either kind, several files at once, or files dragged onto the window. If an imported profile would open apps or run commands, the app lists them and asks before keeping them.
+
+## Settings
+
+Settings (`Cmd/Ctrl+,`) has:
+
+- theme: system, light or dark (`Cmd/Ctrl+Shift+L` toggles it)
+- auto-reconnect
+- per-app switching
+- notifications when Keybits connect or disconnect
+- keep running in the tray / menu bar when the window is closed
+- open at login
+- reset press counts, and open the data folder
+
+The window remembers its size and position.
 
 ## Protocol
 
@@ -46,11 +97,13 @@ They cover the protocol parser, the HID key table and profile import/export.
 
 ## Firmware status
 
-The app is ready, but the Keyword firmware doesn't speak this protocol yet:
-
-- The BLE side (HID keyboard, Nordic UART Service and keymap table) is done in the Keyword firmware.
-- USB CDC isn't there yet, so for now connect over Bluetooth.
-- The Keybit side (assigned addresses, and the side register 0x07) lives in `firmware/keybit/`.
+- **Done in the Keyword firmware:** BLE (HID keyboard, Nordic UART Service and keymap table) and USB CDC (`0483:5740`, "Keyword"). Both speak the same protocol, so either connection works.
+- **Optional features** arrive as the firmware adds them, and the app turns each one on when it appears in `caps`:
+  - hold and macros are in progress
+  - Keybit versions are coming
+  - battery is waiting on the charger's I2C bus
+  - reflashing has no firmware support yet
+- **The Keybit side** (assigned addresses, and the side register 0x07) lives in `firmware/keybit/`.
 
 **Demo** works without any firmware.
 

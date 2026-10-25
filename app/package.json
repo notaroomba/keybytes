@@ -1,14 +1,33 @@
 {
   "name": "keyword-monitor",
-  "version": "0.1.0",
-  "description": "Shows which sides of the Keyword have a Keybit attached, over USB serial or Bluetooth",
+  "productName": "Keyword Monitor",
+  "version": "0.2.0",
+  "description": "Shows which sides of the Keyword have a Keybit attached, and remaps them, over USB serial or Bluetooth",
   "main": "main.js",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "test": "node --test test/protocol.test.js"
+    "test": "node --test",
+    "dist": "electron-builder"
   },
   "devDependencies": {
-    "electron": "33.2.1"
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.keybytes.keyword-monitor",
+    "productName": "Keyword Monitor",
+    "publish": null,
+    "files": ["main.js", "preload.js", "renderer/**", "package.json"],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": ["dmg"],
+      "extendInfo": {
+        "NSBluetoothAlwaysUsageDescription": "Keyword Monitor connects to your Keyword keyboard over Bluetooth.",
+        "NSBluetoothPeripheralUsageDescription": "Keyword Monitor connects to your Keyword keyboard over Bluetooth."
+      }
+    },
+    "win": { "target": ["nsis"] },
+    "linux": { "target": ["AppImage"], "category": "Utility" }
   }
 }
