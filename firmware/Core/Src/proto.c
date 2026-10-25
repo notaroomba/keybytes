@@ -6,6 +6,7 @@
 #include "keybit_image.h"
 #include "ota.h"
 #include "fus.h"
+#include "bootcfg.h"
 #include "proto.h"
 
 /* Optional features the desktop app can use, only what's implemented.
@@ -226,6 +227,35 @@ static void Handle_Line(proto_port_t *port, char *cmd)
   {
     Reply(port, "OK DFU");
     OTA_RequestDfu();
+  }
+  else if (strcmp(cmd, "BOOTCFG?") == 0)
+  {
+    char info[48];
+    BOOTCFG_Info(info, sizeof(info));
+    Reply(port, "BOOTCFG %s", info);
+  }
+  else if (strcmp(cmd, "BOOTLOCK") == 0)
+  {
+    /* Boot from flash always, BOOT0 ignored. Option bytes: USB only, and
+     * only once the app and the BLE stack have proven themselves. */
+    if (!port->local)
+    {
+      Reply(port, "ERR BOOTLOCK is USB only");
+      return;
+    }
+    if (strcmp(args, "yes") != 0)
+    {
+      Reply(port, "ERR send BOOTLOCK yes to always boot from flash (BOOT0 ignored)");
+      return;
+    }
+    if (BOOTCFG_Locked())
+    {
+      Reply(port, "OK BOOTLOCK already");
+      return;
+    }
+    const char *why = BOOTCFG_Lock();
+    if (why) Reply(port, "ERR %s", why);
+    else Reply(port, "OK BOOTLOCK, reloading option bytes");
   }
   else if (strcmp(cmd, "BATT?") == 0)
   {

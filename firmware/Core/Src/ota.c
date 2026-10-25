@@ -14,7 +14,7 @@ PLACE_IN_SECTION("TAG_OTA_START") const uint32_t MagicKeywordAddress = (uint32_t
 
 #define RESET_DELAY_MS 500
 
-enum { RESET_PLAIN, RESET_OTA, RESET_DFU };
+enum { RESET_PLAIN, RESET_OTA, RESET_DFU, RESET_OBL };
 
 static uint8_t reset_timer_id;
 static uint8_t reset_mode;
@@ -22,6 +22,15 @@ static uint8_t healthy;
 
 static void Reset_Now(void)
 {
+  if (reset_mode == RESET_OBL)
+  {
+    /* Option byte reload, a reset with the new option bytes. BOOTCFG_Lock
+     * left the flash unlocked; the unlocks are no-ops then. */
+    BOOT_REBOOT_VAL_MSG = BOOT_REBOOT_ON_FW_APP;
+    HAL_FLASH_Unlock();
+    HAL_FLASH_OB_Unlock();
+    HAL_FLASH_OB_Launch();
+  }
   if (reset_mode == RESET_DFU)
   {
     BOOT_SYSDFU_REQ_WORD = BOOT_SYSDFU_REQ_MAGIC;
@@ -67,6 +76,11 @@ void OTA_RequestDfu(void)
 void OTA_ResetSoon(void)
 {
   Reset_Later(RESET_PLAIN);
+}
+
+void OTA_ObLaunchSoon(void)
+{
+  Reset_Later(RESET_OBL);
 }
 
 /* Every main loop pass: feed the IWDG the bootloader started (no effect

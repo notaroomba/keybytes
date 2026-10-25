@@ -32,6 +32,11 @@ static const char *fus_refuse;
 void FUS_Info(char *out, size_t n) { snprintf(out, n, "v=2.2.0 state=idle stack=none sfsa=0xF4 image=129460"); }
 const char *FUS_Install(void) { if (fus_refuse) return fus_refuse; fus_installs++; return NULL; }
 int FUS_Busy(void) { return 0; }
+static int boot_locked, boot_writes;
+static const char *boot_refuse;
+void BOOTCFG_Info(char *out, size_t n) { snprintf(out, n, "nBOOT0=1 nSWBOOT0=%d nBOOT1=1 RDP=0xAA", !boot_locked); }
+int BOOTCFG_Locked(void) { return boot_locked; }
+const char *BOOTCFG_Lock(void) { if (boot_refuse) return boot_refuse; boot_writes++; boot_locked = 1; return NULL; }
 static batt_t batt_fake;
 const batt_t *BATT_Get(void) { return &batt_fake; }
 int KEYMAP_Save(void) { return 0; }
@@ -218,6 +223,22 @@ int main(void)
   assert(ota_asked == 1);
   expect("DFU\n", "OK DFU\n");
   assert(dfu_asked == 1);
+  /* BOOTCFG? and BOOTLOCK: USB only, exactly "BOOTLOCK yes" */
+  expect("BOOTCFG?\n", "BOOTCFG nBOOT0=1 nSWBOOT0=1 nBOOT1=1 RDP=0xAA\n");
+  expect("BOOTLOCK\n", "ERR send BOOTLOCK yes to always boot from flash (BOOT0 ignored)\n");
+  expect("BOOTLOCK YES\n", "ERR send BOOTLOCK yes to always boot from flash (BOOT0 ignored)\n");
+  expect("BOOTLOCK yes please\n", "ERR send BOOTLOCK yes to always boot from flash (BOOT0 ignored)\n");
+  boot_refuse = "app has not run 10 s yet";
+  expect("BOOTLOCK yes\n", "ERR app has not run 10 s yet\n");
+  boot_refuse = NULL;
+  out2[0] = 0;
+  PROTO_Input(&port2, (const uint8_t *)"BOOTLOCK yes\n", 13);   /* port2 is like NUS */
+  assert(strcmp(out2, "ERR BOOTLOCK is USB only\n") == 0 && boot_writes == 0);
+  expect("BOOTLOCK yes\n", "OK BOOTLOCK, reloading option bytes\n");
+  expect("BOOTLOCK yes\n", "OK BOOTLOCK already\n");
+  assert(boot_writes == 1);
+  expect("BOOTCFG?\n", "BOOTCFG nBOOT0=1 nSWBOOT0=0 nBOOT1=1 RDP=0xAA\n");
+
   /* FUS? and STACK INSTALL (USB only) */
   expect("FUS?\n", "FUS v=2.2.0 state=idle stack=none sfsa=0xF4 image=129460\n");
   expect("STACK INSTALL\n", "OK STACK INSTALL\n");

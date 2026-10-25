@@ -84,6 +84,8 @@ The Keyword lists the features it supports in `HELLO`'s `caps`. The app only sen
 | `ota` | `OTA` | `OK OTA`, then the Keyword restarts into the OTA bootloader after about 500 ms. `ERR no BLE stack on CPU2, use DFU` if it can't |
 | (any) | `DFU` | `OK DFU`, then the Keyword restarts into the ROM USB DFU bootloader |
 | (any) | `STACK?` | `STACK ble v=1.24.0 fus=2.2.0`, `STACK none fus=<x.y.z>` or `STACK unknown` |
+| (any) | `BOOTCFG?` | `BOOTCFG nBOOT0=<0\|1> nSWBOOT0=<0\|1> nBOOT1=<0\|1> RDP=0x<2hex>` |
+| (USB serial only) | `BOOTLOCK yes` | `OK BOOTLOCK, reloading option bytes`, then a reset that boots from flash only (BOOT0 ignored). `OK BOOTLOCK already`, or `ERR <reason>` before the app has run 10 s, without the BLE stack, or when RDP isn't level 0 |
 
 How each one behaves:
 

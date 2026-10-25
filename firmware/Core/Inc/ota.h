@@ -24,6 +24,9 @@ void OTA_RequestDfu(void);
 /* Plain reset back into the app in 500 ms. */
 void OTA_ResetSoon(void);
 
+/* Option byte reload (OBL_LAUNCH, a reset) in 500 ms, after BOOTCFG_Lock. */
+void OTA_ObLaunchSoon(void);
+
 /* Call every main loop pass: feeds the bootloader's IWDG and marks the
  * app healthy (crash count zeroed) after it has run 10 s. */
 void OTA_Service(void);
