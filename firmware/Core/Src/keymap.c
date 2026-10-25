@@ -232,7 +232,7 @@ static void Keys_Task(void)
     const keybit_info_t *old = Find_Keybit(present, present_count, keybits[i].uid);
     uint8_t was_down = old ? old->key_down : 0;
     PROTO_FormatUid(uid, keybits[i].uid);
-    if (!old) PROTO_Send("KEY+ uid=%s at=%c", uid, keybits[i].at);
+    if (!old) PROTO_Send("KEY+ uid=%s at=%c v=%u", uid, keybits[i].at, keybits[i].fw);   /* v: Keybit reg 0x01 */
     if (was_down != keybits[i].key_down)
     {
       PROTO_Send("PRESS uid=%s down=%d", uid, keybits[i].key_down);

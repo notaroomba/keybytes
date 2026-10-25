@@ -61,6 +61,7 @@ int main(void)
   PROTO_AddPort(&port2);
   for (int i = 0; i < UID_LEN; i++) present[0].uid[i] = (uint8_t)(12 - i);   /* prints as U */
   present[0].at = 'L';
+  present[0].fw = 2;
   memset(present[1].uid, 0xAB, UID_LEN);
   present[1].at = 'T';
 
@@ -69,7 +70,7 @@ int main(void)
   expect("HELLO\r", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1\n");   /* terminal Enter */
   expect("\r\n\r\n", "");
   expect("SIDES?\n", "SIDES L=1 R=0 T=1\n");
-  expect("KEYS?\n", "KEY+ uid=" U " at=L\nKEY+ uid=ABABABABABABABABABABABAB at=T\nKEYS END\n");
+  expect("KEYS?\n", "KEY+ uid=" U " at=L v=2\nKEY+ uid=ABABABABABABABABABABABAB at=T v=0\nKEYS END\n");
   expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=00\n");
   expect("MAP uid=" U " mods=02 key=04\n", "OK MAP uid=" U "\n");
   assert(table[0].uid[0] == 0x0C && table[0].uid[11] == 0x01);   /* stored little endian */

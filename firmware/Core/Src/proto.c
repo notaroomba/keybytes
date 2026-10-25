@@ -131,7 +131,7 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     for (int i = 0; i < n; i++)
     {
       PROTO_FormatUid(uid_s, k[i].uid);
-      Reply(port, "KEY+ uid=%s at=%c", uid_s, k[i].at);
+      Reply(port, "KEY+ uid=%s at=%c v=%u", uid_s, k[i].at, k[i].fw);
     }
     Reply(port, "KEYS END");
   }
