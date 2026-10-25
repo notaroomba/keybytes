@@ -9,7 +9,7 @@
 
 #define KEYS_PERIOD_MS 5
 #define MAP_MAGIC      0x50414D4BUL   /* "KMAP" */
-#define MAP_VERSION    1
+#define MAP_VERSION    2   /* 2: entries carry a kind and a 16-bit code */
 
 /* Owned by main.c's Keybit code, refreshed from its own poll calls in the
  * main loop. The key task runs from the same loop, so no locking. */
@@ -17,11 +17,13 @@ extern keybit_info_t keybits[KEYBIT_MAX];
 extern int keybit_count;
 extern volatile uint32_t keybit_changed;
 
+/* 16 bytes, two flash doublewords. code is the keyboard usage for
+ * KEYMAP_KEY and the consumer page usage for KEYMAP_CONSUMER. */
 typedef struct {
   uint8_t uid[UID_LEN];
+  uint8_t kind;
   uint8_t mods;
-  uint8_t key;
-  uint8_t pad[2];   /* keeps an entry at two flash doublewords */
+  uint16_t code;
 } map_entry_t;
 
 /* Flash image: one header doubleword, then the entries. */
@@ -34,6 +36,8 @@ typedef struct {
 
 static map_image_t map __attribute__((aligned(8)));
 static keybit_info_t present[KEYBIT_MAX];
+static uint32_t present_seq[KEYBIT_MAX];   /* press order while held, 0 when up */
+static uint32_t press_counter;
 static int present_count;
 static char sides[3];   /* last SIDES sent: L, R, T present */
 static uint8_t keys_timer_id;
@@ -65,26 +69,38 @@ static int Find(const uint8_t uid[UID_LEN])
   return -1;
 }
 
-int KEYMAP_Set(const uint8_t uid[UID_LEN], uint8_t mods, uint8_t key)
+/* A Keybit has one mapping, so setting either kind replaces the other. */
+static int Put(const uint8_t uid[UID_LEN], uint8_t kind, uint8_t mods, uint16_t code)
 {
   int i = Find(uid);
   if (i < 0)
   {
     if (map.count >= KEYMAP_MAX) return -1;
     i = map.count++;
-    memset(&map.entries[i], 0xFF, sizeof(map_entry_t));
     memcpy(map.entries[i].uid, uid, UID_LEN);
   }
+  map.entries[i].kind = kind;
   map.entries[i].mods = mods;
-  map.entries[i].key = key;
+  map.entries[i].code = code;
   return 0;
 }
 
-void KEYMAP_Get(const uint8_t uid[UID_LEN], uint8_t *mods, uint8_t *key)
+int KEYMAP_Set(const uint8_t uid[UID_LEN], uint8_t mods, uint8_t key)
+{
+  return Put(uid, KEYMAP_KEY, mods, key);
+}
+
+int KEYMAP_SetConsumer(const uint8_t uid[UID_LEN], uint16_t usage)
+{
+  return Put(uid, KEYMAP_CONSUMER, 0, usage);
+}
+
+int KEYMAP_Get(const uint8_t uid[UID_LEN], uint8_t *mods, uint16_t *code)
 {
   int i = Find(uid);
   *mods = i < 0 ? 0 : map.entries[i].mods;
-  *key = i < 0 ? 0 : map.entries[i].key;
+  *code = i < 0 ? 0 : map.entries[i].code;
+  return i < 0 ? KEYMAP_NONE : map.entries[i].kind;
 }
 
 void KEYMAP_Unmap(const uint8_t uid[UID_LEN])
@@ -208,19 +224,25 @@ static void Keys_Task(void)
       PROTO_Send("KEY- uid=%s", uid);
     }
   }
+  uint32_t seq[KEYBIT_MAX];
   for (int i = 0; i < keybit_count; i++)
   {
     const keybit_info_t *old = Find_Keybit(present, present_count, keybits[i].uid);
+    uint8_t was_down = old ? old->key_down : 0;
     PROTO_FormatUid(uid, keybits[i].uid);
     if (!old) PROTO_Send("KEY+ uid=%s at=%c", uid, keybits[i].at);
-    if ((old ? old->key_down : 0) != keybits[i].key_down)
+    if (was_down != keybits[i].key_down)
     {
       PROTO_Send("PRESS uid=%s down=%d", uid, keybits[i].key_down);
     }
+    if (!keybits[i].key_down) seq[i] = 0;
+    else if (!was_down) seq[i] = ++press_counter;
+    else seq[i] = present_seq[old - present];
   }
 
   present_count = keybit_count;
   memcpy(present, keybits, sizeof(keybit_info_t) * keybit_count);
+  memcpy(present_seq, seq, sizeof(uint32_t) * keybit_count);
 
   char now[3] = {0, 0, 0};
   for (int i = 0; i < present_count; i++)
@@ -239,19 +261,31 @@ static void Keys_Task(void)
    * seventh turns every slot into ErrorRollOver as HID asks. */
   uint8_t report[8] = {0};
   int slots = 0;
+  uint16_t consumer = 0;      /* most recently pressed consumer key wins */
+  uint32_t consumer_seq = 0;
   for (int i = 0; i < present_count; i++)
   {
     if (!present[i].key_down) continue;
     int m = Find(present[i].uid);
     if (m < 0) continue;   /* unmapped Keybits send nothing */
+    if (map.entries[m].kind == KEYMAP_CONSUMER)
+    {
+      if (present_seq[i] > consumer_seq)
+      {
+        consumer_seq = present_seq[i];
+        consumer = map.entries[m].code;
+      }
+      continue;
+    }
     report[0] |= map.entries[m].mods;
-    uint8_t key = map.entries[m].key;
+    uint8_t key = (uint8_t)map.entries[m].code;
     if (!key) continue;
     if (slots < 6) report[2 + slots] = key;
     else memset(&report[2], 0x01, 6);
     slots++;
   }
   HIDSAPP_SendKeyboard(report);
+  HIDSAPP_SendConsumer(consumer);
 }
 
 static void Keys_Tick(void)

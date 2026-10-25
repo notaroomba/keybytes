@@ -128,17 +128,40 @@ static void Handle_Line(char *cmd)
     PROTO_FormatUid(uid_s, uid);
     PROTO_Send("OK MAP uid=%s", uid_s);
   }
+  else if (strcmp(cmd, "MAPC") == 0)
+  {
+    uint8_t usage[2];
+    if (Arg_Uid(args, uid) || Arg_Hex(args, "usage", 4, usage))
+    {
+      PROTO_Send("ERR usage: MAPC uid=<24hex> usage=<4hex>");
+      return;
+    }
+    if (KEYMAP_SetConsumer(uid, (uint16_t)(usage[0] << 8 | usage[1])) != 0)
+    {
+      PROTO_Send("ERR keymap full");
+      return;
+    }
+    PROTO_FormatUid(uid_s, uid);
+    PROTO_Send("OK MAPC uid=%s", uid_s);
+  }
   else if (strcmp(cmd, "MAP?") == 0)
   {
-    uint8_t mods, key;
+    uint8_t mods;
+    uint16_t code;
     if (Arg_Uid(args, uid))
     {
       PROTO_Send("ERR usage: MAP? uid=<24hex>");
       return;
     }
-    KEYMAP_Get(uid, &mods, &key);
     PROTO_FormatUid(uid_s, uid);
-    PROTO_Send("MAP uid=%s mods=%02X key=%02X", uid_s, mods, key);
+    if (KEYMAP_Get(uid, &mods, &code) == KEYMAP_CONSUMER)
+    {
+      PROTO_Send("MAPC uid=%s usage=%04X", uid_s, code);
+    }
+    else
+    {
+      PROTO_Send("MAP uid=%s mods=%02X key=%02X", uid_s, mods, code);
+    }
   }
   else if (strcmp(cmd, "UNMAP") == 0)
   {

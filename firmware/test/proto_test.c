@@ -14,7 +14,7 @@ static char out[2048];
 
 void NUS_Write(const char *data, uint16_t len) { strncat(out, data, len); }
 
-static struct { uint8_t uid[UID_LEN], mods, key; } table[KEYMAP_MAX];
+static struct { uint8_t uid[UID_LEN], kind, mods; uint16_t code; } table[KEYMAP_MAX];
 static int n;
 static keybit_info_t present[2];
 
@@ -23,17 +23,20 @@ static int find(const uint8_t *uid)
   for (int i = 0; i < n; i++) if (!memcmp(table[i].uid, uid, UID_LEN)) return i;
   return -1;
 }
-int KEYMAP_Set(const uint8_t *uid, uint8_t mods, uint8_t key)
+static int put(const uint8_t *uid, uint8_t kind, uint8_t mods, uint16_t code)
 {
   int i = find(uid);
   if (i < 0) { if (n == KEYMAP_MAX) return -1; i = n++; memcpy(table[i].uid, uid, UID_LEN); }
-  table[i].mods = mods; table[i].key = key;
+  table[i].kind = kind; table[i].mods = mods; table[i].code = code;
   return 0;
 }
-void KEYMAP_Get(const uint8_t *uid, uint8_t *mods, uint8_t *key)
+int KEYMAP_Set(const uint8_t *uid, uint8_t mods, uint8_t key) { return put(uid, KEYMAP_KEY, mods, key); }
+int KEYMAP_SetConsumer(const uint8_t *uid, uint16_t usage) { return put(uid, KEYMAP_CONSUMER, 0, usage); }
+int KEYMAP_Get(const uint8_t *uid, uint8_t *mods, uint16_t *code)
 {
   int i = find(uid);
-  *mods = i < 0 ? 0 : table[i].mods; *key = i < 0 ? 0 : table[i].key;
+  *mods = i < 0 ? 0 : table[i].mods; *code = i < 0 ? 0 : table[i].code;
+  return i < 0 ? KEYMAP_NONE : table[i].kind;
 }
 void KEYMAP_Unmap(const uint8_t *uid) { int i = find(uid); if (i >= 0) table[i] = table[--n]; }
 void KEYMAP_Clear(void) { n = 0; }
@@ -68,7 +71,23 @@ int main(void)
   expect("MAP? uid=" U "\n", "MAP uid=" U " mods=01 key=00\n");
   expect("UNMAP uid=" U "\n", "OK UNMAP uid=" U "\n");
   expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=00\n");
+
+  /* consumer keys: MAPC and MAP replace each other */
+  expect("MAPC uid=" U " usage=00CD\n", "OK MAPC uid=" U "\n");
+  assert(table[0].kind == KEYMAP_CONSUMER && table[0].code == 0x00CD);
+  expect("MAP? uid=" U "\n", "MAPC uid=" U " usage=00CD\n");
+  expect("MAP uid=" U " mods=00 key=04\n", "OK MAP uid=" U "\n");
+  expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=04\n");
+  expect("MAPC uid=" U " usage=00e9\n", "OK MAPC uid=" U "\n");
+  expect("MAP? uid=" U "\n", "MAPC uid=" U " usage=00E9\n");
+  assert(n == 1);
+  expect("UNMAP uid=" U "\n", "OK UNMAP uid=" U "\n");
+  expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=00\n");
+  expect("MAPC uid=" U " usage=E2\n", "ERR usage: MAPC uid=<24hex> usage=<4hex>\n");
+  expect("MAPC uid=" U "\n", "ERR usage: MAPC uid=<24hex> usage=<4hex>\n");
+  expect("MAPC uid=" U " usage=00E2\n", "OK MAPC uid=" U "\n");
   expect("CLEAR\n", "OK CLEAR\n");
+  assert(n == 0);
   expect("SAVE\n", "OK SAVE\n");
 
   /* chunked like 20 byte BLE writes */
@@ -87,6 +106,7 @@ int main(void)
 
   n = KEYMAP_MAX;
   expect("MAP uid=FFFFFFFFFFFFFFFFFFFFFFFF mods=00 key=04\n", "ERR keymap full\n");
+  expect("MAPC uid=FFFFFFFFFFFFFFFFFFFFFFFF usage=00CD\n", "ERR keymap full\n");
 
   char longline[300];
   memset(longline, 'A', sizeof(longline) - 2);
