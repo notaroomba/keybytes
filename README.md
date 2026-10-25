@@ -95,8 +95,7 @@ This project uses:
 - [OnShape](https://www.onshape.com/) for case design
 - [Blender](https://www.blender.org/) for 3D renders
 - [STM32CubeMX](https://www.st.com/en/development-tools/stm32cubemx.html)
-- [KiCad Fabrication Toolkit](https://github.com/bennymeg/Fabrication-Toolkit) for the JLCPCB files
-- [Hack Club Stasis](https://stasis.hackclub.com/)
+- [Hack Club Forge](https://forge.hackclub.com/)
 
 ## You may also like...
 
