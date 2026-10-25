@@ -5,6 +5,10 @@
 #   make release    also builds the app and writes ../release/:
 #                     keyword_full.bin/.hex  bootloader + app, for the one-time DFU install
 #                     keyword_app.bin        app only, for OTA at 0x08007000
+#   make complete STACK=.../stm32wb5x_BLE_Stack_full_fw.bin
+#                   release plus ../release/keyword_complete.{hex,dfu}: bootloader,
+#                   app and CPU2 stack in one file, flashed once over USB DFU.
+#                   Not committed (ST's SLA0044 covers the stack).
 
 TARGET = ota_bootloader
 BUILD = build
@@ -137,9 +141,16 @@ release: all app
 	cp $(APP_BIN) $(REL)/keyword_app.bin
 	python3 tools/merge.py --check $(BUILD)/$(TARGET).bin $(APP_BIN) $(APP_OFFSET) $(REL)/keyword_full.bin
 
+complete: release
+ifndef STACK
+	$(error STACK=path/to/stm32wb5x_BLE_Stack_full_fw.bin, from STM32CubeWB 1.24.0 Projects/STM32WB_Copro_Wireless_Binaries/STM32WB5x)
+endif
+	cd tools && python3 complete.py $(abspath $(BUILD)/$(TARGET).bin) $(APP_BIN) $(abspath $(STACK)) $(abspath $(REL))/keyword_complete
+	cd tools && python3 complete.py --check $(abspath $(BUILD)/$(TARGET).bin) $(APP_BIN) $(abspath $(STACK)) $(abspath $(REL))/keyword_complete
+
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all app release clean
+.PHONY: all app release complete clean
 
 -include $(wildcard $(BUILD)/*.d)
