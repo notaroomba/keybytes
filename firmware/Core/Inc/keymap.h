@@ -1,41 +1,30 @@
 /*
- * Keymap: which HID modifiers and key each Keybit sends, keyed by the
- * Keybit's 96-bit UID. Lives in RAM, remapped over the config protocol,
- * saved to one flash page just below CPU2's secure area.
+ * Keymap: what each Keybit sends (table in keytable.h), saved to one
+ * flash page just below CPU2's secure area.
  *
- * A 5 ms sequencer task watches keybits[] from main.c, sends a HID report
- * whenever the set of held mapped keys changes, and emits the protocol's
- * KEY+/KEY-/PRESS/SIDES events.
+ * A 5 ms sequencer task watches keybits[] (touching Keybits) and
+ * keybit_remotes[] (Keybits relayed through others) from main.c, sends a
+ * HID report whenever the held mapped keys change, and emits the
+ * protocol's KEY+/KEY-/PRESS/SIDES events.
  */
 #ifndef KEYMAP_H
 #define KEYMAP_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include "keybit_bus.h"
-#include "keyact.h"
-
-#define KEYMAP_MAX 32
-#define UID_LEN 12
+#include "keytable.h"
 
 void KEYMAP_Init(void);
 
-/* A Keybit maps to a keyboard key or a consumer usage, never both: each
- * setter replaces the other (a hold stays). 0 on success, -1 when the
- * table is full. key may be 0 (mods only). */
-int KEYMAP_Set(const uint8_t uid[UID_LEN], uint8_t mods, uint8_t key);
-int KEYMAP_SetConsumer(const uint8_t uid[UID_LEN], uint16_t usage);
-/* Hold action, see keyact.h. mods 0 and key 0 clears it. */
-int KEYMAP_SetHold(const uint8_t uid[UID_LEN], uint8_t mods, uint8_t key, uint16_t ms);
-/* MACRO: up to KEYACT_MACRO_MAX (mods, key) taps, replaces MAP/MAPC. */
-int KEYMAP_SetMacro(const uint8_t uid[UID_LEN], const uint8_t seq[][2], uint8_t len);
-/* NULL when the Keybit has no entry. */
-const keyact_t *KEYMAP_Lookup(const uint8_t uid[UID_LEN]);
-void KEYMAP_Unmap(const uint8_t uid[UID_LEN]);
-void KEYMAP_Clear(void);
 /* 0 on success (also when flash already matched), -1 on a flash error. */
 int KEYMAP_Save(void);
 
-/* Keybits as of the last key task run, the same set the events describe. */
+/* Touching Keybits as of the last key task run, the set the events describe. */
 const keybit_info_t *KEYMAP_Present(int *count);
+
+/* The i-th KEY+ line for KEYS?: touching Keybits first, then the remote
+ * ones that are present. 0 once i is past the end. */
+int KEYMAP_KeyLine(int i, char *out, size_t n);
 
 #endif /* KEYMAP_H */

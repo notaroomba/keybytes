@@ -1,7 +1,8 @@
 /*
  * Host check for the config protocol parser in Core/Src/proto.c, with the
- * keymap and the two transports (NUS, USB CDC) replaced by small fakes.
- *   cc -std=c99 -Itest/stub -ICore/Inc test/proto_test.c Core/Src/proto.c -o /tmp/proto_test && /tmp/proto_test
+ * real keymap table (keytable.c), and the Keybit bus, battery and the two
+ * transports (NUS, USB CDC) replaced by small fakes.
+ *   cc -std=c99 -Itest/stub -ICore/Inc test/proto_test.c Core/Src/proto.c Core/Src/keytable.c -o /tmp/proto_test && /tmp/proto_test
  */
 #include <assert.h>
 #include <stdio.h>
@@ -17,62 +18,30 @@ static void write2(const char *data, uint16_t len) { strncat(out2, data, len); }
 static proto_port_t port = {.write = write1};
 static proto_port_t port2 = {.write = write2};
 
-static struct { uint8_t uid[UID_LEN]; keyact_t act; } table[KEYMAP_MAX];
-static int n;
+/* The real keytable.c is linked; the bus side of keymap.c is faked. */
 static keybit_info_t present[2];
-
-static int find(const uint8_t *uid)
-{
-  for (int i = 0; i < n; i++) if (!memcmp(table[i].uid, uid, UID_LEN)) return i;
-  return -1;
-}
-static keyact_t *entry(const uint8_t *uid)
-{
-  int i = find(uid);
-  if (i < 0) { if (n == KEYMAP_MAX) return NULL; i = n++; memset(&table[i], 0, sizeof(table[i])); memcpy(table[i].uid, uid, UID_LEN); }
-  return &table[i].act;
-}
-static int put(const uint8_t *uid, uint8_t kind, uint8_t mods, uint16_t code)
-{
-  keyact_t *a = entry(uid);
-  if (!a) return -1;
-  a->kind = kind; a->mods = mods; a->code = code; a->macro_len = 0;
-  return 0;
-}
-int KEYMAP_Set(const uint8_t *uid, uint8_t mods, uint8_t key) { return put(uid, KEYACT_KEY, mods, key); }
-int KEYMAP_SetConsumer(const uint8_t *uid, uint16_t usage) { return put(uid, KEYACT_CONSUMER, 0, usage); }
-void KEYMAP_Unmap(const uint8_t *uid);
-int KEYMAP_SetHold(const uint8_t *uid, uint8_t mods, uint8_t key, uint16_t ms)
-{
-  if (!mods && !key)
-  {
-    int i = find(uid);
-    if (i < 0) return 0;
-    table[i].act.hold_mods = table[i].act.hold_key = 0; table[i].act.hold_ms = 0;
-    if (table[i].act.kind == KEYACT_NONE) KEYMAP_Unmap(uid);
-    return 0;
-  }
-  keyact_t *a = entry(uid);
-  if (!a) return -1;
-  a->hold_mods = mods; a->hold_key = key; a->hold_ms = ms;
-  return 0;
-}
-int KEYMAP_SetMacro(const uint8_t *uid, const uint8_t seq[][2], uint8_t len)
-{
-  keyact_t *a = entry(uid);
-  if (!a) return -1;
-  a->kind = KEYACT_MACRO; a->mods = 0; a->code = 0; a->macro_len = len;
-  memcpy(a->macro, seq, (size_t)len * 2);
-  return 0;
-}
+static int remote_listed;
 const uint8_t keybit_image_version = 3;
 static batt_t batt_fake;
 const batt_t *BATT_Get(void) { return &batt_fake; }
-const keyact_t *KEYMAP_Lookup(const uint8_t *uid) { int i = find(uid); return i < 0 ? NULL : &table[i].act; }
-void KEYMAP_Unmap(const uint8_t *uid) { int i = find(uid); if (i >= 0) table[i] = table[--n]; }
-void KEYMAP_Clear(void) { n = 0; }
 int KEYMAP_Save(void) { return 0; }
 const keybit_info_t *KEYMAP_Present(int *count) { *count = 2; return present; }
+int KEYMAP_KeyLine(int i, char *out, size_t len)
+{
+  char uid[25];
+  if (i < 2)
+  {
+    PROTO_FormatUid(uid, present[i].uid);
+    snprintf(out, len, "KEY+ uid=%s at=%c v=%u", uid, present[i].at, present[i].fw);
+    return 1;
+  }
+  if (i == 2 && remote_listed)
+  {
+    snprintf(out, len, "KEY+ uid=1234ABCD at=X via=%s depth=2", "0102030405060708090A0B0C");
+    return 1;
+  }
+  return 0;
+}
 
 static void expect(const char *in, const char *want)
 {
@@ -105,7 +74,7 @@ int main(void)
   expect("KEYS?\n", "KEY+ uid=" U " at=L v=2\nKEY+ uid=ABABABABABABABABABABABAB at=T v=0\nKEYS END\n");
   expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=00\n");
   expect("MAP uid=" U " mods=02 key=04\n", "OK MAP uid=" U "\n");
-  assert(table[0].uid[0] == 0x0C && table[0].uid[11] == 0x01);   /* stored little endian */
+  assert(keytable.entries[0].uid[0] == 0x0C && keytable.entries[0].uid[11] == 0x01);   /* stored little endian */
   expect("MAP? uid=0102030405060708090a0b0c\n", "MAP uid=" U " mods=02 key=04\n");
   expect("MAP uid=" U " mods=01 key=00\n", "OK MAP uid=" U "\n");
   expect("MAP? uid=" U "\n", "MAP uid=" U " mods=01 key=00\n");
@@ -114,20 +83,48 @@ int main(void)
 
   /* consumer keys: MAPC and MAP replace each other */
   expect("MAPC uid=" U " usage=00CD\n", "OK MAPC uid=" U "\n");
-  assert(table[0].act.kind == KEYACT_CONSUMER && table[0].act.code == 0x00CD);
+  assert(keytable.entries[0].act.kind == KEYACT_CONSUMER && keytable.entries[0].act.code == 0x00CD);
   expect("MAP? uid=" U "\n", "MAPC uid=" U " usage=00CD\n");
   expect("MAP uid=" U " mods=00 key=04\n", "OK MAP uid=" U "\n");
   expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=04\n");
   expect("MAPC uid=" U " usage=00e9\n", "OK MAPC uid=" U "\n");
   expect("MAP? uid=" U "\n", "MAPC uid=" U " usage=00E9\n");
-  assert(n == 1);
+  assert(keytable.count == 1);
   expect("UNMAP uid=" U "\n", "OK UNMAP uid=" U "\n");
   expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=00\n");
   expect("MAPC uid=" U " usage=E2\n", "ERR usage: MAPC uid=<24hex> usage=<4hex>\n");
   expect("MAPC uid=" U "\n", "ERR usage: MAPC uid=<24hex> usage=<4hex>\n");
   expect("MAPC uid=" U " usage=00E2\n", "OK MAPC uid=" U "\n");
   expect("CLEAR\n", "OK CLEAR\n");
-  assert(n == 0);
+  assert(keytable.count == 0);
+
+  /* Relayed Keybits: 8 hex digits, the low 32 bits of the UID */
+  remote_listed = 1;
+  expect("KEYS?\n", "KEY+ uid=" U " at=L v=2\nKEY+ uid=ABABABABABABABABABABABAB at=T v=0\n"
+                     "KEY+ uid=1234ABCD at=X via=" U " depth=2\nKEYS END\n");
+  remote_listed = 0;
+  expect("MAP uid=090a0b0c mods=00 key=04\n", "OK MAP uid=090A0B0C\n");
+  assert(keytable.count == 1 && keytable.entries[0].uid_len == UID_SHORT_LEN && keytable.entries[0].uid[0] == 0x0C);
+  expect("MAP? uid=090A0B0C\n", "MAP uid=090A0B0C mods=00 key=04\n");
+  /* U's low 32 bits are 090A0B0C: the full UID finds the short entry */
+  expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=04\n");
+  assert(KEYMAP_FullUid(0x090A0B0C) == NULL);
+  /* and mapping it in full upgrades that entry instead of adding one */
+  expect("MAP uid=" U " mods=00 key=05\n", "OK MAP uid=" U "\n");
+  assert(keytable.count == 1 && keytable.entries[0].uid_len == UID_LEN);
+  assert(KEYMAP_FullUid(0x090A0B0C) == keytable.entries[0].uid);
+  expect("MAP? uid=090A0B0C\n", "MAP uid=090A0B0C mods=00 key=05\n");   /* short still finds it */
+  /* another full UID with the same low 32 bits is a different Keybit */
+  expect("MAP? uid=FFFFFFFFFFFFFFFF090A0B0C\n", "MAP uid=FFFFFFFFFFFFFFFF090A0B0C mods=00 key=00\n");
+  expect("MAPC uid=090A0B0C usage=00CD\n", "OK MAPC uid=090A0B0C\n");   /* edits the same entry */
+  expect("MAP? uid=" U "\n", "MAPC uid=" U " usage=00CD\n");
+  expect("UNMAP uid=090A0B0C\n", "OK UNMAP uid=090A0B0C\n");
+  assert(keytable.count == 0);
+  expect("HOLD uid=1234ABCD mods=02 key=00\n", "OK HOLD uid=1234ABCD\n");
+  expect("MACRO uid=1234ABCD seq=0004\n", "OK MACRO uid=1234ABCD\n");
+  expect("MAP? uid=1234ABCD\n", "MACRO uid=1234ABCD seq=0004\nHOLD uid=1234ABCD mods=02 key=00 ms=200\n");
+  expect("MAP uid=1234ABCDEF mods=00 key=04\n", "ERR usage: MAP uid=<24hex> mods=<2hex> key=<2hex>\n");
+  expect("CLEAR\n", "OK CLEAR\n");
 
   /* HOLD: tap does the MAP action, hold does this one */
   expect("HOLD uid=" U " mods=02 key=00 ms=250\n", "OK HOLD uid=" U "\n");
@@ -146,15 +143,15 @@ int main(void)
   expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=00\n");
   expect("HOLD uid=" U " mods=02 key=00\n", "OK HOLD uid=" U "\n");
   expect("HOLD uid=" U " mods=00 key=00\n", "OK HOLD uid=" U "\n");
-  assert(n == 0);   /* a hold-only entry goes away when cleared */
+  assert(keytable.count == 0);   /* a hold-only entry goes away when cleared */
   expect("HOLD uid=" U " mods=02 key=00\n", "OK HOLD uid=" U "\n");
   expect("CLEAR\n", "OK CLEAR\n");
-  assert(n == 0);
+  assert(keytable.count == 0);
 
   /* MACRO: replaces MAP/MAPC, MAP? prints it back, UNMAP clears it */
   expect("MACRO uid=" U " seq=020B,0008,000F,000F,0012\n", "OK MACRO uid=" U "\n");   /* "Hello" */
-  assert(table[0].act.kind == KEYACT_MACRO && table[0].act.macro_len == 5);
-  assert(table[0].act.macro[0][0] == 0x02 && table[0].act.macro[0][1] == 0x0B);
+  assert(keytable.entries[0].act.kind == KEYACT_MACRO && keytable.entries[0].act.macro_len == 5);
+  assert(keytable.entries[0].act.macro[0][0] == 0x02 && keytable.entries[0].act.macro[0][1] == 0x0B);
   expect("MAP? uid=" U "\n", "MACRO uid=" U " seq=020B,0008,000F,000F,0012\n");
   expect("MACRO uid=" U " seq=0004\n", "OK MACRO uid=" U "\n");
   expect("MAP? uid=" U "\n", "MACRO uid=" U " seq=0004\n");
@@ -194,7 +191,7 @@ int main(void)
   expect("BOGUS\n", "ERR unknown command\n");
   expect("\n", "");
 
-  n = KEYMAP_MAX;
+  keytable.count = KEYMAP_MAX;
   expect("MAP uid=FFFFFFFFFFFFFFFFFFFFFFFF mods=00 key=04\n", "ERR keymap full\n");
   expect("MAPC uid=FFFFFFFFFFFFFFFFFFFFFFFF usage=00CD\n", "ERR keymap full\n");
 

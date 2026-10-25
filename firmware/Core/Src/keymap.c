@@ -11,37 +11,31 @@
 
 #define KEYS_PERIOD_MS 5
 #define MAP_MAGIC      0x50414D4BUL   /* "KMAP" */
-#define MAP_VERSION    4   /* 2: kind + 16-bit code, 3: hold action, 4: macros */
+#define MAP_VERSION    5   /* 2: kind + code, 3: hold, 4: macros, 5: short (32-bit) UIDs */
+#define SEEN_MAX       16
 
 /* Owned by main.c's Keybit code, refreshed from its own poll calls in the
  * main loop. The key task runs from the same loop, so no locking. */
 extern keybit_info_t keybits[KEYBIT_MAX];
 extern int keybit_count;
 extern volatile uint32_t keybit_changed;
-
-/* 56 bytes, seven flash doublewords. 32 of them plus the header are
- * 1800 bytes, under half the 4 KB page. */
-typedef struct {
-  uint8_t uid[UID_LEN];
-  keyact_t act;
-  uint8_t pad[2];
-} map_entry_t;
-
-/* Flash image: one header doubleword, then the entries. */
-typedef struct {
-  uint32_t magic;
-  uint16_t version;
-  uint16_t count;
-  map_entry_t entries[KEYMAP_MAX];
-} map_image_t;
+extern keybit_remote_t keybit_remotes[KEYBIT_REMOTE_MAX];
+extern int keybit_remote_count;
 
 _Static_assert(sizeof(map_entry_t) % 8 == 0, "map entries are written as doublewords");
 _Static_assert(sizeof(map_image_t) <= FLASH_PAGE_SIZE, "keymap must fit its flash page");
 
-static map_image_t map __attribute__((aligned(8)));
 static keybit_info_t present[KEYBIT_MAX];
-static keyact_key_t present_key[KEYBIT_MAX];   /* tap/hold state, follows present[] */
 static int present_count;
+/* Tap/hold state for every key: direct Keybits in [0, KEYBIT_MAX)
+ * following present[], remote ones at KEYBIT_MAX + their (fixed) index. */
+static keyact_key_t key_state[KEYBIT_MAX + KEYBIT_REMOTE_MAX];
+static uint8_t remote_shown[KEYBIT_REMOTE_MAX];   /* KEY+ sent, no KEY- yet */
+static uint8_t remote_down[KEYBIT_REMOTE_MAX];    /* last PRESS sent */
+/* Full UIDs of Keybits seen directly, so one that moves further out can
+ * still be named in full. */
+static uint8_t seen[SEEN_MAX][UID_LEN];
+static int seen_count;
 static char sides[3];   /* last SIDES sent: L, R, T present */
 static uint8_t keys_timer_id;
 
@@ -61,103 +55,6 @@ static const map_image_t *Map_Flash(void)
 static uint32_t Map_Size(const map_image_t *m)
 {
   return 8 + m->count * sizeof(map_entry_t);
-}
-
-static int Find(const uint8_t uid[UID_LEN])
-{
-  for (int i = 0; i < map.count; i++)
-  {
-    if (memcmp(map.entries[i].uid, uid, UID_LEN) == 0) return i;
-  }
-  return -1;
-}
-
-/* Entry for uid, created empty if needed. NULL when the table is full. */
-static keyact_t *Entry(const uint8_t uid[UID_LEN])
-{
-  int i = Find(uid);
-  if (i < 0)
-  {
-    if (map.count >= KEYMAP_MAX) return NULL;
-    i = map.count++;
-    memset(&map.entries[i], 0, sizeof(map_entry_t));
-    memcpy(map.entries[i].uid, uid, UID_LEN);
-  }
-  return &map.entries[i].act;
-}
-
-/* A Keybit has one mapping, so setting either kind replaces the other. */
-static int Put(const uint8_t uid[UID_LEN], uint8_t kind, uint8_t mods, uint16_t code)
-{
-  keyact_t *a = Entry(uid);
-  if (!a) return -1;
-  a->kind = kind;
-  a->mods = mods;
-  a->code = code;
-  a->macro_len = 0;   /* MAP/MAPC replace a macro too */
-  return 0;
-}
-
-int KEYMAP_Set(const uint8_t uid[UID_LEN], uint8_t mods, uint8_t key)
-{
-  return Put(uid, KEYACT_KEY, mods, key);
-}
-
-int KEYMAP_SetConsumer(const uint8_t uid[UID_LEN], uint16_t usage)
-{
-  return Put(uid, KEYACT_CONSUMER, 0, usage);
-}
-
-int KEYMAP_SetMacro(const uint8_t uid[UID_LEN], const uint8_t seq[][2], uint8_t len)
-{
-  if (len > KEYACT_MACRO_MAX) return -1;
-  keyact_t *a = Entry(uid);
-  if (!a) return -1;
-  a->kind = KEYACT_MACRO;
-  a->mods = 0;
-  a->code = 0;
-  a->macro_len = len;
-  memset(a->macro, 0, sizeof(a->macro));
-  memcpy(a->macro, seq, (size_t)len * 2);
-  return 0;
-}
-
-int KEYMAP_SetHold(const uint8_t uid[UID_LEN], uint8_t mods, uint8_t key, uint16_t ms)
-{
-  if (!mods && !key)
-  {
-    int i = Find(uid);
-    if (i < 0) return 0;
-    keyact_t *a = &map.entries[i].act;
-    a->hold_mods = a->hold_key = 0;
-    a->hold_ms = 0;
-    if (a->kind == KEYACT_NONE) KEYMAP_Unmap(uid);   /* nothing left */
-    return 0;
-  }
-  keyact_t *a = Entry(uid);
-  if (!a) return -1;
-  a->hold_mods = mods;
-  a->hold_key = key;
-  a->hold_ms = ms;
-  return 0;
-}
-
-const keyact_t *KEYMAP_Lookup(const uint8_t uid[UID_LEN])
-{
-  int i = Find(uid);
-  return i < 0 ? NULL : &map.entries[i].act;
-}
-
-void KEYMAP_Unmap(const uint8_t uid[UID_LEN])
-{
-  int i = Find(uid);
-  if (i < 0) return;
-  map.entries[i] = map.entries[--map.count];
-}
-
-void KEYMAP_Clear(void)
-{
-  map.count = 0;
 }
 
 const keybit_info_t *KEYMAP_Present(int *count)
@@ -205,10 +102,10 @@ static int Flash_Op(uint8_t erase, uint32_t addr_or_page, uint64_t data)
 
 int KEYMAP_Save(void)
 {
-  map.magic = MAP_MAGIC;
-  map.version = MAP_VERSION;
-  uint32_t size = Map_Size(&map);
-  if (memcmp(Map_Flash(), &map, size) == 0) return 0;   /* nothing changed */
+  keytable.magic = MAP_MAGIC;
+  keytable.version = MAP_VERSION;
+  uint32_t size = Map_Size(&keytable);
+  if (memcmp(Map_Flash(), &keytable, size) == 0) return 0;   /* nothing changed */
 
   int err = 0;
   while (LL_HSEM_1StepLock(HSEM, CFG_HW_FLASH_SEMID));
@@ -221,7 +118,7 @@ int KEYMAP_Save(void)
   if (APP_BLE_Ready()) SHCI_C2_FLASH_EraseActivity(ERASE_ACTIVITY_OFF);
 
   uint32_t addr = (uint32_t)Map_Flash();
-  const uint64_t *src = (const uint64_t *)&map;
+  const uint64_t *src = (const uint64_t *)&keytable;
   for (uint32_t i = 0; i < size / 8 && !err; i++)
   {
     err |= Flash_Op(0, addr + 8 * i, src[i]);
@@ -229,7 +126,7 @@ int KEYMAP_Save(void)
 
   HAL_FLASH_Lock();
   LL_HSEM_ReleaseLock(HSEM, CFG_HW_FLASH_SEMID, 0);
-  if (err || memcmp(Map_Flash(), &map, size) != 0) return -1;
+  if (err || memcmp(Map_Flash(), &keytable, size) != 0) return -1;
   return 0;
 }
 
@@ -238,11 +135,11 @@ static void Map_Load(void)
   const map_image_t *f = Map_Flash();
   if (f->magic == MAP_MAGIC && f->version == MAP_VERSION && f->count <= KEYMAP_MAX)
   {
-    memcpy(&map, f, Map_Size(f));
+    memcpy(&keytable, f, Map_Size(f));
   }
   else
   {
-    map.count = 0;
+    keytable.count = 0;
   }
 }
 
@@ -255,12 +152,78 @@ static const keybit_info_t *Find_Keybit(const keybit_info_t *list, int n, const 
   return NULL;
 }
 
-/* Diff keybits[] against what we reported last time, by UID: indexes move
- * every time main.c rescans the bus. */
-static void Keys_Task(void)
+static uint32_t Low32(const uint8_t uid[UID_LEN])
+{
+  return (uint32_t)uid[0] | (uint32_t)uid[1] << 8 | (uint32_t)uid[2] << 16 | (uint32_t)uid[3] << 24;
+}
+
+/* ponytail: the oldest of SEEN_MAX sightings is forgotten first */
+static void Seen(const uint8_t uid[UID_LEN])
+{
+  int n = seen_count < SEEN_MAX ? seen_count : SEEN_MAX;
+  for (int i = 0; i < n; i++)
+  {
+    if (memcmp(seen[i], uid, UID_LEN) == 0) return;
+  }
+  memcpy(seen[seen_count % SEEN_MAX], uid, UID_LEN);
+  seen_count++;
+}
+
+/* A remote Keybit's UID as the protocol prints it: all 24 hex digits when
+ * the keymap or an earlier direct sighting knows them, else the 8 it
+ * reports. */
+static void Remote_Uid(char *out, uint32_t low)
+{
+  const uint8_t *full = KEYMAP_FullUid(low);
+  int n = seen_count < SEEN_MAX ? seen_count : SEEN_MAX;
+  for (int i = 0; !full && i < n; i++)
+  {
+    if (Low32(seen[i]) == low) full = seen[i];
+  }
+  if (full) PROTO_FormatUid(out, full);
+  else snprintf(out, 9, "%08lX", (unsigned long)low);
+}
+
+/* via is the address of the touching Keybit it came through; "?" if that
+ * one dropped out of the last scan. */
+static void Remote_Line(char *out, size_t n, const keybit_remote_t *r)
+{
+  char uid[UID_LEN * 2 + 1], via[UID_LEN * 2 + 1] = "?";
+  Remote_Uid(uid, r->uid);
+  for (int i = 0; i < present_count; i++)
+  {
+    if (present[i].addr == r->via) PROTO_FormatUid(via, present[i].uid);
+  }
+  snprintf(out, n, "KEY+ uid=%s at=X via=%s depth=%u", uid, via, r->depth);
+}
+
+int KEYMAP_KeyLine(int i, char *out, size_t n)
 {
   char uid[UID_LEN * 2 + 1];
-  keybit_changed = 0;   /* only main-loop code sets it, no ISR */
+  if (i < present_count)
+  {
+    PROTO_FormatUid(uid, present[i].uid);
+    snprintf(out, n, "KEY+ uid=%s at=%c v=%u", uid, present[i].at, present[i].fw);   /* v: Keybit reg 0x01 */
+    return 1;
+  }
+  i -= present_count;
+  for (int r = 0; r < keybit_remote_count; r++)
+  {
+    if (remote_shown[r] && i-- == 0)
+    {
+      Remote_Line(out, n, &keybit_remotes[r]);
+      return 1;
+    }
+  }
+  return 0;
+}
+
+/* Direct Keybits: diff keybits[] against what we reported last time, by
+ * UID, since indexes move every time main.c rescans the bus. */
+static void Direct_Keys(void)
+{
+  char uid[UID_LEN * 2 + 1];
+  char line[PROTO_LINE_MAX];
 
   for (int i = 0; i < present_count; i++)
   {
@@ -270,25 +233,37 @@ static void Keys_Task(void)
       PROTO_Send("KEY- uid=%s", uid);
     }
   }
+
+  keybit_info_t old[KEYBIT_MAX];
   keyact_key_t state[KEYBIT_MAX];
+  int old_count = present_count;
+  memcpy(old, present, sizeof(keybit_info_t) * old_count);
+  present_count = keybit_count;
+  memcpy(present, keybits, sizeof(keybit_info_t) * keybit_count);
+
   for (int i = 0; i < keybit_count; i++)
   {
-    const keybit_info_t *old = Find_Keybit(present, present_count, keybits[i].uid);
-    uint8_t was_down = old ? old->key_down : 0;
+    const keybit_info_t *was = Find_Keybit(old, old_count, keybits[i].uid);
     PROTO_FormatUid(uid, keybits[i].uid);
-    if (!old) PROTO_Send("KEY+ uid=%s at=%c v=%u", uid, keybits[i].at, keybits[i].fw);   /* v: Keybit reg 0x01 */
-    if (was_down != keybits[i].key_down)
+    if (!was)
+    {
+      Seen(keybits[i].uid);
+      KEYMAP_KeyLine(i, line, sizeof(line));
+      PROTO_Send("%s", line);
+    }
+    if ((was ? was->key_down : 0) != keybits[i].key_down)
     {
       PROTO_Send("PRESS uid=%s down=%d", uid, keybits[i].key_down);
     }
-    if (old) state[i] = present_key[old - present];
+    if (was) state[i] = key_state[was - old];
     else memset(&state[i], 0, sizeof(state[i]));
     state[i].down = keybits[i].key_down;
   }
-
-  present_count = keybit_count;
-  memcpy(present, keybits, sizeof(keybit_info_t) * keybit_count);
-  memcpy(present_key, state, sizeof(keyact_key_t) * keybit_count);
+  memcpy(key_state, state, sizeof(keyact_key_t) * keybit_count);
+  for (int i = keybit_count; i < KEYBIT_MAX; i++)
+  {
+    memset(&key_state[i], 0, sizeof(key_state[i]));   /* free slot */
+  }
 
   char now[3] = {0, 0, 0};
   for (int i = 0; i < present_count; i++)
@@ -302,14 +277,74 @@ static void Keys_Task(void)
     memcpy(sides, now, sizeof(sides));
     PROTO_Send("SIDES L=%d R=%d T=%d", sides[0], sides[1], sides[2]);
   }
+}
 
-  /* Unmapped Keybits get a NULL action and send nothing. A Keybit that
-   * leaves while held just drops out of the reports. */
-  const keyact_t *acts[KEYBIT_MAX];
-  for (int i = 0; i < present_count; i++) acts[i] = KEYMAP_Lookup(present[i].uid);
+/* Remote Keybits: entries never move, so their index is their identity. */
+static void Remote_Keys(void)
+{
+  char uid[UID_LEN * 2 + 1];
+  char line[PROTO_LINE_MAX];
+
+  for (int r = 0; r < keybit_remote_count; r++)
+  {
+    keybit_remote_t *k = &keybit_remotes[r];
+    keyact_key_t *s = &key_state[KEYBIT_MAX + r];
+    uint8_t down = k->present && k->key_down;
+    if (!k->dirty && k->present == remote_shown[r] && down == remote_down[r]) continue;
+    k->dirty = 0;
+
+    Remote_Uid(uid, k->uid);
+    if (k->present && !remote_shown[r])
+    {
+      remote_shown[r] = 1;
+      memset(s, 0, sizeof(*s));
+      Remote_Line(line, sizeof(line), k);
+      PROTO_Send("%s", line);
+    }
+    if (down != remote_down[r])
+    {
+      remote_down[r] = down;
+      PROTO_Send("PRESS uid=%s down=%d", uid, down);
+    }
+    if (!k->present && remote_shown[r])
+    {
+      remote_shown[r] = 0;
+      PROTO_Send("KEY- uid=%s", uid);
+    }
+    s->down = down;
+  }
+}
+
+static void Keys_Task(void)
+{
+  keybit_changed = 0;   /* only main-loop code sets it, no ISR */
+  Direct_Keys();
+  Remote_Keys();
+
+  /* Direct Keybits by full UID, remote ones by their low 32 bits (which
+   * also finds an entry stored with the full UID). Unmapped ones get NULL
+   * and send nothing. */
+  static const keyact_t *acts[KEYBIT_MAX + KEYBIT_REMOTE_MAX];
+  keyid_t id;
+  for (int i = 0; i < KEYBIT_MAX; i++)
+  {
+    acts[i] = NULL;
+    if (i >= present_count) continue;
+    memcpy(id.uid, present[i].uid, UID_LEN);
+    id.len = UID_LEN;
+    acts[i] = KEYMAP_Lookup(&id);
+  }
+  for (int r = 0; r < keybit_remote_count; r++)
+  {
+    memset(&id, 0, sizeof(id));
+    for (int b = 0; b < UID_SHORT_LEN; b++) id.uid[b] = (uint8_t)(keybit_remotes[r].uid >> (8 * b));
+    id.len = UID_SHORT_LEN;
+    acts[KEYBIT_MAX + r] = remote_shown[r] ? KEYMAP_Lookup(&id) : NULL;
+  }
+
   uint8_t report[8];
   uint16_t consumer;
-  KEYACT_Step(present_key, acts, present_count, HAL_GetTick(), report, &consumer);
+  KEYACT_Step(key_state, acts, KEYBIT_MAX + keybit_remote_count, HAL_GetTick(), report, &consumer);
   HIDSAPP_SendKeyboard(report);
   HIDSAPP_SendConsumer(consumer);
 

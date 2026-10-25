@@ -135,19 +135,34 @@ static int Arg_Seq(const char *args, uint8_t seq[KEYACT_MACRO_MAX][2])
   return -1;   /* more than KEYACT_MACRO_MAX */
 }
 
-/* uid= is printed most significant byte first, stored little endian. */
-static int Arg_Uid(const char *args, uint8_t uid[UID_LEN])
+/* uid= is 24 hex digits, or 8 for a relayed Keybit known only by its low
+ * 32 bits. Printed most significant byte first, stored little endian. */
+static int Arg_Uid(const char *args, keyid_t *id)
 {
   uint8_t be[UID_LEN];
-  if (Arg_Hex(args, "uid", UID_LEN * 2, be) != 0) return -1;
-  for (int i = 0; i < UID_LEN; i++) uid[i] = be[UID_LEN - 1 - i];
+  memset(id, 0, sizeof(*id));
+  if (Arg_Hex(args, "uid", UID_LEN * 2, be) == 0) id->len = UID_LEN;
+  else if (Arg_Hex(args, "uid", UID_SHORT_LEN * 2, be) == 0) id->len = UID_SHORT_LEN;
+  else return -1;
+  for (int i = 0; i < id->len; i++) id->uid[i] = be[id->len - 1 - i];
   return 0;
+}
+
+/* Replies echo the uid in the form it was given. */
+static void Format_Id(char *out, const keyid_t *id)
+{
+  if (id->len == UID_LEN)
+  {
+    PROTO_FormatUid(out, id->uid);
+    return;
+  }
+  snprintf(out, 9, "%02X%02X%02X%02X", id->uid[3], id->uid[2], id->uid[1], id->uid[0]);
 }
 
 static void Handle_Line(proto_port_t *port, char *cmd)
 {
   char uid_s[UID_LEN * 2 + 1];
-  uint8_t uid[UID_LEN];
+  keyid_t id;
   char *args = strchr(cmd, ' ');
   if (args) *args++ = 0;
   else args = cmd + strlen(cmd);
@@ -178,91 +193,89 @@ static void Handle_Line(proto_port_t *port, char *cmd)
   }
   else if (strcmp(cmd, "KEYS?") == 0)
   {
-    int n;
-    const keybit_info_t *k = KEYMAP_Present(&n);
-    for (int i = 0; i < n; i++)
+    char line[PROTO_LINE_MAX];
+    for (int i = 0; KEYMAP_KeyLine(i, line, sizeof(line)); i++)
     {
-      PROTO_FormatUid(uid_s, k[i].uid);
-      Reply(port, "KEY+ uid=%s at=%c v=%u", uid_s, k[i].at, k[i].fw);
+      Reply(port, "%s", line);
     }
     Reply(port, "KEYS END");
   }
   else if (strcmp(cmd, "MAP") == 0)
   {
     uint8_t mods, key;
-    if (Arg_Uid(args, uid) || Arg_Hex(args, "mods", 2, &mods) || Arg_Hex(args, "key", 2, &key))
+    if (Arg_Uid(args, &id) || Arg_Hex(args, "mods", 2, &mods) || Arg_Hex(args, "key", 2, &key))
     {
       Reply(port, "ERR usage: MAP uid=<24hex> mods=<2hex> key=<2hex>");
       return;
     }
-    if (KEYMAP_Set(uid, mods, key) != 0)
+    if (KEYMAP_Set(&id, mods, key) != 0)
     {
       Reply(port, "ERR keymap full");
       return;
     }
-    PROTO_FormatUid(uid_s, uid);
+    Format_Id(uid_s, &id);
     Reply(port, "OK MAP uid=%s", uid_s);
   }
   else if (strcmp(cmd, "MAPC") == 0)
   {
     uint8_t usage[2];
-    if (Arg_Uid(args, uid) || Arg_Hex(args, "usage", 4, usage))
+    if (Arg_Uid(args, &id) || Arg_Hex(args, "usage", 4, usage))
     {
       Reply(port, "ERR usage: MAPC uid=<24hex> usage=<4hex>");
       return;
     }
-    if (KEYMAP_SetConsumer(uid, (uint16_t)(usage[0] << 8 | usage[1])) != 0)
+    if (KEYMAP_SetConsumer(&id, (uint16_t)(usage[0] << 8 | usage[1])) != 0)
     {
       Reply(port, "ERR keymap full");
       return;
     }
-    PROTO_FormatUid(uid_s, uid);
+    Format_Id(uid_s, &id);
     Reply(port, "OK MAPC uid=%s", uid_s);
   }
   else if (strcmp(cmd, "MACRO") == 0)
   {
     uint8_t seq[KEYACT_MACRO_MAX][2];
     int n = -1;
-    if (Arg_Uid(args, uid) || (n = Arg_Seq(args, seq)) < 0)
+    if (Arg_Uid(args, &id) || (n = Arg_Seq(args, seq)) < 0)
     {
       Reply(port, "ERR usage: MACRO uid=<24hex> seq=<MMKK,...> (1-%d taps)", KEYACT_MACRO_MAX);
       return;
     }
-    if (KEYMAP_SetMacro(uid, (const uint8_t (*)[2])seq, (uint8_t)n) != 0)
+    if (KEYMAP_SetMacro(&id, (const uint8_t (*)[2])seq, (uint8_t)n) != 0)
     {
       Reply(port, "ERR keymap full");
       return;
     }
-    PROTO_FormatUid(uid_s, uid);
+    Format_Id(uid_s, &id);
     Reply(port, "OK MACRO uid=%s", uid_s);
   }
   else if (strcmp(cmd, "HOLD") == 0)
   {
     uint8_t mods, key;
     uint16_t ms = KEYACT_HOLD_MS_DEF;
-    if (Arg_Uid(args, uid) || Arg_Hex(args, "mods", 2, &mods) || Arg_Hex(args, "key", 2, &key)
+    if (Arg_Uid(args, &id) || Arg_Hex(args, "mods", 2, &mods) || Arg_Hex(args, "key", 2, &key)
         || (strstr(args, "ms=") && Arg_Dec(args, "ms", &ms)))
     {
       Reply(port, "ERR usage: HOLD uid=<24hex> mods=<2hex> key=<2hex> ms=<dec>");
       return;
     }
-    if (KEYMAP_SetHold(uid, mods, key, ms) != 0)
+    if (KEYMAP_SetHold(&id, mods, key, ms) != 0)
     {
       Reply(port, "ERR keymap full");
       return;
     }
-    PROTO_FormatUid(uid_s, uid);
+    Format_Id(uid_s, &id);
     Reply(port, "OK HOLD uid=%s", uid_s);
   }
   else if (strcmp(cmd, "MAP?") == 0)
   {
-    if (Arg_Uid(args, uid))
+    if (Arg_Uid(args, &id))
     {
       Reply(port, "ERR usage: MAP? uid=<24hex>");
       return;
     }
-    PROTO_FormatUid(uid_s, uid);
-    const keyact_t *a = KEYMAP_Lookup(uid);
+    Format_Id(uid_s, &id);
+    const keyact_t *a = KEYMAP_Lookup(&id);
     if (a && a->kind == KEYACT_CONSUMER)
     {
       Reply(port, "MAPC uid=%s usage=%04X", uid_s, a->code);
@@ -291,13 +304,13 @@ static void Handle_Line(proto_port_t *port, char *cmd)
   }
   else if (strcmp(cmd, "UNMAP") == 0)
   {
-    if (Arg_Uid(args, uid))
+    if (Arg_Uid(args, &id))
     {
       Reply(port, "ERR usage: UNMAP uid=<24hex>");
       return;
     }
-    KEYMAP_Unmap(uid);
-    PROTO_FormatUid(uid_s, uid);
+    KEYMAP_Unmap(&id);
+    Format_Id(uid_s, &id);
     Reply(port, "OK UNMAP uid=%s", uid_s);
   }
   else if (strcmp(cmd, "CLEAR") == 0)

@@ -106,6 +106,7 @@ Core/Src/batt.c \
 Core/Src/hw_timerserver.c \
 Core/Src/keyact.c \
 Core/Src/keymap.c \
+Core/Src/keytable.c \
 Core/Src/proto.c \
 Core/Src/stm32_lpm_if.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc.c \

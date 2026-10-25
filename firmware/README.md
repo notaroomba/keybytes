@@ -68,7 +68,11 @@ an unmapped Keybit sends nothing. The map is set with the line protocol in
 either the Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e) or USB.
 A Keybit can also be a media key (`MAPC`), type a short macro (`MACRO`, up to
 16 taps), or do one thing on a tap and another while held (`HOLD`, like Escape
-on tap and Ctrl on hold).
+on tap and Ctrl on hold). Keybits further out, relayed through the ones
+touching the keyword, work too. They only report the low 32 bits of their
+UID, so they can be mapped with an 8 digit `uid=`. `BATT?` reads the
+BQ25895's ADC for the battery level, which also goes to the BLE Battery
+Service.
 `SAVE` writes it to the flash page just under CPU2's area (0x080CF000 with the
 full stack).
 
@@ -88,8 +92,9 @@ screen /dev/tty.usbmodem* 115200   # then type HELLO and enter
 The parser and the tap/hold/macro logic have host checks:
 
 ```sh
-cc -std=c99 -Itest/stub -ICore/Inc test/proto_test.c Core/Src/proto.c -o /tmp/proto_test && /tmp/proto_test
+cc -std=c99 -Itest/stub -ICore/Inc test/proto_test.c Core/Src/proto.c Core/Src/keytable.c -o /tmp/proto_test && /tmp/proto_test
 cc -std=c99 -ICore/Inc test/keyact_test.c Core/Src/keyact.c -o /tmp/keyact_test && /tmp/keyact_test
+cc -std=c99 -Itest/stub -ICore/Inc test/batt_test.c Core/Src/batt.c -o /tmp/batt_test && /tmp/batt_test
 ```
 
 ### First flash: the CPU2 BLE stack
