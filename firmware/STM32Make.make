@@ -78,6 +78,7 @@ C_SOURCES =  \
 Core/Src/keybit_bus.c \
 Core/Src/keybit_image.c \
 Core/Src/main.c \
+Core/Src/ota.c \
 Core/Src/stm32wbxx_hal_msp.c \
 Core/Src/stm32wbxx_it.c \
 Core/Src/syscalls.c \
@@ -225,7 +226,9 @@ AS_DEFS =
 # C defines
 C_DEFS =  \
 -DSTM32WB55xx \
--DUSE_HAL_DRIVER
+-DUSE_HAL_DRIVER \
+-DUSER_VECT_TAB_ADDRESS \
+-DVECT_TAB_OFFSET=0x7000
 
 
 # CXX defines

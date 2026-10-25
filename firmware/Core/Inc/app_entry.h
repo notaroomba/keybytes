@@ -61,6 +61,8 @@ void Init_Exti(void);
 void Init_Smps(void);
 
 /* USER CODE BEGIN EF */
+/* CPU2_UNKNOWN / CPU2_BLE / CPU2_FUS (ota.h), from CPU2's ready event */
+int APPE_Cpu2State(void);
 
 /* USER CODE END EF */
 

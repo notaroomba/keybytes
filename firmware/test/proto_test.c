@@ -22,6 +22,11 @@ static proto_port_t port2 = {.write = write2};
 static keybit_info_t present[2];
 static int remote_listed;
 const uint8_t keybit_image_version = 3;
+static int stack_ok = 1, ota_asked, dfu_asked;
+int OTA_Available(void) { return stack_ok; }
+void OTA_Request(void) { ota_asked++; }
+void OTA_RequestDfu(void) { dfu_asked++; }
+void OTA_StackInfo(char *out, size_t n) { snprintf(out, n, stack_ok ? "ble v=1.24.0 fus=2.2.0" : "none fus=2.2.0"); }
 static batt_t batt_fake;
 const batt_t *BATT_Get(void) { return &batt_fake; }
 int KEYMAP_Save(void) { return 0; }
@@ -63,9 +68,9 @@ int main(void)
   memset(present[1].uid, 0xAB, UID_LEN);
   present[1].at = 'T';
 
-  expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro kb=3\n");
-  expect("HELLO\r\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro kb=3\n");
-  expect("HELLO\r", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro kb=3\n");   /* terminal Enter */
+  expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro,ota kb=3\n");
+  expect("HELLO\r\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro,ota kb=3\n");
+  expect("HELLO\r", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro,ota kb=3\n");   /* terminal Enter */
   expect("\r\n\r\n", "");
   expect("SIDES?\n", "SIDES L=1 R=0 T=1\n");
   expect("BATT?\n", "ERR no battery reading yet\n");
@@ -200,7 +205,22 @@ int main(void)
   longline[sizeof(longline) - 2] = '\n';
   longline[sizeof(longline) - 1] = 0;
   expect(longline, "ERR line too long\n");
+  expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro,ota kb=3\n");
+
+  /* OTA / DFU / STACK? */
+  expect("STACK?\n", "STACK ble v=1.24.0 fus=2.2.0\n");
+  expect("OTA\n", "OK OTA\n");
+  assert(ota_asked == 1);
+  expect("DFU\n", "OK DFU\n");
+  assert(dfu_asked == 1);
+  stack_ok = 0;   /* FUS only, no BLE stack: no OTA, and HELLO says so */
   expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro kb=3\n");
+  expect("STACK?\n", "STACK none fus=2.2.0\n");
+  expect("OTA\n", "ERR no BLE stack on CPU2, use DFU\n");
+  assert(ota_asked == 1);
+  expect("DFU\n", "OK DFU\n");   /* DFU still works */
+  assert(dfu_asked == 2);
+  stack_ok = 1;
 
   /* Two transports at once: each has its own line buffer, so half a line
    * on one doesn't mix with the other, and replies go back where they
@@ -211,7 +231,7 @@ int main(void)
   assert(out[0] == 0);
   assert(strcmp(out2, "SIDES L=1 R=0 T=1\n") == 0);
   PROTO_Input(&port, (const uint8_t *)"LO\n", 3);
-  assert(strcmp(out, "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro kb=3\n") == 0);
+  assert(strcmp(out, "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro,ota kb=3\n") == 0);
   assert(strcmp(out2, "SIDES L=1 R=0 T=1\n") == 0);
 
   /* Unsolicited events go to every connected port, and only those. */

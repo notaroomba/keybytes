@@ -18,41 +18,97 @@ U14 is an XL-1608RGBC, common anode to +3.3V, so each colour is active LOW.
 
 ## Build
 
-Needs `arm-none-eabi-gcc`, `make` and OpenOCD (`brew install --cask gcc-arm-embedded`
-and `brew install open-ocd` on macOS). `.stm32env` holds Windows tool paths from
-the STM32 for VSCode extension, so override them on the command line:
+Needs an `arm-none-eabi-gcc` with newlib and `make`. The Arm GNU Toolchain
+(`brew install --cask gcc-arm-embedded`) or the xPack one that STM32 for VSCode
+downloads both work. The bare `arm-none-eabi-gcc` brew formula doesn't (no
+`stdint.h`). `.stm32env` holds the extension's tool paths, so override them on
+the command line:
 
 ```sh
 cd firmware
-make -f STM32Make.make ARM_GCC_PATH="$(dirname "$(which arm-none-eabi-gcc)")" OPENOCD=openocd
+make -C ota_bootloader release ARM_GCC_PATH="$(dirname "$(which arm-none-eabi-gcc)")"
 ```
 
-The ELF lands in `build/debug/keyword.elf`.
+That builds the OTA bootloader (`ota_bootloader/`) and the app, and writes
+`release/`:
 
-## Flash (ST-Link over SWD)
+| File | What | Where |
+|------|------|-------|
+| `keyword_full.bin` / `.hex` | bootloader + app in one image | 0x08000000, first install over USB DFU |
+| `keyword_app.bin` | app only | 0x08007000, updates over BLE |
 
-Wire an ST-Link to the SWD header (SWDIO, SWCLK, GND, 3V3, NRST), then:
+The app alone still builds with `make -f STM32Make.make` (`build/debug/keyword.elf`).
+
+## Flash map
+
+| Address | Pages | What |
+|---------|-------|------|
+| 0x08000000 | 0-6 | OTA bootloader, ST's BLE_Ota adapted (`ota_bootloader/`) |
+| 0x08007000 | 7 up | the app |
+| 0x080CF000 | SFSA - 1 | saved keymap, never erased by flashing or OTA |
+| 0x080D0000 | SFSA up | CPU2: BLE stack and FUS |
+
+On reset the bootloader jumps straight to the app if the app is valid (ST's
+0x94448A29 tag at the end of the image, pointed to from app + 0x140). It only
+stays and advertises **Keyword OTA** when the app is missing or broken, or when
+the app asked for an update.
+
+## Flash
+
+### First install over USB DFU
+
+This needs the CPU2 BLE stack already installed (see "First flash: the CPU2 BLE
+stack" below). Put the keyword in DFU, then write `keyword_full.bin` at
+0x08000000. Either of these only erases the pages the image covers (about 23 of
+them), so the keymap page and CPU2's area stay as they are. No option bytes,
+no full chip erase:
 
 ```sh
-make -f STM32Make.make flash ARM_GCC_PATH="$(dirname "$(which arm-none-eabi-gcc)")" OPENOCD=openocd
-# or directly:
-openocd -f openocd.cfg -c "program build/debug/keyword.elf verify reset exit"
+STM32_Programmer_CLI -c port=usb1 -d release/keyword_full.bin 0x08000000 -v
+# or
+dfu-util -a 0 -d 0483:df11 -s 0x08000000:leave -D release/keyword_full.bin
 ```
 
-### First flash: BOOT0 option bytes
+After this every update goes over Bluetooth.
 
-BOOT0 (PH3) is floating on the keyword board, so the chip may randomly boot into
-the system bootloader instead of your code. Once per chip, tell it to ignore the
-pin and always boot from flash (`nSWBOOT0 = 0`, `nBOOT0 = 1`) with
-STM32CubeProgrammer:
+### Updating over BLE
+
+1. Send `OTA` from the desktop app or over USB serial. The keyword answers
+   `OK OTA` and reboots into the bootloader, which erases the old app and
+   advertises as **Keyword OTA**. `STACK?` shows whether the BLE stack is there;
+   without it `OTA` answers an error instead.
+2. Send `keyword_app.bin` to address 0x7000 with ST BLE Toolbox (or the desktop
+   app once it does OTA).
+3. When it's done the bootloader checks the tag and starts the new app.
+
+If the transfer stops halfway the bootloader stays in OTA mode, so just send
+the file again.
+
+### Back to USB DFU without BOOT0
+
+Send `DFU` over USB serial or BLE. The keyword answers `OK DFU`, resets, and the
+bootloader starts ST's ROM USB DFU bootloader (system memory at 0x1FFF0000)
+straight out of the reset, so it shows up as `0483:df11` without touching BOOT0
+or the option bytes. The bootloader also does this by itself if CPU2 has no BLE
+stack, since then OTA can't work. A reset out of DFU boots the app again.
+
+### ST-Link over SWD
+
+Still works if an ST-Link is wired to the SWD header (SWDIO, SWCLK, GND, 3V3,
+NRST). The app now lives at 0x08007000 and needs the bootloader in front of it:
 
 ```sh
-STM32_Programmer_CLI -c port=SWD mode=UR -ob nSWBOOT0=0 nBOOT0=1
-STM32_Programmer_CLI -c port=SWD -ob displ   # check: nSWBOOT0 = 0x0, nBOOT0 = 0x1
+openocd -f openocd.cfg -c "program ota_bootloader/build/ota_bootloader.elf verify" \
+  -c "program build/debug/keyword.elf verify reset exit"
 ```
 
-The same can be done in the STM32CubeProgrammer GUI under Option bytes > User
-Configuration. This only needs doing once; it survives reflashing and mass erase.
+### BOOT0 option bytes
+
+BOOT0 (PH3) is floating on the keyword board, so the chip could randomly boot
+into the system bootloader instead of the firmware. That's why its option bytes
+were set to ignore the pin and always boot from flash (`nSWBOOT0 = 0`,
+`nBOOT0 = 1`). Leave them like that: `DFU` above gets into the system
+bootloader without them.
 
 ## Keybit dock and side bus
 

@@ -4,9 +4,11 @@
 #include "keymap.h"
 #include "batt.h"
 #include "keybit_image.h"
+#include "ota.h"
 #include "proto.h"
 
-/* Optional features the desktop app can use, only what's implemented. */
+/* Optional features the desktop app can use, only what's implemented.
+ * ota only while the CPU2 BLE stack runs, since the OTA bootloader needs it. */
 #define CAPS "batt,hold,macro"
 
 static proto_port_t *ports[PROTO_MAX_PORTS];
@@ -170,7 +172,31 @@ static void Handle_Line(proto_port_t *port, char *cmd)
   if (strcmp(cmd, "HELLO") == 0)
   {
     /* kb: version of the Keybit image this keyword flashes onto new Keybits */
-    Reply(port, "KEYWORD v=%s proto=1 caps=%s kb=%u", KEYWORD_FW_VERSION, CAPS, keybit_image_version);
+    Reply(port, "KEYWORD v=%s proto=1 caps=%s%s kb=%u", KEYWORD_FW_VERSION, CAPS,
+          OTA_Available() ? ",ota" : "", keybit_image_version);
+  }
+  else if (strcmp(cmd, "STACK?") == 0)
+  {
+    char info[48];
+    OTA_StackInfo(info, sizeof(info));
+    Reply(port, "STACK %s", info);
+  }
+  else if (strcmp(cmd, "OTA") == 0)
+  {
+    /* The loader runs on the same CPU2 BLE stack: without it OTA would
+     * just strand the keyword in the loader (which then drops to DFU). */
+    if (!OTA_Available())
+    {
+      Reply(port, "ERR no BLE stack on CPU2, use DFU");
+      return;
+    }
+    Reply(port, "OK OTA");
+    OTA_Request();
+  }
+  else if (strcmp(cmd, "DFU") == 0)
+  {
+    Reply(port, "OK DFU");
+    OTA_RequestDfu();
   }
   else if (strcmp(cmd, "BATT?") == 0)
   {

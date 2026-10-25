@@ -20,6 +20,7 @@
 #include "shci.h"
 #include "otp.h"
 #include "keymap.h"
+#include "ota.h"
 
 RTC_HandleTypeDef hrtc;
 
@@ -31,6 +32,7 @@ PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t SystemSpareEvtBuffer[sizeof(
 PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t BleSpareEvtBuffer[sizeof(TL_PacketHeader_t) + TL_EVT_HDR_SIZE + 255U];
 
 static void APPE_SysUserEvtRx(void *pPayload);
+static uint8_t cpu2_state = CPU2_UNKNOWN;
 static void APPE_SysStatusNot(SHCI_TL_CmdStatus_t status);
 
 /* Runs before SystemClock_Config: the backup domain reset has to happen
@@ -58,6 +60,10 @@ void MX_APPE_Config(void)
   LL_C1_IPCC_DisableReceiveChannel(IPCC, ch);
   LL_C2_IPCC_DisableReceiveChannel(IPCC, ch);
 #endif
+
+  /* The OTA bootloader trusts its SRAM1 request only after a software
+   * reset, so every boot must start from fresh flags. */
+  __HAL_RCC_CLEAR_RESET_FLAGS();
 
   OTP_ID0_t *p_otp = (OTP_ID0_t *)OTP_Read(0);
   if (p_otp)
@@ -144,6 +150,11 @@ void MX_APPE_Init(void)
   TL_Enable();
 }
 
+int APPE_Cpu2State(void)
+{
+  return cpu2_state;
+}
+
 void MX_APPE_Process(void)
 {
   UTIL_SEQ_Run(UTIL_SEQ_DEFAULT);
@@ -169,6 +180,7 @@ static void APPE_SysUserEvtRx(void *pPayload)
   SHCI_C2_Ready_Evt_t *p_ready = (SHCI_C2_Ready_Evt_t *)p_sys_event->payload;
   if (p_ready->sysevt_ready_rsp == WIRELESS_FW_RUNNING)
   {
+    cpu2_state = CPU2_BLE;
     SHCI_C2_CONFIG_Cmd_Param_t config_param = {0};
     config_param.PayloadCmdSize = SHCI_C2_CONFIG_PAYLOAD_CMD_SIZE;
     config_param.EvtMask1 = SHCI_C2_CONFIG_EVTMASK1_BIT0_ERROR_NOTIF_ENABLE
@@ -183,7 +195,8 @@ static void APPE_SysUserEvtRx(void *pPayload)
   else
   {
     /* FUS is running instead of the BLE stack: the stack binary is missing
-     * or was never started. Keep the user event flow off, nothing to do. */
+     * or was never started. No BLE (and no OTA); STACK? reports it. */
+    cpu2_state = CPU2_FUS;
     ((tSHCI_UserEvtRxParam *)pPayload)->status = SHCI_TL_UserEventFlow_Disable;
   }
 }

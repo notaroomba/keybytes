@@ -20,7 +20,9 @@ floatAbi: -mfloat-abi=hard
 ldscript: stm32wb55xx_flash_cm4.ld # linker script
 
 # Compiler definitions. The -D prefix for the compiler will be automatically added.
-cDefinitions: []
+cDefinitions:
+  - USER_VECT_TAB_ADDRESS
+  - VECT_TAB_OFFSET=0x7000   # the app runs at 0x08007000 behind ota_bootloader/
 cxxDefinitions: []
 asDefinitions: []
 

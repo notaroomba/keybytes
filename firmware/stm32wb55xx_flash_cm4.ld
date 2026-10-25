@@ -39,7 +39,10 @@ ENTRY(Reset_Handler)
 /* Specify the memory areas */
 MEMORY
 {
-FLASH (rx)                 : ORIGIN = 0x08000000, LENGTH = 512K
+/* 0x08000000-0x08006FFF is the OTA bootloader (ota_bootloader/). The app
+ * runs from page 7 up to the keymap page at 0x080CF000 (SFSA - 1 with the
+ * v1.24.0 full BLE stack at 0x080D0000). */
+FLASH (rx)                 : ORIGIN = 0x08007000, LENGTH = 0xC8000
 RAM1 (xrw)                 : ORIGIN = 0x20000008, LENGTH = 0x2FFF8
 RAM_SHARED (xrw)           : ORIGIN = 0x20030000, LENGTH = 10K
 }
@@ -57,6 +60,15 @@ SECTIONS
   {
     . = ALIGN(4);
     KEEP(*(.isr_vector)) /* Startup code */
+    . = ALIGN(4);
+  } >FLASH
+
+  /* The bootloader reads the address of the end tag from app + 0x140
+   * (ST's BLE_Ota CheckFwAppValidity). Fixed address: the link fails if
+   * the vector table ever grows into it. */
+  .ota_region 0x08007140 :
+  {
+    KEEP(*(TAG_OTA_START))
     . = ALIGN(4);
   } >FLASH
 
@@ -229,6 +241,17 @@ SECTIONS
     *(MB_MEM2) ;
     _eMB_MEM2 = . ;
   } >RAM_SHARED AT> FLASH
+
+  /* The 0x94448A29 end tag goes after everything that loads from flash
+   * (ST puts it before the .data image), so an OTA cut off anywhere
+   * before the last byte leaves no valid tag and the bootloader keeps
+   * waiting for a new image. */
+  .ota_region_end :
+  {
+    . = ALIGN(4);
+    KEEP(*(TAG_OTA_END))
+    . = ALIGN(4);
+  } >FLASH
 }
 
 
