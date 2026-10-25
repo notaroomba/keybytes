@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Keyword Monitor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Keyword Monitor</h1>
+    <div class="actions">
+      <button id="btn-usb">USB serial</button>
+      <button id="btn-ble">Bluetooth</button>
+      <button id="btn-demo" class="ghost">Demo</button>
+      <button id="btn-disconnect" class="ghost" hidden>Disconnect</button>
+    </div>
+  </header>
+
+  <div id="status" class="status">
+    <span class="dot"></span><span id="status-text">Not connected</span>
+  </div>
+
+  <main>
+    <section class="col">
+      <div class="board" aria-label="Keyword and its sides">
+        <div class="slot slot-T" data-side="T"><span class="slot-label"></span></div>
+        <div class="slot slot-L" data-side="L"><span class="slot-label"></span></div>
+        <div class="keyword">Keyword</div>
+        <div class="slot slot-R" data-side="R"><span class="slot-label"></span></div>
+      </div>
+      <p id="demo-hint" class="hint center" hidden>Demo: click a side to attach or remove a Keybit.</p>
+
+      <h2>Keys</h2>
+      <ul id="keys" class="keys"></ul>
+      <p id="keys-empty" class="hint">No Keybits connected. Attach one to the Keyword's left, right or top edge.</p>
+    </section>
+
+    <section class="col side">
+      <h2>Profile</h2>
+      <div class="profile-row">
+        <select id="profile-select" aria-label="Active profile"></select>
+      </div>
+      <div class="btn-row">
+        <button id="p-new" class="ghost small">New</button>
+        <button id="p-dup" class="ghost small">Duplicate</button>
+        <button id="p-rename" class="ghost small">Rename</button>
+        <button id="p-delete" class="ghost small">Delete</button>
+      </div>
+      <div class="btn-row">
+        <button id="p-import" class="ghost small">Import…</button>
+        <button id="p-export" class="ghost small">Export…</button>
+        <button id="p-apply" class="small">Send to Keyword</button>
+      </div>
+      <p id="profile-note" class="hint">Profiles save automatically on this computer.</p>
+
+      <h2>Activity</h2>
+      <ul id="activity" class="activity"></ul>
+    </section>
+  </main>
+
+  <details class="log">
+    <summary>Raw log</summary>
+    <pre id="log"></pre>
+  </details>
+
+  <dialog id="chooser">
+    <h2 id="chooser-title">Choose a device</h2>
+    <ul id="chooser-list"></ul>
+    <p id="chooser-empty" class="hint">Searching…</p>
+    <div class="dialog-actions"><button id="chooser-cancel" class="ghost">Cancel</button></div>
+  </dialog>
+
+  <dialog id="assign">
+    <h2>Assign <span id="assign-name"></span></h2>
+    <div id="capture" class="capture" tabindex="0">
+      <span id="capture-combo">Press a key or shortcut…</span>
+    </div>
+    <p class="hint">Or build it by hand, for keys your OS keeps for itself:</p>
+    <div id="assign-mods" class="mods"></div>
+    <select id="assign-key" aria-label="Key"></select>
+    <label class="field">Name <input id="assign-label" maxlength="40" placeholder="optional, e.g. Mute mic"></label>
+    <div class="dialog-actions">
+      <button id="assign-clear" class="ghost">Unassign</button>
+      <span class="spacer"></span>
+      <button id="assign-cancel" class="ghost">Cancel</button>
+      <button id="assign-save">Save</button>
+    </div>
+  </dialog>
+
+  <dialog id="prompt">
+    <h2 id="prompt-title"></h2>
+    <input id="prompt-input" maxlength="40">
+    <div class="dialog-actions">
+      <button id="prompt-cancel" class="ghost">Cancel</button>
+      <button id="prompt-ok">OK</button>
+    </div>
+  </dialog>
+
+  <script src="protocol.js"></script>
+  <script src="hid.js"></script>
+  <script src="profiles.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "keyword-monitor",
+  "version": "0.1.0",
+  "description": "Shows which sides of the Keyword have a Keybit attached, over USB serial or Bluetooth",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/protocol.test.js"
+  },
+  "devDependencies": {
+    "electron": "33.2.1"
+  }
+}
