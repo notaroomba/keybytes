@@ -4,6 +4,11 @@
 #include "keymap.h"
 #include "proto.h"
 
+/* Optional features the desktop app can use, only what's implemented.
+ * kb= (the embedded Keybit image version) waits for keybit_image.h to
+ * export one. */
+#define CAPS "hold,macro"
+
 static proto_port_t *ports[PROTO_MAX_PORTS];
 static int port_count;
 
@@ -149,7 +154,7 @@ static void Handle_Line(proto_port_t *port, char *cmd)
 
   if (strcmp(cmd, "HELLO") == 0)
   {
-    Reply(port, "KEYWORD v=%s proto=1", KEYWORD_FW_VERSION);
+    Reply(port, "KEYWORD v=%s proto=1 caps=%s", KEYWORD_FW_VERSION, CAPS);
   }
   else if (strcmp(cmd, "SIDES?") == 0)
   {
