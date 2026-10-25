@@ -1393,7 +1393,9 @@ $('#ota-dfu').onclick = async () => {
   const m = await waitForMessage((x) => (x.type === 'ok' && x.what === 'DFU') || x.type === 'error', 2000);
   if (m?.type === 'ok') {
     await disconnect();
-    otaSet('The Keyword is in USB DFU mode. Flash keyword_full.bin at 0x08000000 with STM32CubeProgrammer.');
+    // Over USB DFU, starting the app from the programmer (-g, :leave, -startfus, -fwupgrade)
+    // rewrites nSWBOOT0 and can lock the Keyword out of DFU.
+    otaSet('The Keyword is in USB DFU mode. Flash keyword_full.bin at 0x08000000 with STM32CubeProgrammer, then unplug and replug it. Don\'t use "run after programming" (-g / :leave) or the FUS/stack upgrade, which can lock it out of DFU.');
   } else otaSet(m ? `Keyword: ${m.message}` : 'No reply from the Keyword.', { error: true });
 };
 
