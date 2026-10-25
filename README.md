@@ -31,9 +31,7 @@ A truly modular keyboard with rearrangeable keys, magnetic cases and Bluetooth!
 
 ## Video Demo
 
-<video src="https://raw.githubusercontent.com/NotARoomba/keybytes/main/assets/demo.mp4" controls muted width="800">
-  <a href="assets/demo.mp4"><img src="assets/demo-preview.jpg" alt="Keybytes demo" width="800"/></a>
-</video>
+[![Keybytes demo](assets/demo-preview.jpg)](https://cdn.hackclub.com/01a170cc-38dd-7f9a-bc0b-847228d2b5cb/demo.mp4)
 
 ## Key Features
 
