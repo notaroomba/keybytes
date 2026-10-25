@@ -5,7 +5,7 @@
 </h1>
 
 <h4 align="center">
-A truly modular keyboard with rearrangeable keys, magnetic keycaps and Bluetooth!
+A truly modular keyboard with rearrangeable keys, magnetic cases and Bluetooth!
 </h4>
 
 <div align="center">
@@ -20,13 +20,20 @@ A truly modular keyboard with rearrangeable keys, magnetic keycaps and Bluetooth
 
 <p align="center">
   <a href="#key-features">Key Features</a> •
+  <a href="#video-demo">Video Demo</a> •
   <a href="#pcb">PCB</a> •
-  <a href="#case-and-keycaps">Case &amp; Keycaps</a> •
+  <a href="#case">Case</a> •
   <a href="#credits">Credits</a> •
   <a href="#license">License</a>
 </p>
 
-<img src="assets/render.png" alt="Keybytes Render" width="800"/>
+<img src="assets/keybytes.jpg" alt="Keybytes" width="800"/>
+
+## Video Demo
+
+<video src="https://raw.githubusercontent.com/NotARoomba/keybytes/main/assets/demo.mp4" controls muted width="800">
+  <a href="assets/demo.mp4"><img src="assets/demo-preview.jpg" alt="Keybytes demo" width="800"/></a>
+</video>
 
 ## Key Features
 
@@ -34,7 +41,7 @@ A truly modular keyboard with rearrangeable keys, magnetic keycaps and Bluetooth
 - **CH32V003** RISC-V microcontroller on every key
 - **STM32WB55RGV6** main board with Bluetooth and USB
 - **Pogo pins on all 4 sides** of every key for power and I2C
-- **Magnetic keycaps** with 2mm x 0.5mm magnets
+- **Magnetic cases** to hold the modules together
 - **Key programming** from the main board over pogo pins
 - **2MB QSPI flash** (W25Q16JV) to store the key firmware
 - **Battery charging** with the BQ25895 and solder pads for a 1S LiPo
@@ -57,7 +64,7 @@ A single key with a Cherry MX switch and a CH32V003. Every side has pogo pins fo
 
 **Layout:**
 
-<img src="assets/journal/keybit_routing.png" alt="Keybit Layout" width="800"/>
+<img src="assets/readme/keybit-layout.png" alt="Keybit Layout" width="800"/>
 
 ### Keyword
 
@@ -65,28 +72,22 @@ The main board that the keybits connect to. It is split into two PCBs that stack
 
 **Schematic:**
 
-<img src="assets/journal/keyword_schematic.png" alt="Keyword Schematic" width="800"/>
+<img src="assets/readme/keyword-schematic.png" alt="Keyword Schematic" width="800"/>
 
 **Layout:**
 
-<img src="assets/journal/keyword_routing.png" alt="Keyword Layout" width="800"/>
+<img src="assets/readme/keyword-layout.png" alt="Keyword Layout" width="800"/>
 
 **3D View:**
 
-<img src="assets/journal/keyword_3d_view.png" alt="Keyword 3D View" width="800"/>
-<img src="assets/journal/keyword_3d_view_2.png" alt="Keyword 3D View" width="800"/>
+<img src="assets/readme/keyword-3d-angle.png" alt="Keyword 3D View" width="800"/>
+<img src="assets/readme/keyword-3d-bottom.png" alt="Keyword 3D View" width="800"/>
 
-## Case and Keycaps
+## Case
 
-Custom designed cases and keycaps in OnShape, the STEP files are in the [`cad`](cad) folder.
+Custom designed cases in [Onshape](https://cad.onshape.com/documents/16fd731b2222007142e5340e/w/1583a55f05f5e1a2f8aaf622/e/787b8ffe055f15084c3845af), the STEP files are in the [`cad`](cad) folder.
 
-<img src="assets/journal/final_case.png" alt="Case" width="800"/>
-
-The keycaps have internal holes for the magnets and latch on to the side latches of the key switch.
-
-<img src="assets/journal/keycap_design.png" alt="Keycap Design" width="800"/>
-<img src="assets/journal/keycap_latch.png" alt="Keycap Latch" width="800"/>
-<img src="assets/journal/printed_keycap.png" alt="Printed Keycap" width="400"/>
+<img src="assets/readme/keyboard.png" alt="Keybit and Keyword cases assembled in Onshape" width="600"/>
 
 ## Credits
 
