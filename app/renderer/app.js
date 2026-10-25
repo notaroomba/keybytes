@@ -1,5 +1,5 @@
 /* global KeywordProtocol, Hid, Profiles, Templates */
-const { SIDES, NUS, LineBuffer, parseLine, cmd, entryCommands, profileCommands, hasHold, MAX_MACRO_STEPS, DEFAULT_HOLD_MS } = KeywordProtocol;
+const { SIDES, NUS, OTA, LineBuffer, parseLine, cmd, entryCommands, profileCommands, hasHold, MAX_MACRO_STEPS, DEFAULT_HOLD_MS, otaBaseCommand, checkAppImage, otaChunks } = KeywordProtocol;
 
 const POLL_MS = 2000;       // ask for SIDES? this often in case a push was missed
 const KEYS_POLL_MS = 10000; // full KEYS? resync
@@ -174,7 +174,7 @@ class DemoTransport {
     for (const line of text.split('\n').map((s) => s.trim()).filter(Boolean)) {
       const [c] = line.split(' ');
       const f = Object.fromEntries(line.split(' ').slice(1).map((p) => p.split('=')));
-      if (c === 'HELLO') this.emit(`KEYWORD v=demo proto=1 caps=batt,hold,macro,flash kb=${this.kb}`);
+      if (c === 'HELLO') this.emit(`KEYWORD v=demo proto=1 caps=batt,hold,macro,flash,ota kb=${this.kb}`);
       else if (c === 'SIDES?') this.emit(this.sidesLine());
       else if (c === 'BATT?') this.emit(this.battLine());
       else if (c === 'KEYS?') {
@@ -186,11 +186,57 @@ class DemoTransport {
       else if (c === 'CLEAR') { this.maps = {}; this.emit('OK CLEAR'); }
       else if (c === 'SAVE') this.emit('OK SAVE');
       else if (c === 'FLASH') this.flash(f.uid);
+      else if (c === 'STACK?') this.emit('STACK ble v=1.24.0 fus=2.2.0');
+      else if (c === 'OTA') this.emit('OK OTA');
+      else if (c === 'DFU') this.emit('OK DFU');
       else this.emit(`ERR unknown command ${c}`);
     }
   }
   async close() { clearInterval(this.battTimer); this.onText = null; }
 }
+
+// ---- Keyword firmware update targets: connect(), start(), write(chunk), finish(), cancel(), close() ----
+
+// ST's BLE_Ota bootloader, which the Keyword restarts into after OTA.
+class BleOtaTarget {
+  async connect() {
+    this.device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: OTA.name }],
+      optionalServices: [OTA.service],
+    });
+    const server = await this.device.gatt.connect();
+    const svc = await server.getPrimaryService(OTA.service);
+    this.base = await svc.getCharacteristic(OTA.base);
+    this.raw = await svc.getCharacteristic(OTA.raw);
+    this.confirm = await svc.getCharacteristic(OTA.confirm);
+    this.confirmed = new Promise((resolve) => {
+      this.confirm.addEventListener('characteristicvaluechanged', (e) => resolve(e.target.value.getUint8(0)));
+    });
+    await this.confirm.startNotifications(); // indications, as far as Web Bluetooth is concerned
+    this.lost = new Promise((resolve) => this.device.addEventListener('gattserverdisconnected', resolve, { once: true }));
+  }
+  async writeBase(bytes) {
+    if (this.base.writeValueWithoutResponse) await this.base.writeValueWithoutResponse(bytes);
+    else await this.base.writeValue(bytes);
+  }
+  start() { return this.writeBase(otaBaseCommand(OTA.START, OTA.APP_OFFSET)); }
+  write(chunk) { return this.raw.writeValueWithoutResponse ? this.raw.writeValueWithoutResponse(chunk) : this.raw.writeValue(chunk); }
+  finish() { return this.writeBase(otaBaseCommand(OTA.FINISH)); }
+  cancel() { return this.writeBase(otaBaseCommand(OTA.CANCEL)).catch(() => {}); }
+  close() { if (this.device?.gatt.connected) this.device.gatt.disconnect(); }
+}
+
+// Stands in for the bootloader in Demo mode.
+class DemoOtaTarget {
+  async connect() { await sleep(400); this.bytes = 0; }
+  async start() { this.bytes = 0; }
+  async write(chunk) { this.bytes += chunk.length; }
+  async finish() { await sleep(300); this.confirmed = Promise.resolve(this.bytes > 0 ? 1 : 0); this.lost = new Promise(() => {}); }
+  async cancel() {}
+  close() {}
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- Saved state (main.js writes it to disk; localStorage when run in a browser) ----
 
@@ -490,10 +536,20 @@ async function copyUid(uid) {
 
 // ---- Protocol handling ----
 
+// Lets a flow wait for a particular reply. pred returns true to take the message.
+const waiters = new Set();
+function waitForMessage(pred, ms) {
+  return new Promise((resolve) => {
+    const w = { pred, resolve, timer: setTimeout(() => { waiters.delete(w); resolve(null); }, ms) };
+    waiters.add(w);
+  });
+}
+
 function handleLine(line) {
   lastRx = Date.now();
   log('<-', line);
   const msg = parseLine(line);
+  for (const w of [...waiters]) if (w.pred(msg)) { clearTimeout(w.timer); waiters.delete(w); w.resolve(msg); }
   switch (msg.type) {
     case 'hello': {
       const first = !device.fw;
@@ -765,7 +821,7 @@ async function autoConnectOnLaunch() {
 // A Keyword plugged back in over USB reconnects straight away.
 if ('serial' in navigator) {
   navigator.serial.addEventListener('connect', async () => {
-    if (transport || !settings().autoReconnect || settings().lastConnection?.kind !== 'serial') return;
+    if (transport || ota.busy || !settings().autoReconnect || settings().lastConnection?.kind !== 'serial') return;
     const port = await findSerialPort();
     if (port) connect(new SerialTransport(port), { auto: true }).catch((e) => log('!!', e.message));
   });
@@ -1243,6 +1299,212 @@ function useTemplate(t, uids, asNew) {
 $('#p-library').onclick = openLibrary;
 $('#library-close').onclick = () => closeDialog($('#library'));
 
+// ---- Keyword firmware update (BLE OTA) ----
+
+// The Keyword restarts into ST's BLE_Ota bootloader on OTA, erasing its app first (4-5 s).
+// From there the image goes over Bluetooth whatever link the app was using.
+const OTA_RESTART_MS = 6500;
+const ota = { busy: false, image: null, fileName: '', stage: 'pick', target: null, demo: false, cancelled: false };
+
+function otaSet(text, { error = false, pct = null } = {}) {
+  const st = $('#ota-status');
+  st.textContent = text;
+  st.classList.toggle('error-text', error);
+  $('#ota-progress').hidden = pct == null;
+  if (pct != null) $('#ota-progress').value = pct;
+}
+
+function otaButtons() {
+  const go = $('#ota-go');
+  const realLink = transport && !(transport instanceof DemoTransport);
+  const labels = {
+    pick: realLink || transport ? 'Start update' : `Find ${OTA.name}`,
+    find: `Find ${OTA.name}`,
+    sending: 'Sending…', done: 'Done', waiting: 'Restarting…',
+  };
+  go.textContent = labels[ota.stage];
+  go.disabled = ota.stage === 'sending' || ota.stage === 'waiting' || (ota.stage !== 'done' && !ota.image);
+  $('#ota-cancel').textContent = ota.stage === 'sending' ? 'Cancel' : 'Close';
+  $('#ota-file').disabled = ota.busy;
+}
+
+async function openOta() {
+  if (ota.busy) { $('#ota').showModal(); return; }
+  Object.assign(ota, { stage: 'pick', cancelled: false, demo: transport instanceof DemoTransport });
+  $('#ota-dfu').hidden = true;
+  $('#ota-stack').textContent = '';
+  otaSet(transport
+    ? (can('ota') ? '' : 'This Keyword firmware does not report OTA support. The update will be tried anyway.')
+    : `Not connected. If the Keyword is already in update mode (it shows up as "${OTA.name}"), pick the image and find it.`);
+  otaButtons();
+  closeDialog($('#settings'));
+  $('#ota').showModal();
+  if (transport && device.fw) {
+    send(cmd.stack());
+    const m = await waitForMessage((x) => x.type === 'stack' || (x.type === 'error' && /stack/i.test(x.message)), 2000);
+    if (m?.type === 'stack') {
+      $('#ota-stack').textContent = `Keyword firmware ${device.fw} · wireless stack ${m.stack === 'ble' ? `BLE ${m.v || ''}` : m.stack}${m.fus ? ` · FUS ${m.fus}` : ''}`;
+      if (m.stack === 'none') {
+        otaSet('The Keyword has no Bluetooth stack on its radio core, so it can only be updated over USB DFU.', { error: true });
+        $('#ota-dfu').hidden = false;
+      }
+    } else $('#ota-stack').textContent = `Keyword firmware ${device.fw}`;
+  }
+}
+
+$('#ota-file').onchange = async (e) => {
+  const f = e.target.files[0];
+  ota.image = null;
+  if (f) {
+    const bytes = new Uint8Array(await f.arrayBuffer());
+    const check = checkAppImage(bytes);
+    if (check.ok) {
+      ota.image = bytes;
+      ota.fileName = f.name;
+      $('#ota-file-info').textContent = `${f.name} · ${(bytes.length / 1024).toFixed(1)} KB`;
+      if ($('#ota-dfu').hidden) otaSet('');
+    } else {
+      $('#ota-file-info').textContent = '';
+      otaSet(check.error, { error: true });
+    }
+  }
+  otaButtons();
+};
+
+$('#ota-go').onclick = async () => {
+  if (ota.stage === 'done') return closeDialog($('#ota'));
+  if (ota.stage === 'pick' && transport) return otaRestartKeyword();
+  return otaSend();
+};
+
+$('#ota-cancel').onclick = async () => {
+  if (ota.stage === 'sending') {
+    ota.cancelled = true;
+    return;
+  }
+  closeDialog($('#ota'));
+};
+$('#ota').addEventListener('cancel', (e) => { if (ota.busy) e.preventDefault(); });
+
+$('#ota-dfu').onclick = async () => {
+  if (!transport) return;
+  if (!confirm('Restart the Keyword into its USB DFU bootloader? It stops working as a keyboard until it is flashed with STM32CubeProgrammer (or dfu-util) and restarted.')) return;
+  send(cmd.dfu());
+  const m = await waitForMessage((x) => (x.type === 'ok' && x.what === 'DFU') || x.type === 'error', 2000);
+  if (m?.type === 'ok') {
+    await disconnect();
+    otaSet('The Keyword is in USB DFU mode. Flash keyword_full.bin at 0x08000000 with STM32CubeProgrammer.');
+  } else otaSet(m ? `Keyword: ${m.message}` : 'No reply from the Keyword.', { error: true });
+};
+
+// Step 1: ask the running Keyword to restart into the bootloader.
+async function otaRestartKeyword() {
+  ota.busy = true;
+  ota.stage = 'waiting';
+  otaButtons();
+  otaSet('Asking the Keyword to restart into update mode…');
+  send(cmd.ota());
+  const m = await waitForMessage((x) => (x.type === 'ok' && x.what === 'OTA') || x.type === 'error', 3000);
+  if (m?.type !== 'ok') {
+    ota.busy = false;
+    ota.stage = 'pick';
+    otaButtons();
+    if (m && /no BLE stack/i.test(m.message)) {
+      otaSet('The Keyword has no Bluetooth stack on its radio core, so it can only be updated over USB DFU.', { error: true });
+      $('#ota-dfu').hidden = false;
+    } else otaSet(m ? `Keyword: ${m.message}` : 'The Keyword did not answer. Its firmware may be too old for OTA.', { error: true });
+    return;
+  }
+  ota.demo = transport instanceof DemoTransport;
+  await disconnect();
+  activity('Keyword restarting into update mode');
+  const until = Date.now() + (ota.demo ? 1500 : OTA_RESTART_MS);
+  while (Date.now() < until) {
+    otaSet(`The Keyword is erasing its app and restarting into update mode… ${Math.ceil((until - Date.now()) / 1000)}`);
+    await sleep(250);
+  }
+  ota.stage = 'find';
+  otaButtons();
+  // Web Bluetooth only opens its picker from a click, so the user presses Find.
+  otaSet(`Ready. Click "Find ${OTA.name}" and pick it from the list.`);
+}
+
+// Step 2: send the image to the bootloader.
+async function otaSend() {
+  if (!ota.image) return;
+  if (!ota.demo && !('bluetooth' in navigator)) return otaSet('Web Bluetooth is not available here.', { error: true });
+  ota.busy = true;
+  ota.cancelled = false;
+  stopReconnect();
+  const target = ota.demo ? new DemoOtaTarget() : new BleOtaTarget();
+  ota.target = target;
+  try {
+    otaSet(`Connecting to ${OTA.name}…`);
+    ota.stage = 'waiting';
+    otaButtons();
+    await target.connect();
+    ota.stage = 'sending';
+    otaButtons();
+    await target.start();
+    // There's no flow control, so pace the writes to the bootloader's flash speed (~3 ms per 248 bytes).
+    // Chunks fit common MTUs; if a size is refused, step down to a smaller one.
+    const sizes = MAC ? [176, 16] : [240, 176, 16];
+    let chunks = otaChunks(ota.image, sizes[0]);
+    let size = 0;
+    let sent = 0;
+    const t0 = Date.now();
+    for (let i = 0; i < chunks.length; i++) {
+      if (ota.cancelled) throw new Error('cancelled');
+      try {
+        await target.write(chunks[i]);
+      } catch (e) {
+        if (i > 0 || size + 1 >= sizes.length) throw e;
+        size++;
+        log('!!', `OTA write of ${chunks[i].length} B refused (${e.message}), trying ${sizes[size]}`);
+        chunks = otaChunks(ota.image, sizes[size]);
+        i = -1;
+        continue;
+      }
+      sent += chunks[i].length;
+      await sleep(Math.max(2, Math.ceil(chunks[i].length / 248 * 3) + 1));
+      if (i % 8 === 0 || i === chunks.length - 1) {
+        const rate = sent / Math.max(1, Date.now() - t0); // bytes per ms
+        const left = Math.ceil((ota.image.length - sent) / rate / 1000);
+        otaSet(`Sending ${ota.fileName}… ${Math.round(sent / 1024)} of ${Math.round(ota.image.length / 1024)} KB${left > 1 ? ` · about ${left} s left` : ''}`,
+          { pct: Math.min(100, Math.round(sent / ota.image.length * 100)) });
+      }
+    }
+    otaSet('Checking the image…', { pct: 100 });
+    await target.finish();
+    const ack = await Promise.race([target.confirmed, target.lost.then(() => 'lost'), sleep(15000).then(() => 'timeout')]);
+    if (ack === 1) {
+      ota.stage = 'done';
+      otaSet('Updated. The Keyword is restarting with the new firmware.');
+      activity('Keyword firmware updated', 'add');
+      toast('Keyword firmware updated');
+      target.close();
+      setTimeout(() => { if (!ota.demo) autoConnectOnLaunch(); else connect(new DemoTransport()); }, 3000);
+    } else {
+      throw new Error(ack === 'lost' ? 'the Keyword disconnected before confirming'
+        : ack === 'timeout' ? 'no confirmation from the Keyword' : `the Keyword rejected the image (${ack})`);
+    }
+  } catch (e) {
+    await target.cancel?.();
+    target.close();
+    ota.stage = 'find';
+    if (e.name === 'NotFoundError') otaSet(`Didn't find ${OTA.name}. Click Find to try again.`);
+    else if (e.message === 'cancelled') otaSet(`Cancelled. The Keyword stays in update mode (as "${OTA.name}") until it gets a good image.`);
+    else otaSet(`Update failed: ${e.message}. The Keyword stays in update mode, so you can try again.`, { error: true });
+    log('!!', `OTA: ${e.message}`);
+  } finally {
+    ota.busy = false;
+    ota.target = null;
+    otaButtons();
+  }
+}
+
+$('#set-ota').onclick = openOta;
+
 // ---- Settings ----
 
 function applySettings() {
@@ -1336,6 +1598,7 @@ function onMenu(command, arg) {
     case 'library': openLibrary(); break;
     case 'apply': applyProfile(false); break;
     case 'toggle-theme': toggleTheme(); break;
+    case 'update-firmware': openOta(); break;
     case 'find': $('#key-filter').focus(); $('#key-filter').select(); break;
   }
 }

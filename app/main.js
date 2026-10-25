@@ -182,6 +182,8 @@ function buildMenu() {
         { label: 'Import Profiles…', accelerator: 'CmdOrCtrl+O', click: m('import') },
         { label: 'Export Profile…', accelerator: 'CmdOrCtrl+E', click: m('export') },
         { label: 'Export All Profiles…', accelerator: 'CmdOrCtrl+Shift+E', click: m('export-all') },
+        { type: 'separator' },
+        { label: 'Update Keyword Firmware…', click: m('update-firmware') },
         ...(IS_MAC ? [] : [{ type: 'separator' }, { label: 'Settings…', accelerator: 'Ctrl+,', click: m('settings') },
           { type: 'separator' }, { role: 'quit' }]),
       ],

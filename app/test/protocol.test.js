@@ -97,3 +97,26 @@ test('relayed Keybits', () => {
   assert.deepStrictEqual(parseLine('KEY+ uid=D00DF00D at=X via=91C7002DE4B3A75C0A33B7E2 depth=2 v=3'),
     { type: 'keyAdd', uid: 'D00DF00D', at: null, v: 3, via: '91C7002DE4B3A75C0A33B7E2', depth: 2 });
 });
+
+test('OTA: stack reply, image checks and chunks', () => {
+  const { OTA, otaBaseCommand, checkAppImage, otaChunks } = require('../renderer/protocol.js');
+  assert.deepStrictEqual(parseLine('STACK ble v=1.24.0 fus=2.2.0'), { type: 'stack', stack: 'ble', v: '1.24.0', fus: '2.2.0' });
+  assert.deepStrictEqual(parseLine('STACK none fus=2.2.0'), { type: 'stack', stack: 'none', v: null, fus: '2.2.0' });
+  assert.deepStrictEqual([...otaBaseCommand(OTA.START, OTA.APP_OFFSET)], [0x02, 0x00, 0x70, 0x00]);
+  assert.deepStrictEqual([...otaBaseCommand(OTA.FINISH)], [0x07, 0, 0, 0]);
+
+  const image = (sp, reset, len = 1000) => {
+    const b = new Uint8Array(len);
+    new DataView(b.buffer).setUint32(0, sp, true);
+    new DataView(b.buffer).setUint32(4, reset, true);
+    return b;
+  };
+  assert.ok(checkAppImage(image(0x20030000, 0x08007119)).ok);
+  assert.match(checkAppImage(image(0x20030000, 0x08000119)).error, /keyword_app\.bin/);
+  assert.match(checkAppImage(image(0x12345678, 0x08007119)).error, /vector table/);
+  assert.match(checkAppImage(new Uint8Array(10)).error, /too small/);
+
+  const chunks = otaChunks(new Uint8Array(500).fill(1), 244);
+  assert.deepStrictEqual(chunks.map((c) => c.length), [240, 240, 24]);
+  assert.deepStrictEqual([...chunks[2].slice(18)], [1, 1, 0xff, 0xff, 0xff, 0xff]);
+});

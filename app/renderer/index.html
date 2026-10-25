@@ -173,12 +173,29 @@
     <label class="check"><input type="checkbox" id="set-closeToTray"> Keep running in the menu bar / tray when closed</label>
     <label class="check"><input type="checkbox" id="set-launchAtLogin"> Open at login</label>
     <div class="btn-row">
+      <button id="set-ota" class="ghost small">Update Keyword firmware…</button>
       <button id="set-export-all" class="ghost small">Export all profiles…</button>
       <button id="set-reset-stats" class="ghost small">Reset press counts</button>
       <button id="set-data" class="ghost small">Open data folder</button>
     </div>
     <p id="set-about" class="hint small-text"></p>
     <div class="dialog-actions"><button id="settings-close">Done</button></div>
+  </dialog>
+
+  <dialog id="ota">
+    <h2>Update Keyword firmware</h2>
+    <p class="hint">Sends a new firmware image to the Keyword over Bluetooth, even when you're connected over USB. Pick <code>keyword_app.bin</code> from <code>firmware/release</code>.</p>
+    <p id="ota-stack" class="hint small-text"></p>
+    <label class="field">Firmware image <input type="file" id="ota-file" accept=".bin"></label>
+    <p id="ota-file-info" class="hint small-text"></p>
+    <progress id="ota-progress" max="100" value="0" hidden></progress>
+    <p id="ota-status" class="small-text" aria-live="polite"></p>
+    <div class="dialog-actions">
+      <button id="ota-dfu" class="ghost" hidden>Restart into USB DFU</button>
+      <span class="spacer"></span>
+      <button id="ota-cancel" class="ghost">Close</button>
+      <button id="ota-go">Start update</button>
+    </div>
   </dialog>
 
   <dialog id="prompt">

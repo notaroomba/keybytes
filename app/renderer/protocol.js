@@ -10,6 +10,49 @@
     tx: '6e400003-b5a3-f393-e0a9-e50e24dcca9e', // keyword notifies here
   };
 
+  // ST BLE_Ota bootloader on the Keyword, reached with the OTA command. See PROTOCOL.md.
+  const OTA = {
+    name: 'Keyword OTA',
+    service: '0000fe20-cc7a-482a-984a-7f2ed5b3e58f',
+    base: '0000fe22-8e22-4541-9d4c-21edae82ed19',    // write: [cmd, offset >> 16, >> 8, offset]
+    confirm: '0000fe23-8e22-4541-9d4c-21edae82ed19', // indicate: 0x01 once the image is accepted
+    raw: '0000fe24-8e22-4541-9d4c-21edae82ed19',     // write without response: image bytes, in order
+    START: 0x02, FINISH: 0x07, CANCEL: 0x08,
+    FLASH_BASE: 0x08000000,
+    APP_OFFSET: 0x7000, // the app lives at 0x08007000, behind the bootloader
+    MAX_SIZE: 0x08100000 - 0x08007000,
+  };
+  const otaBaseCommand = (op, offset = 0) => new Uint8Array([op, (offset >> 16) & 0xff, (offset >> 8) & 0xff, offset & 0xff]);
+
+  // Sanity checks an app image before sending it: the right file, linked for 0x08007000.
+  function checkAppImage(bytes) {
+    if (!bytes || bytes.length < 64) return { ok: false, error: 'The file is too small to be a Keyword firmware image.' };
+    if (bytes.length > OTA.MAX_SIZE) return { ok: false, error: 'The file is too big for the Keyword.' };
+    const word = (i) => (bytes[i] | (bytes[i + 1] << 8) | (bytes[i + 2] << 16) | (bytes[i + 3] << 24)) >>> 0;
+    const sp = word(0), reset = word(4);
+    if (sp < 0x20000000 || sp > 0x20040000 || !(reset & 1)) {
+      return { ok: false, error: "This doesn't look like a Keyword firmware image (no vector table at the start)." };
+    }
+    const appStart = OTA.FLASH_BASE + OTA.APP_OFFSET;
+    if (reset < appStart || reset >= appStart + bytes.length) {
+      return { ok: false, error: reset < appStart
+        ? 'This image starts at 0x08000000, so it is the full image for USB DFU. Pick keyword_app.bin instead.'
+        : 'This image is not linked for 0x08007000.' };
+    }
+    return { ok: true, size: bytes.length };
+  }
+
+  // Splits an image into OTA writes. The bootloader programs flash 8 bytes at a time,
+  // so chunks are multiples of 8 and the tail is padded with 0xFF (erased flash).
+  function otaChunks(bytes, size) {
+    const step = Math.max(8, size - (size % 8));
+    const padded = new Uint8Array(Math.ceil(bytes.length / 8) * 8).fill(0xff);
+    padded.set(bytes);
+    const out = [];
+    for (let i = 0; i < padded.length; i += step) out.push(padded.subarray(i, i + step));
+    return out;
+  }
+
   const MAX_MACRO_STEPS = 16;
   const DEFAULT_HOLD_MS = 200;
 
@@ -59,6 +102,9 @@
     mapQuery: (uid) => `MAP? uid=${uid}`,
     unmap: (uid) => `UNMAP uid=${uid}`,
     flash: (uid) => `FLASH uid=${uid}`,
+    ota: () => 'OTA',
+    dfu: () => 'DFU',
+    stack: () => 'STACK?',
     clear: () => 'CLEAR',
     save: () => 'SAVE',
   };
@@ -149,6 +195,9 @@
       case 'FLASH':
         if (!uid) break;
         return { type: 'flashProgress', uid, pct: Math.max(0, Math.min(100, int(f.pct))) };
+      case 'STACK':
+        // STACK ble v=1.24.0 fus=2.2.0 | STACK none fus=x.y.z | STACK unknown
+        return { type: 'stack', stack: parts[1] || 'unknown', v: f.v || null, fus: f.fus || null };
       case 'OK':
         return { type: 'ok', what: parts[1] || '', ...parseFields(parts.slice(2)) };
       case 'ERR':
@@ -160,6 +209,7 @@
   const api = {
     SIDES, NUS, MAX_MACRO_STEPS, DEFAULT_HOLD_MS, LineBuffer, parseLine, cmd,
     mapCommand, entryCommands, profileCommands, isUid, hasHold,
+    OTA, otaBaseCommand, checkAppImage, otaChunks,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.KeywordProtocol = api;

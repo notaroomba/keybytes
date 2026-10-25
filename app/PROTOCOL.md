@@ -70,7 +70,7 @@ The Keyword lists the features it supports in `HELLO`'s `caps`. The app only sen
 
 `KEYWORD v=<fw> proto=1 caps=<comma list> kb=<n>`
 
-- `caps` can include `batt`, `hold`, `macro` and `flash`.
+- `caps` can include `batt`, `hold`, `macro`, `flash` and `ota`. `ota` is listed only while the BLE stack runs on CPU2.
 - `kb` is the version of the Keybit image the Keyword carries. A Keybit reporting a lower `v` is shown as outdated.
 - `KEY+` may carry `v=<n>`, the Keybit firmware version (Keybit register 0x01).
 
@@ -80,6 +80,10 @@ The Keyword lists the features it supports in `HELLO`'s `caps`. The app only sen
 | `hold` | `HOLD uid=<uid> mods=<2hex> key=<2hex> ms=<dec>` | `OK HOLD uid=<uid>` |
 | `macro` | `MACRO uid=<uid> seq=<MMKK,MMKK,…>` | `OK MACRO uid=<uid>` |
 | `flash` | `FLASH uid=<uid>` | `FLASH uid=<uid> pct=<n>` progress, then `OK FLASH uid=<uid>` or `ERR flash <reason>` |
+
+| `ota` | `OTA` | `OK OTA`, then the Keyword restarts into the OTA bootloader after about 500 ms. `ERR no BLE stack on CPU2, use DFU` if it can't |
+| (any) | `DFU` | `OK DFU`, then the Keyword restarts into the ROM USB DFU bootloader |
+| (any) | `STACK?` | `STACK ble v=1.24.0 fus=2.2.0`, `STACK none fus=<x.y.z>` or `STACK unknown` |
 
 How each one behaves:
 
@@ -92,6 +96,25 @@ How each one behaves:
   - A macro replaces `MAP`/`MAPC` for that UID, and `UNMAP` clears it.
 - **`MAP?`** can answer with several lines for one key: a `MAP`, `MAPC` or `MACRO` line, followed by a `HOLD` line if a hold action is set.
 - **Programming a single key,** the app sends `UNMAP`, then the key's commands, then `SAVE`. That way a stale macro or hold never survives an edit.
+
+## Keyword firmware update (BLE OTA)
+
+After `OK OTA` the Keyword erases its app (4-5 s) and restarts into ST's BLE_Ota bootloader. That works whichever link sent `OTA`, but the image itself always goes over Bluetooth.
+
+- **Finding it:** it advertises as `Keyword OTA`, at the Keyword's BD address + 1, with ST manufacturer data (device ID 0x86). No pairing is needed.
+- **GATT:** service `0000fe20-cc7a-482a-984a-7f2ed5b3e58f`
+  - Base address `0000fe22-8e22-4541-9d4c-21edae82ed19`: write without response, 4 bytes `[cmd, offset>>16, offset>>8, offset]`, offset from 0x08000000. Start = `02 00 70 00`, finish = `07 00 00 00`, cancel = `08 00 00 00`.
+  - Raw data `0000fe24-8e22-4541-9d4c-21edae82ed19`: write without response, up to MTU-3 bytes per write, appended in order.
+  - Confirm `0000fe23-8e22-4541-9d4c-21edae82ed19`: indicate, 1 byte, `01` when the image is accepted.
+- **Sequence:** connect, enable indications on fe23, write start, stream `firmware/release/keyword_app.bin` to fe24, write finish, wait for `01`. The Keyword then restarts into the new app. A bad image brings it back as `Keyword OTA`.
+- **Pacing:** there's no flow control, so the host waits about 3 ms per 248 bytes, the bootloader's flash time.
+
+How the app does it (Settings → **Update Keyword firmware…**, or File → Update Keyword Firmware…):
+
+- It checks the file first: a Cortex-M vector table whose reset handler is inside 0x08007000 plus the image size. That rejects `keyword_full.bin`, which is for USB DFU.
+- It sends writes of 240 bytes (176 on macOS, whose usual MTU is 185), stepping down to 176 and then 16 if the first write is refused. Every write is a multiple of 8, and the last one is padded with `FF`, because the bootloader programs flash 8 bytes at a time.
+- If the Keyword reports no BLE stack, the app offers **Restart into USB DFU** instead.
+- With no Keyword connected, it goes straight to finding `Keyword OTA`, so it can recover a Keyword stuck in the bootloader.
 
 ## Computer actions (no protocol)
 

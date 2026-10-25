@@ -88,6 +88,7 @@ Settings (`Cmd/Ctrl+,`) has:
 - keep running in the tray / menu bar when the window is closed
 - open at login
 - reset press counts, and open the data folder
+- **Update Keyword firmware…**: pick `firmware/release/keyword_app.bin`, and the app restarts the Keyword into its Bluetooth bootloader and sends the image, with progress. It works when you're connected over USB too, since the image always goes over Bluetooth. If the Keyword has no Bluetooth stack, the app offers USB DFU instead. A Keyword stuck in update mode (showing as `Keyword OTA`) can be recovered from here without connecting first
 
 The window remembers its size and position.
 
@@ -98,11 +99,7 @@ The window remembers its size and position.
 ## Firmware status
 
 - **Done in the Keyword firmware:** BLE (HID keyboard, Nordic UART Service and keymap table) and USB CDC (`0483:5740`, "Keyword"). Both speak the same protocol, so either connection works.
-- **Optional features** arrive as the firmware adds them, and the app turns each one on when it appears in `caps`:
-  - hold and macros are in progress
-  - Keybit versions are coming
-  - battery is waiting on the charger's I2C bus
-  - reflashing has no firmware support yet
+- **Optional features** are switched on by the app when they appear in `caps`. The Keyword firmware now reports `batt`, `hold`, `macro` and `ota`, plus `kb=` for the Keybit image it carries. Reflashing Keybits from the app (`flash`) isn't reported yet.
 - **The Keybit side** (assigned addresses, and the side register 0x07) lives in `firmware/keybit/`.
 
 **Demo** works without any firmware.
