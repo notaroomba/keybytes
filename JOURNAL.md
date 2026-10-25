@@ -36,24 +36,6 @@ For the keyword the plain pocket J7 tray was too tight for the 4x2 magnets (prob
 
 I also priced out a full sized keyboard (2 keywords and like 110 keybits) and its around $900 assembled, almost half of that being the pogo pins lol, so if I ever make a full one ill buy them seperately and solder them myself.
 
-# 10/22/2026 9 PM - Magnet Joint Tests
-
-_Time spent: 6h_
-
-So I went back to the magnets and did some math, every joint has 4 pogo pins at around 120gf each so its about 520 to 720gf of spring force pushing the cases apart, and the tiny 2mm x 0.5mm magnets I had only give like 1gf through the case wall which is why it kept falling apart.
-
-I tried adding pockets for 4mm x 2mm magnets but on the keyword they would hit the side contacts and the inductors, so I switched to the 4mm x 1mm ones that I already had. Then I tried a bunch of other ways of holding them together and made several cases so I could test all of them:
-
-- J1 magnets only
-- J2 bow tie key that drops in from the top
-- J3 snap hooks
-- J4 sliding dovetail
-- J5 slip pegs
-- J6 crush rib pegs
-- J7 protruding magnets
-
-For J7 I made the magnets stick out 0.75mm so theyre the length of the pogo pins - 0.5mm, which leaves a 1.5mm gap between cases. The keybit uses 4mm x 3mm magnets and the keyword had 3 versions (J7 with 4x2, J7b with 4x1 on collars and J7c with 4x2 on collars). I printed 2 of each one on the formlabs form 4 and yea
-
 # 10/21/2026 10 PM - Pogo Pin Force
 
 _Time spent: 3h_
