@@ -1,18 +1,29 @@
 // Electron main process. The renderer talks to the Keyword with Web Serial and
 // Web Bluetooth; Electron has no built-in device picker for either, so we forward
 // the device lists to the renderer and hand back whatever the user picks.
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+// This side also owns the tray, the app menu, the frontmost-app watcher used for
+// per-app profiles, and running "host actions" (open URL/app, run a command).
+const { app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage, nativeTheme, shell } = require('electron');
+const { execFile, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const storePath = () => path.join(app.getPath('userData'), 'profiles.json');
+const IS_MAC = process.platform === 'darwin';
+const IS_WIN = process.platform === 'win32';
+const dataPath = (name) => path.join(app.getPath('userData'), name);
 
 // Chromium gates Web Bluetooth behind this flag on some platforms.
 app.commandLine.appendSwitch('enable-experimental-web-platform-features');
 
+if (!app.requestSingleInstanceLock()) app.quit();
+
 let win;
+let tray = null;
+let quitting = false;
 let pendingPick = null; // { kind, callback }
 let capturing = false;
+let settings = { closeToTray: false, perApp: false };
+let trayState = { status: 'Not connected', profiles: [], active: null, battery: null };
 
 function finishPick(id) {
   if (!pendingPick) return;
@@ -21,25 +32,58 @@ function finishPick(id) {
   callback(id || '');
 }
 
+const send = (channel, ...args) => { if (win && !win.isDestroyed()) win.webContents.send(channel, ...args); };
+
+function showWindow() {
+  if (!win || win.isDestroyed()) return createWindow();
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+}
+
+// ---- Window ----
+
+function loadBounds() {
+  try {
+    const b = JSON.parse(fs.readFileSync(dataPath('window.json'), 'utf8'));
+    if ([b.width, b.height].every(Number.isFinite)) return b;
+  } catch {}
+  return { width: 1000, height: 700 };
+}
+function saveBounds() {
+  if (!win || win.isDestroyed() || win.isMinimized() || win.isFullScreen()) return;
+  try { fs.writeFileSync(dataPath('window.json'), JSON.stringify(win.getBounds())); } catch {}
+}
+
 function createWindow() {
   win = new BrowserWindow({
-    width: 900,
-    height: 640,
+    ...loadBounds(),
     minWidth: 520,
     minHeight: 480,
     title: 'Keyword Monitor',
-    backgroundColor: '#14161a',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#14161a' : '#f5f6f8',
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
+  win.once('ready-to-show', () => win.show());
+  win.on('resize', saveBounds);
+  win.on('move', saveBounds);
+  win.on('close', (e) => {
+    if (settings.closeToTray && !quitting) {
+      e.preventDefault();
+      win.hide();
+    }
+  });
 
   const ses = win.webContents.session;
 
   ses.setPermissionCheckHandler((_wc, permission) =>
-    ['serial', 'bluetooth'].includes(permission));
+    ['serial', 'bluetooth', 'notifications'].includes(permission));
+  ses.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === 'notifications'));
   ses.setDevicePermissionHandler((details) =>
     ['serial', 'bluetooth'].includes(details.deviceType));
 
@@ -54,18 +98,19 @@ function createWindow() {
     event.preventDefault();
     finishPick(''); // cancel any older picker
     pendingPick = { kind: 'serial', callback };
-    win.webContents.send('chooser:list', {
+    send('chooser:list', {
       kind: 'serial',
       devices: portList.map((p) => ({
         id: p.portId,
         name: p.displayName || p.portName,
         detail: [p.portName, p.vendorId && `VID ${p.vendorId}`, p.productId && `PID ${p.productId}`]
           .filter(Boolean).join(' · '),
-        // 0x0483 is ST's USB vendor id, so it's most likely the Keyword.
-        likely: String(p.vendorId).toLowerCase() === '0483' || p.vendorId === '1155',
+        // The Keyword enumerates as 0483:5740 (ST's VID) with the product string "Keyword".
+        likely: /keyword/i.test(p.displayName || '') || ['0483', '1155'].includes(String(p.vendorId).toLowerCase()),
       })),
     });
   });
+  // Web Serial needs listeners on these for navigator.serial connect/disconnect events.
   ses.on('serial-port-added', () => {});
   ses.on('serial-port-removed', () => {});
 
@@ -78,7 +123,7 @@ function createWindow() {
     } else {
       pendingPick.callback = callback;
     }
-    win.webContents.send('chooser:list', {
+    send('chooser:list', {
       kind: 'bluetooth',
       devices: devices.map((d) => ({
         id: d.deviceId,
@@ -94,53 +139,289 @@ function createWindow() {
   win.webContents.on('before-input-event', (event, input) => {
     if (!capturing) return;
     event.preventDefault();
-    win.webContents.send('capture:key', {
+    send('capture:key', {
       type: input.type, code: input.code,
       ctrlKey: input.control, shiftKey: input.shift, altKey: input.alt, metaKey: input.meta,
     });
   });
 
+  // Links in the page open in the browser, never in the app.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:/i.test(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 }
+
+// ---- Menu ----
+
+function buildMenu() {
+  const m = (cmd) => () => send('menu', cmd);
+  const profileItems = trayState.profiles.slice(0, 9).map((p, i) => ({
+    label: p.name, type: 'radio', checked: p.id === trayState.active,
+    accelerator: `CmdOrCtrl+${i + 1}`, click: () => send('menu', 'profile', p.id),
+  }));
+  const template = [
+    ...(IS_MAC ? [{
+      label: app.name,
+      submenu: [
+        { role: 'about' }, { type: 'separator' },
+        { label: 'Settings…', accelerator: 'Cmd+,', click: m('settings') },
+        { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' },
+        { type: 'separator' }, { role: 'quit' },
+      ],
+    }] : []),
+    {
+      label: 'File',
+      submenu: [
+        { label: 'Connect over USB', accelerator: 'CmdOrCtrl+U', click: m('connect-usb') },
+        { label: 'Connect over Bluetooth', accelerator: 'CmdOrCtrl+B', click: m('connect-ble') },
+        { label: 'Disconnect', accelerator: 'CmdOrCtrl+Shift+D', click: m('disconnect') },
+        { type: 'separator' },
+        { label: 'Import Profiles…', accelerator: 'CmdOrCtrl+O', click: m('import') },
+        { label: 'Export Profile…', accelerator: 'CmdOrCtrl+E', click: m('export') },
+        { label: 'Export All Profiles…', accelerator: 'CmdOrCtrl+Shift+E', click: m('export-all') },
+        ...(IS_MAC ? [] : [{ type: 'separator' }, { label: 'Settings…', accelerator: 'Ctrl+,', click: m('settings') },
+          { type: 'separator' }, { role: 'quit' }]),
+      ],
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        // Not role: 'undo', which would only undo text fields. The page decides.
+        { label: 'Undo', accelerator: 'CmdOrCtrl+Z', click: m('undo') },
+        { label: 'Redo', accelerator: IS_MAC ? 'Cmd+Shift+Z' : 'Ctrl+Y', click: m('redo') },
+        { type: 'separator' },
+        { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' },
+        { type: 'separator' },
+        { label: 'Find Key…', accelerator: 'CmdOrCtrl+F', click: m('find') },
+      ],
+    },
+    {
+      label: 'Profiles',
+      submenu: [
+        ...profileItems,
+        { type: 'separator' },
+        { label: 'Next Profile', accelerator: 'CmdOrCtrl+]', click: m('next-profile') },
+        { label: 'Previous Profile', accelerator: 'CmdOrCtrl+[', click: m('prev-profile') },
+        { type: 'separator' },
+        { label: 'New Profile…', accelerator: 'CmdOrCtrl+N', click: m('new-profile') },
+        { label: 'Profile Library…', accelerator: 'CmdOrCtrl+L', click: m('library') },
+        { label: 'Send to Keyword', accelerator: 'CmdOrCtrl+Enter', click: m('apply') },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { label: 'Toggle Theme', accelerator: 'CmdOrCtrl+Shift+L', click: m('toggle-theme') },
+        { type: 'separator' },
+        { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' },
+        { type: 'separator' }, { role: 'reload' }, { role: 'toggleDevTools' }, { role: 'togglefullscreen' },
+      ],
+    },
+    { role: 'windowMenu' },
+    {
+      role: 'help',
+      submenu: [{ label: 'Open Data Folder', click: () => shell.openPath(app.getPath('userData')) }],
+    },
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+// ---- Tray / menu bar ----
+
+// Draws a 16pt key outline (rounded square with a dot) so no image file is needed.
+function trayIcon() {
+  const size = 32; // @2x
+  const buf = Buffer.alloc(size * size * 4);
+  const [r, g, b] = IS_MAC ? [0, 0, 0] : [128, 128, 128];
+  const put = (x, y, a) => { const i = (y * size + x) * 4; buf[i] = b; buf[i + 1] = g; buf[i + 2] = r; buf[i + 3] = a; };
+  const inRounded = (x, y, x0, y0, x1, y1, rad) => {
+    const cx = Math.min(Math.max(x, x0 + rad), x1 - rad);
+    const cy = Math.min(Math.max(y, y0 + rad), y1 - rad);
+    return (x - cx) ** 2 + (y - cy) ** 2 <= rad * rad;
+  };
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const px = x + 0.5, py = y + 0.5;
+      const outer = inRounded(px, py, 3, 5, 29, 27, 6);
+      const inner = inRounded(px, py, 6, 8, 26, 24, 3.5);
+      const dot = (px - 16) ** 2 + (py - 16) ** 2 <= 9;
+      if ((outer && !inner) || dot) put(x, y, 255);
+    }
+  }
+  const img = nativeImage.createFromBitmap(buf, { width: size, height: size, scaleFactor: 2 });
+  if (IS_MAC) img.setTemplateImage(true);
+  return img;
+}
+
+function updateTray() {
+  if (!tray) {
+    tray = new Tray(trayIcon());
+    tray.on('click', () => { if (!IS_MAC) showWindow(); });
+  }
+  const { status, profiles, active, battery } = trayState;
+  tray.setToolTip(`Keyword Monitor · ${status}`);
+  if (IS_MAC) tray.setTitle(battery != null ? `${battery}%` : '');
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: status, enabled: false },
+    ...(battery != null ? [{ label: `Battery ${battery}%`, enabled: false }] : []),
+    { type: 'separator' },
+    ...profiles.map((p) => ({ label: p.name, type: 'radio', checked: p.id === active, click: () => send('menu', 'profile', p.id) })),
+    { type: 'separator' },
+    { label: 'Show Keyword Monitor', click: showWindow },
+    { label: 'Quit', click: () => { quitting = true; app.quit(); } },
+  ]));
+}
+
+// ---- Frontmost app, for per-app profiles ----
+
+let watcher = null;
+let lastFront = null;
+
+function reportFront(name) {
+  name = (name || '').trim();
+  if (!name || name === lastFront) return;
+  lastFront = name;
+  send('app:front', name);
+}
+
+function startWatcher() {
+  if (watcher) return;
+  if (IS_MAC) {
+    // lsappinfo ships with macOS and needs no Automation permission.
+    const tick = () => execFile('lsappinfo', ['front'], (err, asn) => {
+      if (err || !asn.trim()) return;
+      execFile('lsappinfo', ['info', '-only', 'name', asn.trim()], (err2, out) => {
+        const m = !err2 && /"LSDisplayName"="([^"]*)"/.exec(out);
+        if (m) reportFront(m[1]);
+      });
+    });
+    const t = setInterval(tick, 1200);
+    tick();
+    watcher = { stop: () => clearInterval(t) };
+  } else if (IS_WIN) {
+    // One long-lived PowerShell that prints the foreground process name when it changes.
+    const script = `
+Add-Type @"
+using System; using System.Runtime.InteropServices;
+public class FG { [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+[DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p); }
+"@
+$last = ""
+while ($true) {
+  $p = 0; [void][FG]::GetWindowThreadProcessId([FG]::GetForegroundWindow(), [ref]$p)
+  try { $n = (Get-Process -Id $p).ProcessName } catch { $n = "" }
+  if ($n -ne $last) { [Console]::Out.WriteLine($n); [Console]::Out.Flush(); $last = $n }
+  Start-Sleep -Milliseconds 1000
+}`;
+    const ps = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true });
+    ps.stdout.on('data', (d) => d.toString().split(/\r?\n/).forEach(reportFront));
+    ps.on('error', () => {});
+    watcher = { stop: () => ps.kill() };
+  } else {
+    const tick = () => execFile('xdotool', ['getactivewindow', 'getwindowclassname'], (err, out) => { if (!err) reportFront(out); });
+    const t = setInterval(tick, 1200);
+    watcher = { stop: () => clearInterval(t) };
+  }
+}
+
+function stopWatcher() {
+  watcher?.stop();
+  watcher = null;
+  lastFront = null;
+}
+
+// ---- Host actions ----
+
+function runHostAction({ type, value }) {
+  value = String(value || '').trim();
+  if (!value) return { ok: false, error: 'Nothing to run' };
+  try {
+    if (type === 'url') {
+      if (!/^[a-z][a-z0-9+.-]*:/i.test(value)) value = `https://${value}`;
+      shell.openExternal(value);
+    } else if (type === 'app') {
+      if (IS_MAC) spawn('open', ['-a', value], { detached: true, stdio: 'ignore' }).unref();
+      else if (IS_WIN) spawn('cmd', ['/c', 'start', '', value], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+      else spawn(value, [], { detached: true, stdio: 'ignore' }).unref();
+    } else if (type === 'cmd') {
+      spawn(value, { shell: true, detached: true, stdio: 'ignore', windowsHide: true }).unref();
+    } else {
+      return { ok: false, error: `Unknown action ${type}` };
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// ---- IPC ----
 
 ipcMain.on('chooser:pick', (_e, id) => finishPick(id));
 ipcMain.on('capture:set', (_e, on) => { capturing = !!on; });
 
 ipcMain.handle('store:load', () => {
-  try { return JSON.parse(fs.readFileSync(storePath(), 'utf8')); } catch { return null; }
+  try { return JSON.parse(fs.readFileSync(dataPath('profiles.json'), 'utf8')); } catch { return null; }
 });
 ipcMain.handle('store:save', (_e, store) => {
-  const tmp = storePath() + '.tmp';
+  const tmp = dataPath('profiles.json.tmp');
   fs.writeFileSync(tmp, JSON.stringify(store, null, 2));
-  fs.renameSync(tmp, storePath());
+  fs.renameSync(tmp, dataPath('profiles.json'));
 });
-ipcMain.handle('profile:export', async (_e, name, text) => {
+ipcMain.handle('file:save', async (_e, defaultName, text) => {
   const { canceled, filePath } = await dialog.showSaveDialog(win, {
-    title: 'Export profile',
-    defaultPath: `${name.replace(/[^\w -]+/g, '_') || 'profile'}.keyword.json`,
+    title: 'Export',
+    defaultPath: defaultName.replace(/[^\w .-]+/g, '_') || 'profile.keyword.json',
     filters: [{ name: 'Keyword profile', extensions: ['json'] }],
   });
   if (canceled || !filePath) return false;
   fs.writeFileSync(filePath, text);
   return true;
 });
-ipcMain.handle('profile:import', async () => {
+ipcMain.handle('file:open', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog(win, {
-    title: 'Import profile',
+    title: 'Import profiles',
     filters: [{ name: 'Keyword profile', extensions: ['json'] }],
-    properties: ['openFile'],
+    properties: ['openFile', 'multiSelections'],
   });
-  if (canceled || !filePaths.length) return null;
-  return fs.readFileSync(filePaths[0], 'utf8');
+  if (canceled || !filePaths.length) return [];
+  return filePaths.map((p) => ({ name: path.basename(p), text: fs.readFileSync(p, 'utf8') }));
 });
+ipcMain.handle('host:run', (_e, action) => runHostAction(action));
+ipcMain.handle('app:info', () => ({ version: app.getVersion(), platform: process.platform }));
+ipcMain.on('open:data', () => shell.openPath(app.getPath('userData')));
+
+ipcMain.on('settings:apply', (_e, s) => {
+  settings = { ...settings, ...s };
+  nativeTheme.themeSource = ['light', 'dark'].includes(s.theme) ? s.theme : 'system';
+  if (!process.env.KEYWORD_NO_LOGIN_ITEM && (IS_MAC || IS_WIN)) {
+    try { app.setLoginItemSettings({ openAtLogin: !!s.launchAtLogin, openAsHidden: true }); } catch {}
+  }
+  if (s.perApp) startWatcher(); else stopWatcher();
+});
+
+ipcMain.on('state:update', (_e, s) => {
+  const profilesChanged = JSON.stringify(s.profiles) !== JSON.stringify(trayState.profiles) || s.active !== trayState.active;
+  trayState = s;
+  updateTray();
+  if (profilesChanged) buildMenu();
+});
+
+// ---- App lifecycle ----
+
+app.on('second-instance', showWindow);
 
 app.whenReady().then(() => {
+  buildMenu();
   createWindow();
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
+  updateTray();
+  app.on('activate', showWindow);
 });
 
+app.on('before-quit', () => { quitting = true; });
+
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  if (!IS_MAC && !settings.closeToTray) app.quit();
 });
