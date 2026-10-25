@@ -10,29 +10,27 @@
 #include "hw_conf.h"
 #include "hw_if.h"
 #include "ble_bufsize.h"
+#include "boot_shared.h"
 
 /* ---- flash map ----
  * 0x08000000  this bootloader, pages 0-6 (28 KB)
  * 0x08007000  the keyword app, page 7 up to the keymap page
  * SFSA - 1    the app's saved keymap, never erased or written here
  * SFSA        CPU2 (BLE stack, FUS), never touched */
-#define CFG_APP_START_SECTOR_INDEX   (7)
-#define CFG_APP_START_ADDRESS        (FLASH_BASE + CFG_APP_START_SECTOR_INDEX * FLASH_PAGE_SIZE)
+#define CFG_APP_START_SECTOR_INDEX   (BOOT_APP_FIRST_PAGE)
+#define CFG_APP_START_ADDRESS        (BOOT_APP_ADDRESS)
 #define CFG_APP_TAG_OFFSET           (0x140)        /* word holding the address of the 0x94448A29 tag */
 #define CFG_APP_MAGIC                (0x94448A29UL)
 
-/* ---- boot request in SRAM1, kept across a software reset ----
- * Same bytes as ST's BLE_Ota (SRAM1_BASE + 0..2), so the app sets them the
- * same way. The DFU word at + 4 is the keyword's addition; RAM1 in both
- * linker scripts starts at 0x20000008 so nothing else lives there. */
-#define CFG_REBOOT_ON_FW_APP          (0x00)
-#define CFG_REBOOT_ON_BLE_OTA_APP     (0x01)
-#define CFG_REBOOT_ON_CPU2_UPGRADE    (0x02)
-#define CFG_OTA_REBOOT_VAL_MSG            (*(volatile uint8_t *)(SRAM1_BASE + 0))
-#define CFG_OTA_START_SECTOR_IDX_VAL_MSG  (*(volatile uint8_t *)(SRAM1_BASE + 1))
-#define CFG_OTA_NBR_OF_SECTOR_VAL_MSG     (*(volatile uint8_t *)(SRAM1_BASE + 2))
-#define CFG_SYSDFU_REQ_WORD               (*(volatile uint32_t *)(SRAM1_BASE + 4))
-#define CFG_SYSDFU_REQ_MAGIC              (0x4446553FUL)   /* "?UFD" */
+/* ---- boot request in SRAM1 (Shared/boot_shared.h), names as in ST's code ---- */
+#define CFG_REBOOT_ON_FW_APP              BOOT_REBOOT_ON_FW_APP
+#define CFG_REBOOT_ON_BLE_OTA_APP         BOOT_REBOOT_ON_BLE_OTA_APP
+#define CFG_REBOOT_ON_CPU2_UPGRADE        (0x02)
+#define CFG_OTA_REBOOT_VAL_MSG            BOOT_REBOOT_VAL_MSG
+#define CFG_OTA_START_SECTOR_IDX_VAL_MSG  BOOT_START_SECTOR_MSG
+#define CFG_OTA_NBR_OF_SECTOR_VAL_MSG     BOOT_NBR_OF_SECTOR_MSG
+#define CFG_SYSDFU_REQ_WORD               BOOT_SYSDFU_REQ_WORD
+#define CFG_SYSDFU_REQ_MAGIC              BOOT_SYSDFU_REQ_MAGIC
 
 /* ---- GAP ---- */
 #define CFG_TX_POWER                      (0x18) /* -0.15 dBm */

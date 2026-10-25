@@ -5,6 +5,7 @@
 #include "batt.h"
 #include "keybit_image.h"
 #include "ota.h"
+#include "fus.h"
 #include "proto.h"
 
 /* Optional features the desktop app can use, only what's implemented.
@@ -174,6 +175,34 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     /* kb: version of the Keybit image this keyword flashes onto new Keybits */
     Reply(port, "KEYWORD v=%s proto=1 caps=%s%s kb=%u", KEYWORD_FW_VERSION, CAPS,
           OTA_Available() ? ",ota" : "", keybit_image_version);
+  }
+#ifdef KEYWORD_DEBUG_CMDS
+  else if (strcmp(cmd, "CRASH") == 0 && port->local)
+  {
+    /* Test for the bootloader's crash fallback: hang until the IWDG resets
+     * us. Three in a row should end in ROM USB DFU. Debug builds only. */
+    Reply(port, "OK CRASH");
+    for (volatile uint32_t i = 0; i < 2000000; i++);   /* let the reply out */
+    while (1);
+  }
+#endif
+  else if (strcmp(cmd, "FUS?") == 0)
+  {
+    char info[96];
+    FUS_Info(info, sizeof(info));
+    Reply(port, "FUS %s", info);
+  }
+  else if (strcmp(cmd, "STACK") == 0 && strcmp(args, "INSTALL") == 0)
+  {
+    /* Hands CPU2's flash to FUS: only from someone at the USB cable */
+    if (!port->local)
+    {
+      Reply(port, "ERR STACK INSTALL is USB only");
+      return;
+    }
+    const char *why = FUS_Install();
+    if (why) Reply(port, "ERR %s", why);
+    else Reply(port, "OK STACK INSTALL");
   }
   else if (strcmp(cmd, "STACK?") == 0)
   {
@@ -346,6 +375,13 @@ static void Handle_Line(proto_port_t *port, char *cmd)
   }
   else if (strcmp(cmd, "SAVE") == 0)
   {
+    /* Without the BLE stack the keymap page (SFSA - 1) moves when the stack
+     * gets installed, and FUS may be writing flash: don't save then. */
+    if (!OTA_Available() || FUS_Busy())
+    {
+      Reply(port, "ERR no BLE stack yet, keymap not saved");
+      return;
+    }
     if (KEYMAP_Save() != 0) Reply(port, "ERR flash write failed");
     else Reply(port, "OK SAVE");
   }

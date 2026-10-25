@@ -57,19 +57,30 @@ the app asked for an update.
 
 ### First install over USB DFU
 
-This needs the CPU2 BLE stack already installed (see "First flash: the CPU2 BLE
-stack" below). Put the keyword in DFU, then write `keyword_full.bin` at
-0x08000000. Either of these only erases the pages the image covers (about 23 of
-them), so the keymap page and CPU2's area stay as they are. No option bytes,
-no full chip erase:
+> **Warning: over USB DFU, only ever use plain writes (`-d ... -v`) and reads.**
+> STM32CubeProgrammer's "run after programming" steps rewrite the option bytes
+> over USB: `-startfus` set `nSWBOOT0=0` on this board, which makes it boot
+> from flash and ignore BOOT0 from then on. Never use `-g`/`--go`, `-s`, `-rst`,
+> `-startfus`, `-fwupgrade`, `-startwirelessstack`, `-ob ...` or dfu-util's
+> `:leave` over USB. Leave DFU by unplugging and plugging the keyword back in.
+
+Two plain writes. Neither erases anything but the pages it covers, so the
+keymap page and CPU2's area stay as they are:
 
 ```sh
+# bootloader + app
 STM32_Programmer_CLI -c port=usb1 -d release/keyword_full.bin 0x08000000 -v
-# or
-dfu-util -a 0 -d 0483:df11 -s 0x08000000:leave -D release/keyword_full.bin
+# CPU2 BLE stack 1.24.0 (from STM32CubeWB, see below), only as data for now
+STM32_Programmer_CLI -c port=usb1 -d stm32wb5x_BLE_Stack_full_fw.bin 0x080D0000 -v
 ```
 
-After this every update goes over Bluetooth.
+`dfu-util -a 0 -d 0483:df11 -s 0x08000000 -D release/keyword_full.bin` works
+too (no `:leave`). Then unplug and plug the keyword back in.
+
+On that first boot the app comes up on USB serial first, then finds the stack
+image at 0x080D0000 and has FUS install it, printing `STACK PROGRESS ...` lines
+over USB serial. It resets once when it's done and comes back as the Bluetooth
+keyboard **Keyword**. `FUS?` and `STACK?` show where it is.
 
 ### Updating over BLE
 
@@ -90,7 +101,12 @@ Send `DFU` over USB serial or BLE. The keyword answers `OK DFU`, resets, and the
 bootloader starts ST's ROM USB DFU bootloader (system memory at 0x1FFF0000)
 straight out of the reset, so it shows up as `0483:df11` without touching BOOT0
 or the option bytes. The bootloader also does this by itself if CPU2 has no BLE
-stack, since then OTA can't work. A reset out of DFU boots the app again.
+stack and the app is broken. A reset out of DFU boots the app again.
+
+The bootloader also starts an 8 s watchdog before it runs the app, and the app
+feeds it from its main loop. If the app hangs or crashes three times in a row
+(before it has run 10 s), the bootloader goes to USB DFU instead, so a bad app
+can't lock the keyword out.
 
 ### ST-Link over SWD
 
@@ -169,32 +185,25 @@ cc -std=c99 -ICore/Inc test/keyact_test.c Core/Src/keyact.c -o /tmp/keyact_test 
 cc -std=c99 -Itest/stub -ICore/Inc test/batt_test.c Core/Src/batt.c -o /tmp/batt_test && /tmp/batt_test
 ```
 
-### First flash: the CPU2 BLE stack
+### The CPU2 BLE stack
 
-The radio runs on the second core (CPU2), which needs ST's BLE stack flashed
-once with STM32CubeProgrammer 2.20 or newer. The binaries are in
-[STM32CubeWB](https://github.com/STMicroelectronics/STM32CubeWB) under
-`Projects/STM32WB_Copro_Wireless_Binaries/STM32WB5x`. The 1.24.0 stack needs
-FUS v2, so check that first:
+The radio runs on CPU2, which needs ST's BLE stack. The keyword installs it
+itself, so it never needs `-startfus` or `-fwupgrade` (see the warning above):
 
-```sh
-STM32_Programmer_CLI -c port=SWD -startfus
-STM32_Programmer_CLI -c port=SWD mode=UR -r32 0x20030030 1   # 0x0202xx00 = FUS v2.2, good
-```
+1. Write `stm32wb5x_BLE_Stack_full_fw.bin` (1.24.0, 129460 bytes, SHA-256
+   b7855d9ce0b012fabff5782a574a3038e6e5b1889c5c9bcdb06c2cab2201c05d) to
+   0x080D0000 over DFU as above. It's in
+   [STM32CubeWB](https://github.com/STMicroelectronics/STM32CubeWB) under
+   `Projects/STM32WB_Copro_Wireless_Binaries/STM32WB5x`. It isn't in this repo:
+   ST's SLA0044 doesn't allow it in an MIT licensed project.
+2. When CPU2 boots with only FUS (no stack), the app checks 0x080D0000 for ST's
+   image footer and asks FUS to install it (`SHCI_C2_FUS_FwUpgrade`, ST's
+   CPU1-driven path). FUS moves SFSA down to 0xD0 itself. Over USB serial, `FUS?`
+   shows `v=<fus> state=<idle|upgrade> stack=<version|none> sfsa=<page>
+   image=<bytes>`, and `STACK INSTALL` starts it by hand.
+3. Then the app resets and starts the stack. `STACK?` should answer
+   `STACK ble v=1.24.0 fus=2.2.0`.
 
-If it reads `0x0102xx00` (FUS v1.2), update FUS first. If it is older than
-v1.2, go through `stm32wb5x_FUS_fw_1_2_0.bin` at 0x080EC000 first.
+This board has FUS 2.2.0, which the 1.24.0 stack needs, so no FUS update.
+Until the stack runs, `SAVE` is refused, since the keymap page moves with SFSA.
 
-```sh
-STM32_Programmer_CLI -c port=SWD mode=UR -fwupgrade stm32wb5x_FUS_fw.bin 0x080EE000 firstinstall=0
-```
-
-Then the stack itself (addresses are for the 1 MB STM32WB55RG):
-
-```sh
-STM32_Programmer_CLI -c port=SWD mode=UR -fwupgrade stm32wb5x_BLE_Stack_full_fw.bin 0x080D0000 firstinstall=0
-```
-
-ST's notes end by setting nSWBOOT0 back to 1, skip that here or the floating
-BOOT0 comes back. After this the app flashes as normal with the steps above.
-If the stack is missing the app still runs, it just never advertises.

@@ -21,6 +21,7 @@
 #include "otp.h"
 #include "keymap.h"
 #include "ota.h"
+#include "fus.h"
 
 RTC_HandleTypeDef hrtc;
 
@@ -44,7 +45,10 @@ void MX_APPE_Config(void)
 #if (CFG_HW_RESET_BY_FW == 1)
   /* After a pin reset (not a software one) CPU2 may still be running with
    * stale IPCC state, so start both clean. */
-  if (LL_RCC_IsActiveFlag_PINRST() && !LL_RCC_IsActiveFlag_SFTRST())
+  /* A watchdog reset also sets PINRST; keep the backup domain (the
+   * bootloader's crash count lives there) unless it was a real pin reset. */
+  if (LL_RCC_IsActiveFlag_PINRST() && !LL_RCC_IsActiveFlag_SFTRST()
+      && !LL_RCC_IsActiveFlag_IWDGRST() && !LL_RCC_IsActiveFlag_WWDGRST())
   {
     HAL_PWR_EnableBkUpAccess();
     __HAL_RCC_BACKUPRESET_FORCE();
@@ -157,6 +161,7 @@ int APPE_Cpu2State(void)
 
 void MX_APPE_Process(void)
 {
+  OTA_Service();
   UTIL_SEQ_Run(UTIL_SEQ_DEFAULT);
 }
 
@@ -181,6 +186,7 @@ static void APPE_SysUserEvtRx(void *pPayload)
   if (p_ready->sysevt_ready_rsp == WIRELESS_FW_RUNNING)
   {
     cpu2_state = CPU2_BLE;
+    FUS_OnCpu2Ready(CPU2_BLE);
     SHCI_C2_CONFIG_Cmd_Param_t config_param = {0};
     config_param.PayloadCmdSize = SHCI_C2_CONFIG_PAYLOAD_CMD_SIZE;
     config_param.EvtMask1 = SHCI_C2_CONFIG_EVTMASK1_BIT0_ERROR_NOTIF_ENABLE
@@ -197,7 +203,7 @@ static void APPE_SysUserEvtRx(void *pPayload)
     /* FUS is running instead of the BLE stack: the stack binary is missing
      * or was never started. No BLE (and no OTA); STACK? reports it. */
     cpu2_state = CPU2_FUS;
-    ((tSHCI_UserEvtRxParam *)pPayload)->status = SHCI_TL_UserEventFlow_Disable;
+    FUS_OnCpu2Ready(CPU2_FUS);   /* installs a staged stack image, if any */
   }
 }
 

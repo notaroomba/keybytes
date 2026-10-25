@@ -66,6 +66,7 @@ ASM_SOURCES = startup_stm32wb55xx_cm4.s
 
 C_INCLUDES = \
 -ICore/Inc \
+-I$(FW)/Shared \
 -ISTM32_WPAN/App \
 -I$(FW)/Drivers/CMSIS/Device/ST/STM32WBxx/Include \
 -I$(FW)/Drivers/CMSIS/Include \

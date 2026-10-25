@@ -211,6 +211,9 @@ static void JumpSelectionOnPowerUp( void );
 static uint8_t  CheckFwAppValidity( void );
 
 
+/* For app_entry.c / main.c: 1 if the app at 0x08007000 is valid. */
+uint8_t BOOT_AppValid( void );
+
 static uint8_t CheckFwAppValidity( void )
 {
   uint8_t status;
@@ -251,9 +254,32 @@ static uint8_t CheckFwAppValidity( void )
  * Jump to existing FW App in flash
  * It never returns
  */
+uint8_t BOOT_AppValid( void )
+{
+  return CheckFwAppValidity();
+}
+
+/**
+ * Keyword: start the IWDG (about 8 s) just before handing over to the app,
+ * so an app that hangs gets reset and counted (see BootModeCheck). The app
+ * feeds it from its main loop. Once started it can't be stopped until the
+ * next reset.
+ */
+static void StartAppWatchdog( void )
+{
+  IWDG->KR = 0xCCCC;               /* start (also starts the LSI) */
+  IWDG->KR = 0x5555;               /* unlock PR/RLR */
+  IWDG->PR = BOOT_IWDG_PR;
+  IWDG->RLR = BOOT_IWDG_RLR;
+  while (IWDG->SR != 0);
+  IWDG->KR = 0xAAAA;               /* reload */
+}
+
 static void JumpFwApp( void )
 {
   fct_t app_reset_handler;
+
+  StartAppWatchdog();
 
   SCB->VTOR = FLASH_BASE + (CFG_APP_START_SECTOR_INDEX * 0x1000);
   __set_MSP(*(uint32_t*)(FLASH_BASE + (CFG_APP_START_SECTOR_INDEX * 0x1000)));
@@ -298,12 +324,53 @@ static void JumpSystemDfu( void )
   __WFI();   /* never reached, see JumpFwApp() */
 }
 
+/**
+ * Keyword crash fallback: count resets the app caused (IWDG or WWDG) in an
+ * RTC backup register. A software reset leaves the count alone, any other
+ * reset (power, pin) clears it, and the app clears it after running
+ * BOOT_HEALTHY_MS. At BOOT_CRASH_LIMIT the app is skipped for ROM DFU, the
+ * only way back in once BOOT0 is ignored. Resets during a CPU2 stack
+ * install (BOOT_FUS_BUSY) aren't counted. Returns 1 to go to DFU.
+ */
+static uint8_t CrashLoopCheck( void )
+{
+  uint32_t csr = RCC->CSR;
+  RCC->APB1ENR1 |= RCC_APB1ENR1_RTCAPBEN;   /* backup registers */
+  (void)RCC->APB1ENR1;
+  PWR->CR1 |= PWR_CR1_DBP;                  /* allow writing them */
+
+  if (csr & (RCC_CSR_IWDGRSTF | RCC_CSR_WWDGRSTF))
+  {
+    if (BOOT_FUS_BUSY != BOOT_FUS_BUSY_MAGIC)
+    {
+      BOOT_CRASH_COUNT = BOOT_CRASH_COUNT + 1;
+    }
+  }
+  else if (!(csr & RCC_CSR_SFTRSTF))
+  {
+    BOOT_CRASH_COUNT = 0;
+  }
+
+  if (BOOT_CRASH_COUNT >= BOOT_CRASH_LIMIT)
+  {
+    BOOT_CRASH_COUNT = 0;
+    return 1;
+  }
+  return 0;
+}
+
 static void BootModeCheck( void )
 {
+  if (CrashLoopCheck())
+  {
+    CFG_SYSDFU_REQ_WORD = 0;
+    CFG_OTA_REBOOT_VAL_MSG = CFG_REBOOT_ON_FW_APP;
+    JumpSystemDfu();
+  }
+
   /**
-   * Keyword: the app (DFU command) or this loader (no BLE stack) asked for
-   * the ROM USB DFU bootloader. The magic is cleared first, so a reset out
-   * of DFU boots normally again.
+   * Keyword: the app asked for the ROM USB DFU bootloader (DFU command).
+   * The magic is cleared first, so a reset out of DFU boots normally again.
    */
   if(LL_RCC_IsActiveFlag_SFTRST( ) && (CFG_SYSDFU_REQ_WORD == CFG_SYSDFU_REQ_MAGIC))
   {

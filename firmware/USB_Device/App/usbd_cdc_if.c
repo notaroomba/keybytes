@@ -38,7 +38,7 @@ static volatile uint16_t tx_head, tx_tail;
 static uint8_t line_coding[7] = {0x00, 0xC2, 0x01, 0x00, 0x00, 0x00, 0x08};
 
 static void CDC_Write(const char *data, uint16_t len);
-static proto_port_t cdc_port = {.write = CDC_Write};
+static proto_port_t cdc_port = {.write = CDC_Write, .local = 1};
 
 static uint16_t Rx_Free(void)
 {

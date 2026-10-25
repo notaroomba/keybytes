@@ -21,6 +21,13 @@ void OTA_Request(void);
 /* Reset into the ROM USB DFU bootloader in 500 ms. No option bytes. */
 void OTA_RequestDfu(void);
 
+/* Plain reset back into the app in 500 ms. */
+void OTA_ResetSoon(void);
+
+/* Call every main loop pass: feeds the bootloader's IWDG and marks the
+ * app healthy (crash count zeroed) after it has run 10 s. */
+void OTA_Service(void);
+
 /* "ble v=1.24.0 fus=2.2.0", "none fus=2.2.0" or "unknown". */
 void OTA_StackInfo(char *out, size_t n);
 

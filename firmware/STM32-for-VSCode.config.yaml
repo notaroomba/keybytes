@@ -83,6 +83,7 @@ includeDirectories:
   - Core/Src/**
   - Core/Lib/**
   - Drivers/CH32V003
+  - Shared
   - STM32_WPAN/App
   - Middlewares/ST/STM32_WPAN
   - Middlewares/ST/STM32_WPAN/ble

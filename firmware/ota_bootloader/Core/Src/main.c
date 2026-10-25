@@ -19,7 +19,10 @@ RTC_HandleTypeDef hrtc;
  * stale IPCC state after a pin reset. */
 static void Reset_Device(void)
 {
-  if (LL_RCC_IsActiveFlag_PINRST() && !LL_RCC_IsActiveFlag_SFTRST())
+  /* A watchdog reset also sets PINRST; keep the backup domain (the crash
+   * count lives there) unless it was a real pin reset. */
+  if (LL_RCC_IsActiveFlag_PINRST() && !LL_RCC_IsActiveFlag_SFTRST()
+      && !LL_RCC_IsActiveFlag_IWDGRST() && !LL_RCC_IsActiveFlag_WWDGRST())
   {
     HAL_PWR_EnableBkUpAccess();
     __HAL_RCC_BACKUPRESET_FORCE();
@@ -95,8 +98,18 @@ void BOOT_RequestSystemDfu(void)
   NVIC_SystemReset();
 }
 
+void BOOT_LeaveLoader(void)
+{
+  if (BOOT_AppValid())
+  {
+    CFG_OTA_REBOOT_VAL_MSG = CFG_REBOOT_ON_FW_APP;   /* SystemInit jumps to it */
+    NVIC_SystemReset();
+  }
+  BOOT_RequestSystemDfu();
+}
+
 void Error_Handler(void)
 {
-  /* Can't run BLE: fall back to USB DFU so the keyword stays recoverable. */
-  BOOT_RequestSystemDfu();
+  /* Can't run BLE: back to the app if there is one, else USB DFU. */
+  BOOT_LeaveLoader();
 }

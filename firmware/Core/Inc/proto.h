@@ -20,6 +20,7 @@ typedef struct
 {
   void (*write)(const char *data, uint16_t len);
   volatile uint8_t connected;
+  uint8_t local;     /* USB CDC: allowed to run CPU2 firmware commands */
   uint8_t overflow;
   uint16_t len;
   char line[PROTO_LINE_MAX];

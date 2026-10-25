@@ -15,7 +15,7 @@
 static char out[2048], out2[2048];
 static void write1(const char *data, uint16_t len) { strncat(out, data, len); }
 static void write2(const char *data, uint16_t len) { strncat(out2, data, len); }
-static proto_port_t port = {.write = write1};
+static proto_port_t port = {.write = write1, .local = 1};   /* like USB CDC */
 static proto_port_t port2 = {.write = write2};
 
 /* The real keytable.c is linked; the bus side of keymap.c is faked. */
@@ -27,6 +27,11 @@ int OTA_Available(void) { return stack_ok; }
 void OTA_Request(void) { ota_asked++; }
 void OTA_RequestDfu(void) { dfu_asked++; }
 void OTA_StackInfo(char *out, size_t n) { snprintf(out, n, stack_ok ? "ble v=1.24.0 fus=2.2.0" : "none fus=2.2.0"); }
+static int fus_installs;
+static const char *fus_refuse;
+void FUS_Info(char *out, size_t n) { snprintf(out, n, "v=2.2.0 state=idle stack=none sfsa=0xF4 image=129460"); }
+const char *FUS_Install(void) { if (fus_refuse) return fus_refuse; fus_installs++; return NULL; }
+int FUS_Busy(void) { return 0; }
 static batt_t batt_fake;
 const batt_t *BATT_Get(void) { return &batt_fake; }
 int KEYMAP_Save(void) { return 0; }
@@ -213,7 +218,23 @@ int main(void)
   assert(ota_asked == 1);
   expect("DFU\n", "OK DFU\n");
   assert(dfu_asked == 1);
+  /* FUS? and STACK INSTALL (USB only) */
+  expect("FUS?\n", "FUS v=2.2.0 state=idle stack=none sfsa=0xF4 image=129460\n");
+  expect("STACK INSTALL\n", "OK STACK INSTALL\n");
+  assert(fus_installs == 1);
+  fus_refuse = "no image at 0x080D0000";
+  expect("STACK INSTALL\n", "ERR no image at 0x080D0000\n");
+  fus_refuse = NULL;
+  expect("STACK BOGUS\n", "ERR unknown command\n");
+  out2[0] = 0;
+  PROTO_Input(&port2, (const uint8_t *)"STACK INSTALL\n", 14);   /* port2 is like NUS */
+  assert(strcmp(out2, "ERR STACK INSTALL is USB only\n") == 0 && fus_installs == 1);
+  out2[0] = 0;
+  PROTO_Input(&port2, (const uint8_t *)"FUS?\n", 5);              /* reading is fine anywhere */
+  assert(strncmp(out2, "FUS v=2.2.0", 11) == 0);
+
   stack_ok = 0;   /* FUS only, no BLE stack: no OTA, and HELLO says so */
+  expect("SAVE\n", "ERR no BLE stack yet, keymap not saved\n");
   expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro kb=3\n");
   expect("STACK?\n", "STACK none fus=2.2.0\n");
   expect("OTA\n", "ERR no BLE stack on CPU2, use DFU\n");

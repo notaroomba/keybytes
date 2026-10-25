@@ -3,6 +3,7 @@
 #include "main.h"
 #include "shci.h"
 #include "app_entry.h"
+#include "boot_shared.h"
 #include "ota.h"
 
 /* The validity tag ST's BLE_Ota checks (CheckFwAppValidity): the word at
@@ -11,40 +12,36 @@
 PLACE_IN_SECTION("TAG_OTA_END") const uint32_t MagicKeywordValue = 0x94448A29;
 PLACE_IN_SECTION("TAG_OTA_START") const uint32_t MagicKeywordAddress = (uint32_t)&MagicKeywordValue;
 
-/* Boot request in SRAM1, kept across a software reset. Must match
- * ota_bootloader/Core/Inc/app_conf.h; RAM1 starts at 0x20000008 in both
- * linker scripts so these 8 bytes are never touched otherwise. */
-#define REBOOT_ON_BLE_OTA_APP  0x01
-#define APP_FIRST_PAGE         7
-#define REBOOT_VAL_MSG         (*(volatile uint8_t *)(SRAM1_BASE + 0))
-#define START_SECTOR_VAL_MSG   (*(volatile uint8_t *)(SRAM1_BASE + 1))
-#define NBR_OF_SECTOR_VAL_MSG  (*(volatile uint8_t *)(SRAM1_BASE + 2))
-#define SYSDFU_REQ_WORD        (*(volatile uint32_t *)(SRAM1_BASE + 4))
-#define SYSDFU_REQ_MAGIC       0x4446553FUL
-
 #define RESET_DELAY_MS 500
 
+enum { RESET_PLAIN, RESET_OTA, RESET_DFU };
+
 static uint8_t reset_timer_id;
-static uint8_t want_dfu;
+static uint8_t reset_mode;
+static uint8_t healthy;
 
 static void Reset_Now(void)
 {
-  if (want_dfu)
+  if (reset_mode == RESET_DFU)
   {
-    SYSDFU_REQ_WORD = SYSDFU_REQ_MAGIC;
+    BOOT_SYSDFU_REQ_WORD = BOOT_SYSDFU_REQ_MAGIC;
+  }
+  else if (reset_mode == RESET_OTA)
+  {
+    BOOT_REBOOT_VAL_MSG = BOOT_REBOOT_ON_BLE_OTA_APP;
+    BOOT_START_SECTOR_MSG = BOOT_APP_FIRST_PAGE;
+    BOOT_NBR_OF_SECTOR_MSG = 0xFF;   /* the loader clamps this to below the keymap page */
   }
   else
   {
-    REBOOT_VAL_MSG = REBOOT_ON_BLE_OTA_APP;
-    START_SECTOR_VAL_MSG = APP_FIRST_PAGE;
-    NBR_OF_SECTOR_VAL_MSG = 0xFF;   /* the loader clamps this to below the keymap page */
+    BOOT_REBOOT_VAL_MSG = BOOT_REBOOT_ON_FW_APP;
   }
   NVIC_SystemReset();
 }
 
-static void Reset_Later(uint8_t dfu)
+static void Reset_Later(uint8_t mode)
 {
-  want_dfu = dfu;
+  reset_mode = mode;
   if (!reset_timer_id)
   {
     HW_TS_Create(CFG_TIM_PROC_ID_ISR, &reset_timer_id, hw_ts_SingleShot, Reset_Now);
@@ -59,12 +56,31 @@ int OTA_Available(void)
 
 void OTA_Request(void)
 {
-  Reset_Later(0);
+  Reset_Later(RESET_OTA);
 }
 
 void OTA_RequestDfu(void)
 {
-  Reset_Later(1);
+  Reset_Later(RESET_DFU);
+}
+
+void OTA_ResetSoon(void)
+{
+  Reset_Later(RESET_PLAIN);
+}
+
+/* Every main loop pass: feed the IWDG the bootloader started (no effect
+ * if it didn't), and after BOOT_HEALTHY_MS of running tell the bootloader
+ * this app is fine by zeroing its crash count. */
+void OTA_Service(void)
+{
+  IWDG->KR = 0xAAAA;
+  if (!healthy && HAL_GetTick() >= BOOT_HEALTHY_MS)
+  {
+    healthy = 1;
+    HAL_PWR_EnableBkUpAccess();
+    BOOT_CRASH_COUNT = 0;
+  }
 }
 
 void OTA_StackInfo(char *out, size_t n)

@@ -2,9 +2,9 @@
  * CPU2 boot and transport layer for the OTA bootloader, from ST's BLE_Ota
  * app_entry.c. The difference: when CPU2 comes up running FUS instead of
  * the BLE stack, ST's version tells FUS to install whatever it finds in
- * flash. Here there is no BLE stack to do an OTA with, so it resets into
- * the ROM USB DFU bootloader instead and never starts a FUS operation
- * (those can move SFSA).
+ * flash. Here there is no BLE stack to do an OTA with, so it goes back to
+ * the app if the app is valid (the app installs the stack itself), or to
+ * the ROM USB DFU bootloader if not. It never starts a FUS operation.
  */
 #include "app_common.h"
 #include "main.h"
@@ -46,7 +46,7 @@ static void APPE_SysUserEvtRx(void *pPayload)
   else
   {
     ((tSHCI_UserEvtRxParam *)pPayload)->status = SHCI_TL_UserEventFlow_Disable;
-    BOOT_RequestSystemDfu();   /* no BLE stack: USB DFU is the only way in */
+    BOOT_LeaveLoader();   /* no BLE stack, no OTA: app if valid, else USB DFU */
   }
 }
 

@@ -78,7 +78,9 @@ C_SOURCES =  \
 Core/Src/keybit_bus.c \
 Core/Src/keybit_image.c \
 Core/Src/main.c \
+Core/Src/fus.c \
 Core/Src/ota.c \
+Core/Src/stackimg.c \
 Core/Src/stm32wbxx_hal_msp.c \
 Core/Src/stm32wbxx_it.c \
 Core/Src/syscalls.c \
@@ -243,6 +245,7 @@ AS_INCLUDES = \
 # C includes
 C_INCLUDES =  \
 -ICore/Inc \
+-IShared \
 -IDrivers/CH32V003 \
 -IDrivers/CMSIS/Device/ST/STM32WBxx/Include \
 -IDrivers/CMSIS/Include \
