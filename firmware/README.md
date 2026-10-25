@@ -53,3 +53,53 @@ STM32_Programmer_CLI -c port=SWD -ob displ   # check: nSWBOOT0 = 0x0, nBOOT0 = 0
 
 The same can be done in the STM32CubeProgrammer GUI under Option bytes > User
 Configuration. This only needs doing once; it survives reflashing and mass erase.
+
+## Bluetooth
+
+The keyword shows up as a BLE keyboard called **Keyword**. It runs ST's
+STM32_WPAN middleware from STM32CubeWB 1.24.0 (`Middlewares/`, `Utilities/`,
+`STM32_WPAN/`) with HID over GATT (a keyboard report and a consumer control
+report), Battery and Device Information. Pairing is Just Works with bonding,
+so the host just connects and remembers it.
+
+Each Keybit sends whatever its UID is mapped to in `Core/Src/keymap.c`, and
+an unmapped Keybit sends nothing. The map is set over the Nordic UART Service
+(6e400001-b5a3-f393-e0a9-e50e24dcca9e) with the line protocol in
+`Core/Src/proto.c` (`HELLO`, `KEYS?`, `MAP`, `SAVE` and so on). `SAVE` writes
+it to the flash page just under CPU2's area (0x080CF000 with the full stack).
+
+The parser has a host check:
+
+```sh
+cc -std=c99 -Itest/stub -ICore/Inc -ISTM32_WPAN/App test/proto_test.c Core/Src/proto.c -o /tmp/proto_test && /tmp/proto_test
+```
+
+### First flash: the CPU2 BLE stack
+
+The radio runs on the second core (CPU2), which needs ST's BLE stack flashed
+once with STM32CubeProgrammer 2.20 or newer. The binaries are in
+[STM32CubeWB](https://github.com/STMicroelectronics/STM32CubeWB) under
+`Projects/STM32WB_Copro_Wireless_Binaries/STM32WB5x`. The 1.24.0 stack needs
+FUS v2, so check that first:
+
+```sh
+STM32_Programmer_CLI -c port=SWD -startfus
+STM32_Programmer_CLI -c port=SWD mode=UR -r32 0x20030030 1   # 0x0202xx00 = FUS v2.2, good
+```
+
+If it reads `0x0102xx00` (FUS v1.2), update FUS first. If it is older than
+v1.2, go through `stm32wb5x_FUS_fw_1_2_0.bin` at 0x080EC000 first.
+
+```sh
+STM32_Programmer_CLI -c port=SWD mode=UR -fwupgrade stm32wb5x_FUS_fw.bin 0x080EE000 firstinstall=0
+```
+
+Then the stack itself (addresses are for the 1 MB STM32WB55RG):
+
+```sh
+STM32_Programmer_CLI -c port=SWD mode=UR -fwupgrade stm32wb5x_BLE_Stack_full_fw.bin 0x080D0000 firstinstall=0
+```
+
+ST's notes end by setting nSWBOOT0 back to 1, skip that here or the floating
+BOOT0 comes back. After this the app flashes as normal with the steps above.
+If the stack is missing the app still runs, it just never advertises.
