@@ -118,12 +118,16 @@ $(BUILD):
 	mkdir -p $@
 
 # ---- release images ----
-APP_BIN = $(FW)/build/debug/keyword.bin
+# The app is built into its own untracked folder: the repo tracks old
+# objects in firmware/build/debug, and in a fresh checkout make would take
+# those as up to date and link stale code.
+APP_BUILD = $(abspath $(BUILD))/app
+APP_BIN = $(APP_BUILD)/debug/keyword.bin
 APP_OFFSET = 0x7000
 REL = $(FW)/release
 
 app:
-	$(MAKE) -C $(FW) -f STM32Make.make ARM_GCC_PATH="$(ARM_GCC_PATH)" OPENOCD=openocd
+	$(MAKE) -C $(FW) -f STM32Make.make ARM_GCC_PATH="$(ARM_GCC_PATH)" OPENOCD=openocd BUILD_DIRECTORY=$(APP_BUILD)
 
 release: all app
 	mkdir -p $(REL)
