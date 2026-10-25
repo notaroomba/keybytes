@@ -75,12 +75,15 @@ endif
 ######################################
 # C sources
 C_SOURCES =  \
+Core/Src/keybit_bus.c \
+Core/Src/keybit_image.c \
 Core/Src/main.c \
 Core/Src/stm32wbxx_hal_msp.c \
 Core/Src/stm32wbxx_it.c \
 Core/Src/syscalls.c \
 Core/Src/sysmem.c \
 Core/Src/system_stm32wbxx.c \
+Drivers/CH32V003/ch32v003_swio.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_cortex.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma.c \
@@ -237,6 +240,7 @@ AS_INCLUDES = \
 # C includes
 C_INCLUDES =  \
 -ICore/Inc \
+-IDrivers/CH32V003 \
 -IDrivers/CMSIS/Device/ST/STM32WBxx/Include \
 -IDrivers/CMSIS/Include \
 -IDrivers/STM32WBxx_HAL_Driver/Inc \

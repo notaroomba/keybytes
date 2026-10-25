@@ -54,6 +54,22 @@ STM32_Programmer_CLI -c port=SWD -ob displ   # check: nSWBOOT0 = 0x0, nBOOT0 = 0
 The same can be done in the STM32CubeProgrammer GUI under Option bytes > User
 Configuration. This only needs doing once; it survives reflashing and mass erase.
 
+## Keybit dock and side bus
+
+The keyword flashes Keybits itself. CN7/CN8/CN9 (3V3, SWIO, GND) on the
+back line up with a Keybit's TP1/TP2/TP4. `Drivers/CH32V003` bit-bangs
+WCH's one-wire debug protocol on PB5 (BB_SWIO) to detect a Keybit there,
+halt it, and write `Core/Src/keybit_image.c` (built from `keybit/`) into its
+flash. If the flash already matches, it just resets it.
+
+On I2C3 (the side pogo pins) `Core/Src/keybit_bus.c` hands addresses to new
+Keybits and lists the ones present, with UID, key state and which side they
+are on. See `keybit/README.md` for the protocol.
+
+Status LED: green idle, blue while a Keybit sits on the dock, blinking
+white when a Keybit connects on a side, red if flashing the docked Keybit
+failed.
+
 ## Bluetooth
 
 The keyword shows up as a BLE keyboard called **Keyword**. It runs ST's

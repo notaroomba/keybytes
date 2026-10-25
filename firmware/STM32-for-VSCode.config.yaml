@@ -80,6 +80,7 @@ includeDirectories:
   - Src/**
   - Core/Src/**
   - Core/Lib/**
+  - Drivers/CH32V003
   - STM32_WPAN/App
   - Middlewares/ST/STM32_WPAN
   - Middlewares/ST/STM32_WPAN/ble
@@ -109,6 +110,7 @@ sourceFiles:
   - Src/**
   - Core/Src/**
   - Core/Lib/**
+  - Drivers/CH32V003/**
   - STM32_WPAN/**
   - Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc.c
   - Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc_ex.c

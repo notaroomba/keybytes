@@ -1,0 +1,6 @@
+ch32v003fun/
+*.elf
+*.bin
+*.hex
+*.lst
+*.map

@@ -23,6 +23,9 @@
 /* USER CODE BEGIN Includes */
 #include "app_entry.h"
 #include "usb_device.h"
+#include "ch32v003_swio.h"
+#include "keybit_image.h"
+#include "keybit_bus.h"
 
 /* USER CODE END Includes */
 
@@ -35,6 +38,9 @@
 /* USER CODE BEGIN PD */
 /* U14 (XL-1608RGBC) is common anode to +3.3V, so a pin driven LOW lights its colour. */
 #define LED_STEP_MS 500
+#define KEYBIT_POLL_MS 250
+#define KEYBIT_SCAN_MS 250
+#define KEYBIT_KEYS_MS 5
 
 /* USER CODE END PD */
 
@@ -51,6 +57,17 @@ QSPI_HandleTypeDef hqspi;
 PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
+static ch32_swio_t keybit_swio;
+/* Keybits touching the keyword's sides: the list is rebuilt every
+ * KEYBIT_SCAN_MS, key_down refreshed every KEYBIT_KEYS_MS. keybit_changed
+ * collects bits of entries whose key_down changed; whoever consumes key
+ * events clears the bits it has handled. */
+keybit_info_t keybits[KEYBIT_MAX];
+int keybit_count;
+volatile uint32_t keybit_changed;
+/* Keybits further out, from events relayed by their neighbours. */
+keybit_remote_t keybit_remotes[KEYBIT_REMOTE_MAX];
+int keybit_remote_count;
 
 /* USER CODE END PV */
 
@@ -74,6 +91,80 @@ static void LED_Set(uint8_t r, uint8_t g, uint8_t b)
   HAL_GPIO_WritePin(STATUS_R_GPIO_Port, STATUS_R_Pin, r ? GPIO_PIN_RESET : GPIO_PIN_SET);
   HAL_GPIO_WritePin(STATUS_G_GPIO_Port, STATUS_G_Pin, g ? GPIO_PIN_RESET : GPIO_PIN_SET);
   HAL_GPIO_WritePin(STATUS_B_GPIO_Port, STATUS_B_Pin, b ? GPIO_PIN_RESET : GPIO_PIN_SET);
+}
+
+/* Status LED, highest priority first:
+ *   red    Keybit on the dock failed to flash (until it's taken off)
+ *   white  blinking: a Keybit just connected on a side
+ *   blue   Keybit on the dock (flashed or up to date)
+ *   green  idle */
+static uint8_t dock_present, dock_failed;
+static uint32_t white_until;
+
+#define WHITE_BLINK_MS 1200
+
+static void LED_Update(void)
+{
+  uint32_t now = HAL_GetTick();
+  if (dock_failed) LED_Set(1, 0, 0);
+  else if ((int32_t)(white_until - now) > 0) {
+    uint8_t on = ((now / 100) & 1) == 0;
+    LED_Set(on, on, on);
+  }
+  else if (dock_present) LED_Set(0, 0, 1);
+  else LED_Set(0, 1, 0);
+}
+
+/* Keybit programming dock: CN7/CN8/CN9 on the keyword's back are 3V3, SWIO
+ * and GND, lined up with a Keybit's TP1/TP2/TP4. Poll for a Keybit there
+ * and flash keybit_image onto it once each time one is placed. */
+static void Keybit_Dock_Poll(void)
+{
+  static uint32_t last_poll;
+  static uint8_t misses;
+
+  if (HAL_GetTick() - last_poll < KEYBIT_POLL_MS) return;
+  last_poll = HAL_GetTick();
+
+  if (ch32_detect(&keybit_swio) != CH32_OK) {
+    /* A few misses in a row before calling it gone, so a wobble while
+     * seating it doesn't trigger a second flash. */
+    if (dock_present && ++misses >= 3) {
+      dock_present = 0;
+      dock_failed = 0;
+    }
+    return;
+  }
+  misses = 0;
+  if (dock_present) return;
+  dock_present = 1;
+  LED_Update();      /* blue while flashing */
+
+  HAL_Delay(50);     /* let it finish powering up off CN7 */
+  ch32_status_t r = ch32_halt(&keybit_swio, 1);
+  if (r == CH32_OK && ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len) == CH32_OK) {
+    ch32_reboot(&keybit_swio);  /* already up to date */
+    return;
+  }
+  dock_failed = ch32_program(&keybit_swio, keybit_image, keybit_image_len) != CH32_OK;
+}
+
+/* Hand addresses to new Keybits, then refresh the list of who is there. */
+static void Keybit_Bus_Poll(void)
+{
+  static uint32_t last_scan, last_keys;
+  if (HAL_GetTick() - last_keys >= KEYBIT_KEYS_MS) {
+    last_keys = HAL_GetTick();
+    keybit_changed |= keybit_bus_poll_keys(&hi2c3, keybits, keybit_count);
+    keybit_bus_poll_relay(&hi2c3, keybits, keybit_count, keybit_remotes, &keybit_remote_count);
+  }
+  if (HAL_GetTick() - last_scan < KEYBIT_SCAN_MS) return;
+  last_scan = HAL_GetTick();
+
+  int fresh = keybit_bus_assign(&hi2c3);
+  int before = keybit_count;
+  keybit_count = keybit_bus_scan(&hi2c3, keybits, KEYBIT_MAX);
+  if (fresh > 0 || keybit_count > before) white_until = HAL_GetTick() + WHITE_BLINK_MS;
 }
 
 /* USER CODE END 0 */
@@ -115,13 +206,9 @@ int main(void)
   MX_QUADSPI_Init();
   MX_RF_Init();
   /* USER CODE BEGIN 2 */
-  /* red, yellow, green, cyan, blue, magenta, white, off */
-  static const uint8_t colours[][3] = {
-    {1, 0, 0}, {1, 1, 0}, {0, 1, 0}, {0, 1, 1},
-    {0, 0, 1}, {1, 0, 1}, {1, 1, 1}, {0, 0, 0},
-  };
-  uint32_t step = 0;
-  LED_Set(0, 0, 0);
+
+  ch32_init(&keybit_swio, BB_SWIO_GPIO_Port, BB_SWIO_Pin);
+  LED_Set(0, 1, 0); // greeen
 
   /* USER CODE END 2 */
 
@@ -133,9 +220,10 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    const uint8_t *c = colours[step++ % (sizeof(colours) / sizeof(colours[0]))];
-    LED_Set(c[0], c[1], c[2]);
-    HAL_Delay(LED_STEP_MS);
+    Keybit_Dock_Poll();
+    Keybit_Bus_Poll();
+    LED_Update();
+
   }
   /* USER CODE END 3 */
 }
