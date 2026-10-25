@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "app_entry.h"
 
 /* USER CODE END Includes */
 
@@ -93,7 +94,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  MX_APPE_Config();   /* STM32_WPAN: IPCC/backup reset and HSE trim, before the clocks start */
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -127,6 +128,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    MX_APPE_Process();  /* STM32_WPAN sequencer: BLE events, keymap, NUS */
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -322,7 +324,7 @@ static void MX_RF_Init(void)
 
   /* USER CODE END RF_Init 1 */
   /* USER CODE BEGIN RF_Init 2 */
-
+  MX_APPE_Init();     /* STM32_WPAN: RTC timer server, transport layer, boots CPU2 */
   /* USER CODE END RF_Init 2 */
 
 }

@@ -100,7 +100,39 @@ Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_qspi.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rcc.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rcc_ex.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_rcc.c \
-Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_usb.c
+Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_usb.c \
+Core/Src/app_entry.c \
+Core/Src/hw_timerserver.c \
+Core/Src/keymap.c \
+Core/Src/proto.c \
+Core/Src/stm32_lpm_if.c \
+Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc.c \
+Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc_ex.c \
+Middlewares/ST/STM32_WPAN/ble/core/auto/ble_gap_aci.c \
+Middlewares/ST/STM32_WPAN/ble/core/auto/ble_gatt_aci.c \
+Middlewares/ST/STM32_WPAN/ble/core/auto/ble_hal_aci.c \
+Middlewares/ST/STM32_WPAN/ble/core/auto/ble_hci_le.c \
+Middlewares/ST/STM32_WPAN/ble/core/auto/ble_l2cap_aci.c \
+Middlewares/ST/STM32_WPAN/ble/core/template/osal.c \
+Middlewares/ST/STM32_WPAN/ble/svc/Src/bas.c \
+Middlewares/ST/STM32_WPAN/ble/svc/Src/dis.c \
+Middlewares/ST/STM32_WPAN/ble/svc/Src/hids.c \
+Middlewares/ST/STM32_WPAN/ble/svc/Src/svc_ctl.c \
+Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/shci/shci.c \
+Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/tl/hci_tl.c \
+Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/tl/hci_tl_if.c \
+Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/tl/shci_tl.c \
+Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/tl/shci_tl_if.c \
+Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/tl/tl_mbox.c \
+Middlewares/ST/STM32_WPAN/utilities/otp.c \
+Middlewares/ST/STM32_WPAN/utilities/stm_list.c \
+Middlewares/ST/STM32_WPAN/utilities/stm_queue.c \
+STM32_WPAN/App/app_ble.c \
+STM32_WPAN/App/hids_app.c \
+STM32_WPAN/App/nus.c \
+STM32_WPAN/Target/hw_ipcc.c \
+Utilities/lpm/tiny_lpm/stm32_lpm.c \
+Utilities/sequencer/stm32_seq.c
 
 
 CXX_SOURCES = \
@@ -197,7 +229,21 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Device/ST/STM32WBxx/Include \
 -IDrivers/CMSIS/Include \
 -IDrivers/STM32WBxx_HAL_Driver/Inc \
--IDrivers/STM32WBxx_HAL_Driver/Inc/Legacy
+-IDrivers/STM32WBxx_HAL_Driver/Inc/Legacy \
+-IMiddlewares/ST/STM32_WPAN \
+-IMiddlewares/ST/STM32_WPAN/ble \
+-IMiddlewares/ST/STM32_WPAN/ble/core \
+-IMiddlewares/ST/STM32_WPAN/ble/core/auto \
+-IMiddlewares/ST/STM32_WPAN/ble/core/template \
+-IMiddlewares/ST/STM32_WPAN/ble/svc/Inc \
+-IMiddlewares/ST/STM32_WPAN/ble/svc/Src \
+-IMiddlewares/ST/STM32_WPAN/interface/patterns/ble_thread \
+-IMiddlewares/ST/STM32_WPAN/interface/patterns/ble_thread/shci \
+-IMiddlewares/ST/STM32_WPAN/interface/patterns/ble_thread/tl \
+-IMiddlewares/ST/STM32_WPAN/utilities \
+-ISTM32_WPAN/App \
+-IUtilities/lpm/tiny_lpm \
+-IUtilities/sequencer
 
 
 

@@ -80,6 +80,20 @@ includeDirectories:
   - Src/**
   - Core/Src/**
   - Core/Lib/**
+  - STM32_WPAN/App
+  - Middlewares/ST/STM32_WPAN
+  - Middlewares/ST/STM32_WPAN/ble
+  - Middlewares/ST/STM32_WPAN/ble/core
+  - Middlewares/ST/STM32_WPAN/ble/core/auto
+  - Middlewares/ST/STM32_WPAN/ble/core/template
+  - Middlewares/ST/STM32_WPAN/ble/svc/Inc
+  - Middlewares/ST/STM32_WPAN/ble/svc/Src
+  - Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread
+  - Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/shci
+  - Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/tl
+  - Middlewares/ST/STM32_WPAN/utilities
+  - Utilities/lpm/tiny_lpm
+  - Utilities/sequencer
 
 
 # Files that should be included in the compilation.
@@ -91,6 +105,30 @@ sourceFiles:
   - Src/**
   - Core/Src/**
   - Core/Lib/**
+  - STM32_WPAN/**
+  - Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc.c
+  - Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc_ex.c
+  - Middlewares/ST/STM32_WPAN/ble/core/auto/ble_gap_aci.c
+  - Middlewares/ST/STM32_WPAN/ble/core/auto/ble_gatt_aci.c
+  - Middlewares/ST/STM32_WPAN/ble/core/auto/ble_hal_aci.c
+  - Middlewares/ST/STM32_WPAN/ble/core/auto/ble_hci_le.c
+  - Middlewares/ST/STM32_WPAN/ble/core/auto/ble_l2cap_aci.c
+  - Middlewares/ST/STM32_WPAN/ble/core/template/osal.c
+  - Middlewares/ST/STM32_WPAN/ble/svc/Src/bas.c
+  - Middlewares/ST/STM32_WPAN/ble/svc/Src/dis.c
+  - Middlewares/ST/STM32_WPAN/ble/svc/Src/hids.c
+  - Middlewares/ST/STM32_WPAN/ble/svc/Src/svc_ctl.c
+  - Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/shci/shci.c
+  - Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/tl/hci_tl.c
+  - Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/tl/hci_tl_if.c
+  - Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/tl/shci_tl.c
+  - Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/tl/shci_tl_if.c
+  - Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/tl/tl_mbox.c
+  - Middlewares/ST/STM32_WPAN/utilities/otp.c
+  - Middlewares/ST/STM32_WPAN/utilities/stm_list.c
+  - Middlewares/ST/STM32_WPAN/utilities/stm_queue.c
+  - Utilities/lpm/tiny_lpm/stm32_lpm.c
+  - Utilities/sequencer/stm32_seq.c
 
 
 # When no makefile is present it will show a warning pop-up.
