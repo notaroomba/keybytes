@@ -3,11 +3,10 @@
 #include <string.h>
 #include "keymap.h"
 #include "batt.h"
+#include "keybit_image.h"
 #include "proto.h"
 
-/* Optional features the desktop app can use, only what's implemented.
- * kb= (the embedded Keybit image version) waits for keybit_image.h to
- * export one. */
+/* Optional features the desktop app can use, only what's implemented. */
 #define CAPS "batt,hold,macro"
 
 static proto_port_t *ports[PROTO_MAX_PORTS];
@@ -155,7 +154,8 @@ static void Handle_Line(proto_port_t *port, char *cmd)
 
   if (strcmp(cmd, "HELLO") == 0)
   {
-    Reply(port, "KEYWORD v=%s proto=1 caps=%s", KEYWORD_FW_VERSION, CAPS);
+    /* kb: version of the Keybit image this keyword flashes onto new Keybits */
+    Reply(port, "KEYWORD v=%s proto=1 caps=%s kb=%u", KEYWORD_FW_VERSION, CAPS, keybit_image_version);
   }
   else if (strcmp(cmd, "BATT?") == 0)
   {

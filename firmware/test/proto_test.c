@@ -65,6 +65,7 @@ int KEYMAP_SetMacro(const uint8_t *uid, const uint8_t seq[][2], uint8_t len)
   memcpy(a->macro, seq, (size_t)len * 2);
   return 0;
 }
+const uint8_t keybit_image_version = 3;
 static batt_t batt_fake;
 const batt_t *BATT_Get(void) { return &batt_fake; }
 const keyact_t *KEYMAP_Lookup(const uint8_t *uid) { int i = find(uid); return i < 0 ? NULL : &table[i].act; }
@@ -93,9 +94,9 @@ int main(void)
   memset(present[1].uid, 0xAB, UID_LEN);
   present[1].at = 'T';
 
-  expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro\n");
-  expect("HELLO\r\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro\n");
-  expect("HELLO\r", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro\n");   /* terminal Enter */
+  expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro kb=3\n");
+  expect("HELLO\r\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro kb=3\n");
+  expect("HELLO\r", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro kb=3\n");   /* terminal Enter */
   expect("\r\n\r\n", "");
   expect("SIDES?\n", "SIDES L=1 R=0 T=1\n");
   expect("BATT?\n", "ERR no battery reading yet\n");
@@ -202,7 +203,7 @@ int main(void)
   longline[sizeof(longline) - 2] = '\n';
   longline[sizeof(longline) - 1] = 0;
   expect(longline, "ERR line too long\n");
-  expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro\n");
+  expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro kb=3\n");
 
   /* Two transports at once: each has its own line buffer, so half a line
    * on one doesn't mix with the other, and replies go back where they
@@ -213,7 +214,7 @@ int main(void)
   assert(out[0] == 0);
   assert(strcmp(out2, "SIDES L=1 R=0 T=1\n") == 0);
   PROTO_Input(&port, (const uint8_t *)"LO\n", 3);
-  assert(strcmp(out, "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro\n") == 0);
+  assert(strcmp(out, "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro kb=3\n") == 0);
   assert(strcmp(out2, "SIDES L=1 R=0 T=1\n") == 0);
 
   /* Unsolicited events go to every connected port, and only those. */
