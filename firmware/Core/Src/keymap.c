@@ -4,6 +4,7 @@
 #include "shci.h"
 #include "utilities_conf.h"
 #include "hids_app.h"
+#include "batt.h"
 #include "app_ble.h"
 #include "proto.h"
 #include "keymap.h"
@@ -311,6 +312,9 @@ static void Keys_Task(void)
   KEYACT_Step(present_key, acts, present_count, HAL_GetTick(), report, &consumer);
   HIDSAPP_SendKeyboard(report);
   HIDSAPP_SendConsumer(consumer);
+
+  /* same task as the keys: the charger shares I2C3 with the Keybits */
+  BATT_Poll(HAL_GetTick());
 }
 
 static void Keys_Tick(void)

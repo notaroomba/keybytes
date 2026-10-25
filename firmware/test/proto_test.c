@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "keymap.h"
+#include "batt.h"
 #include "proto.h"
 
 /* Two fake transports, like NUS and USB CDC. */
@@ -64,6 +65,8 @@ int KEYMAP_SetMacro(const uint8_t *uid, const uint8_t seq[][2], uint8_t len)
   memcpy(a->macro, seq, (size_t)len * 2);
   return 0;
 }
+static batt_t batt_fake;
+const batt_t *BATT_Get(void) { return &batt_fake; }
 const keyact_t *KEYMAP_Lookup(const uint8_t *uid) { int i = find(uid); return i < 0 ? NULL : &table[i].act; }
 void KEYMAP_Unmap(const uint8_t *uid) { int i = find(uid); if (i >= 0) table[i] = table[--n]; }
 void KEYMAP_Clear(void) { n = 0; }
@@ -90,11 +93,14 @@ int main(void)
   memset(present[1].uid, 0xAB, UID_LEN);
   present[1].at = 'T';
 
-  expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=hold,macro\n");
-  expect("HELLO\r\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=hold,macro\n");
-  expect("HELLO\r", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=hold,macro\n");   /* terminal Enter */
+  expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro\n");
+  expect("HELLO\r\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro\n");
+  expect("HELLO\r", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro\n");   /* terminal Enter */
   expect("\r\n\r\n", "");
   expect("SIDES?\n", "SIDES L=1 R=0 T=1\n");
+  expect("BATT?\n", "ERR no battery reading yet\n");
+  batt_fake = (batt_t){.valid = 1, .pct = 73, .chg = 1, .usb = 1, .mv = 3970};
+  expect("BATT?\n", "BATT pct=73 chg=1 usb=1\n");
   expect("KEYS?\n", "KEY+ uid=" U " at=L v=2\nKEY+ uid=ABABABABABABABABABABABAB at=T v=0\nKEYS END\n");
   expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=00\n");
   expect("MAP uid=" U " mods=02 key=04\n", "OK MAP uid=" U "\n");
@@ -196,7 +202,7 @@ int main(void)
   longline[sizeof(longline) - 2] = '\n';
   longline[sizeof(longline) - 1] = 0;
   expect(longline, "ERR line too long\n");
-  expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=hold,macro\n");
+  expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro\n");
 
   /* Two transports at once: each has its own line buffer, so half a line
    * on one doesn't mix with the other, and replies go back where they
@@ -207,7 +213,7 @@ int main(void)
   assert(out[0] == 0);
   assert(strcmp(out2, "SIDES L=1 R=0 T=1\n") == 0);
   PROTO_Input(&port, (const uint8_t *)"LO\n", 3);
-  assert(strcmp(out, "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=hold,macro\n") == 0);
+  assert(strcmp(out, "KEYWORD v=" KEYWORD_FW_VERSION " proto=1 caps=batt,hold,macro\n") == 0);
   assert(strcmp(out2, "SIDES L=1 R=0 T=1\n") == 0);
 
   /* Unsolicited events go to every connected port, and only those. */

@@ -18,4 +18,7 @@ uint16_t APP_BLE_ConnHandle(void);
 /* 1 once the CPU2 stack is up and the services exist. */
 uint8_t APP_BLE_Ready(void);
 
+/* Battery Service level, 0-100. Safe to call before BLE is up. */
+void APP_BLE_SetBattery(uint8_t pct);
+
 #endif /* APP_BLE_H */

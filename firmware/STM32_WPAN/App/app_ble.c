@@ -30,6 +30,7 @@ static const uint8_t a_BLE_CfgErValue[16] = CFG_BLE_ER;
 
 static uint16_t conn_handle = APP_BLE_NO_CONN;
 static uint8_t ble_ready;
+static uint8_t battery_level = 100;
 static uint8_t adv_timer_id;
 static uint8_t a_BdAddr[6];
 
@@ -57,6 +58,13 @@ uint16_t APP_BLE_ConnHandle(void)
 uint8_t APP_BLE_Ready(void)
 {
   return ble_ready;
+}
+
+void APP_BLE_SetBattery(uint8_t pct)
+{
+  if (pct == battery_level) return;
+  battery_level = pct;
+  if (ble_ready) BAS_Update_Char(BATTERY_LEVEL_CHAR_UUID, 0, &battery_level);
 }
 
 static void Adv_Slow(void)
@@ -139,9 +147,8 @@ void APP_BLE_Init(void)
   dis.Length = sizeof(KEYWORD_FW_VERSION) - 1;
   DIS_UpdateChar(FIRMWARE_REVISION_UUID, &dis);
 
-  /* ponytail: fixed 100 %, the board has no battery gauge wired to the MCU yet */
-  uint8_t level = 100;
-  BAS_Update_Char(BATTERY_LEVEL_CHAR_UUID, 0, &level);
+  /* batt.c updates it from the charger's ADC once it has a reading */
+  BAS_Update_Char(BATTERY_LEVEL_CHAR_UUID, 0, &battery_level);
 
   HIDSAPP_Init();
   ble_ready = 1;
