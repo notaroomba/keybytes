@@ -26,7 +26,11 @@ _Time spent: 5h_
 
 So I started gluing the magnets in with gorilla super glue gel (from the inside so it doesnt get on the faces) and when I put two J7 keybits together they tilted up a little. I thought I had to sand it but it turned out that glue had gotten onto the outside face of some magnets so they werent flat, after scraping it off with a razor the tilt went away. Btw acetone doesnt hurt the magnets but it does wreck the resin so dont get it on the case.
 
-J7 was the one I liked the most so I made it the main keybit case. The magnets kept deflecting when I pushed them in against the keyswitch so I also designed a jig that drops in where the switch goes so they all stop at exactly 0.75mm.
+J7 was the one I liked the most so I made it the main keybit case.
+
+![image](assets/journal/j7_keybits_joined.jpeg)
+
+The magnets kept deflecting when I pushed them in against the keyswitch so I also designed a jig that drops in where the switch goes so they all stop at exactly 0.75mm.
 
 For the keyword the plain pocket J7 tray was too tight for the 4x2 magnets (probably resin curing tolerance) but the collar one worked. I also realized that I need at least 2 magnets per side on the keyword like on the keybit, and since the collars stick out, a 4x1 magnet never reaches into the tray so it doesnt hit the side contacts or the inductors anymore. That made the J7.1 and J7.1b keyword trays and also a press fit coupon to see if I could skip the glue completely.
 
