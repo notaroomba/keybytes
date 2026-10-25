@@ -163,7 +163,7 @@
       ],
       "drc_exclusions": [],
       "meta": {
-        "version": 3
+        "version": 2
       },
       "rule_severities": {
         "annular_width": "error",
@@ -275,7 +275,6 @@
         {
           "td_allow_use_two_tracks": true,
           "td_curve_segcount": 0,
-          "td_enabled": false,
           "td_height_ratio": 1.0,
           "td_length_ratio": 0.5,
           "td_maxheight": 2.0,
@@ -287,7 +286,6 @@
         {
           "td_allow_use_two_tracks": true,
           "td_curve_segcount": 0,
-          "td_enabled": false,
           "td_height_ratio": 1.0,
           "td_length_ratio": 0.5,
           "td_maxheight": 2.0,
@@ -299,7 +297,6 @@
         {
           "td_allow_use_two_tracks": true,
           "td_curve_segcount": 0,
-          "td_enabled": false,
           "td_height_ratio": 1.0,
           "td_length_ratio": 0.5,
           "td_maxheight": 2.0,
@@ -638,8 +635,8 @@
     },
     "net_chain_classes": {},
     "net_chain_netclasses": {},
-    "net_colors": {},
-    "netclass_assignments": {},
+    "net_colors": null,
+    "netclass_assignments": null,
     "netclass_patterns": []
   },
   "pcbnew": {
@@ -797,7 +794,7 @@
   "text_variables": {},
   "tuning_profiles": {
     "meta": {
-      "version": 2
+      "version": 0
     },
     "tuning_profiles_impedance_geometric": []
   }
