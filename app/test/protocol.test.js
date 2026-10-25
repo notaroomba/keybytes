@@ -15,12 +15,15 @@ test('SIDES with only some fields', () => {
 });
 
 test('parses HELLO reply', () => {
-  assert.deepStrictEqual(parseLine('KEYWORD v=0.1 proto=1'), { type: 'hello', fw: '0.1', proto: 1 });
+  assert.deepStrictEqual(parseLine('KEYWORD v=0.1 proto=1'), { type: 'hello', fw: '0.1', proto: 1, caps: new Set(), kb: null });
+  const h = parseLine('KEYWORD v=0.2 proto=1 caps=batt,hold kb=3');
+  assert.deepStrictEqual([...h.caps], ['batt', 'hold']);
+  assert.strictEqual(h.kb, 3);
 });
 
 test('accepts 96-bit UIDs', () => {
   const uid = '3B0A4F1C88D2E61F5F1821C1';
-  assert.deepStrictEqual(parseLine(`KEY+ uid=${uid.toLowerCase()} at=L`), { type: 'keyAdd', uid, at: 'L' });
+  assert.deepStrictEqual(parseLine(`KEY+ uid=${uid.toLowerCase()} at=L`), { type: 'keyAdd', uid, at: 'L', v: null });
   assert.strictEqual(cmd.map(uid, 1, 4), `MAP uid=${uid} mods=01 key=04`);
   assert.strictEqual(parseLine('KEY+ uid=3B0A4F1C88D2 at=L').type, 'unknown');
 });
@@ -39,8 +42,8 @@ test('line buffer splits chunks and CRLF', () => {
 });
 
 test('parses key events', () => {
-  assert.deepStrictEqual(parseLine('KEY+ uid=5f1821c1 at=R'), { type: 'keyAdd', uid: '5F1821C1', at: 'R' });
-  assert.deepStrictEqual(parseLine('KEY+ uid=5F1821C1 at=?'), { type: 'keyAdd', uid: '5F1821C1', at: null });
+  assert.deepStrictEqual(parseLine('KEY+ uid=5f1821c1 at=R'), { type: 'keyAdd', uid: '5F1821C1', at: 'R', v: null });
+  assert.deepStrictEqual(parseLine('KEY+ uid=5F1821C1 at=?'), { type: 'keyAdd', uid: '5F1821C1', at: null, v: null });
   assert.deepStrictEqual(parseLine('KEY- uid=5F1821C1'), { type: 'keyRemove', uid: '5F1821C1' });
   assert.deepStrictEqual(parseLine('PRESS uid=5F1821C1 down=1'), { type: 'press', uid: '5F1821C1', down: true });
   assert.deepStrictEqual(parseLine('KEYS END'), { type: 'keysEnd' });
@@ -64,4 +67,33 @@ test('media key mappings', () => {
   assert.strictEqual(mapCommand('5F1821C1', { mods: 0, key: 0 }), null);
   assert.deepStrictEqual(parseLine('MAPC uid=5F1821C1 usage=00E9'), { type: 'mapConsumer', uid: '5F1821C1', usage: 0xe9 });
   assert.deepStrictEqual(profileCommands({ '5F1821C1': { consumer: 0x192 } }), ['CLEAR', 'MAPC uid=5F1821C1 usage=0192', 'SAVE']);
+});
+
+test('optional features: battery, macro, hold, flash', () => {
+  const { entryCommands } = require('../renderer/protocol.js');
+  assert.deepStrictEqual(parseLine('BATT pct=81 chg=1 usb=1'), { type: 'battery', pct: 81, charging: true, usb: true });
+  assert.deepStrictEqual(parseLine('MACRO uid=5F1821C1 seq=0006,0119,zz'), { type: 'macro', uid: '5F1821C1', steps: [[0, 6], [1, 0x19]] });
+  assert.deepStrictEqual(parseLine('HOLD uid=5F1821C1 mods=02 key=00 ms=250'), { type: 'hold', uid: '5F1821C1', mods: 2, key: 0, ms: 250 });
+  assert.deepStrictEqual(parseLine('FLASH uid=5F1821C1 pct=40'), { type: 'flashProgress', uid: '5F1821C1', pct: 40 });
+  assert.deepStrictEqual(parseLine('KEY+ uid=5F1821C1 at=L v=2').v, 2);
+
+  const all = new Set(['macro', 'hold']);
+  const e = { macro: [[1, 6], [1, 0x19]], hold: { mods: 2, key: 0, ms: 300 } };
+  assert.deepStrictEqual(entryCommands('5F1821C1', e, all), ['MACRO uid=5F1821C1 seq=0106,0119', 'HOLD uid=5F1821C1 mods=02 key=00 ms=300']);
+  assert.deepStrictEqual(entryCommands('5F1821C1', e, new Set()), [], 'unsupported features are not sent');
+  assert.deepStrictEqual(entryCommands('5F1821C1', { host: { type: 'url', value: 'x' } }, all), []);
+  assert.strictEqual(cmd.macro('5F1821C1', Array(20).fill([0, 4])).split(',').length, 16);
+});
+
+test('line buffer accepts a bare CR', () => {
+  const lines = [];
+  const lb = new LineBuffer((l) => lines.push(l));
+  lb.push('HELLO\rSIDES?\r');
+  lb.push('\nKEYS?\n');
+  assert.deepStrictEqual(lines, ['HELLO', 'SIDES?', 'KEYS?']);
+});
+
+test('relayed Keybits', () => {
+  assert.deepStrictEqual(parseLine('KEY+ uid=D00DF00D at=X via=91C7002DE4B3A75C0A33B7E2 depth=2 v=3'),
+    { type: 'keyAdd', uid: 'D00DF00D', at: null, v: 3, via: '91C7002DE4B3A75C0A33B7E2', depth: 2 });
 });

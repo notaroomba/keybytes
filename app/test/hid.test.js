@@ -30,3 +30,15 @@ test('media keys', () => {
   assert.deepStrictEqual(Hid.fromEvent({ code: 'MediaPlayPause' }), { consumer: 0xcd });
   assert.strictEqual(Hid.consumerLabel(0xe9), 'Volume Up');
 });
+
+test('text to macro steps', () => {
+  assert.deepStrictEqual(Hid.textToSteps('aB1!').steps, [[0, 4], [2, 5], [0, 0x1e], [2, 0x1e]]);
+  assert.deepStrictEqual(Hid.textToSteps('é').skipped, ['é']);
+  assert.strictEqual(Hid.macroLabel([...Hid.textToSteps('Hi').steps, [8, 0x06]], true), '"Hi", Cmd+C');
+});
+
+test('search finds keys and media keys', () => {
+  assert.strictEqual(Hid.search('f13')[0].label, 'F13');
+  assert.deepStrictEqual(Hid.search('play')[0], { kind: 'c', usage: 0xcd, label: 'Play/Pause' });
+  assert.strictEqual(Hid.search('zzzz').length, 0);
+});

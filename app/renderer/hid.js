@@ -91,7 +91,77 @@
     return { mods, usage: k.usage };
   }
 
-  const api = { KEYS, MODS, CONSUMER, byUsage, comboLabel, consumerLabel, fromEvent, modName };
+  // Characters on a US layout -> [mods, usage] taps, for typing text with a macro.
+  const SHIFTED = { '!': '1', '@': '2', '#': '3', $: '4', '%': '5', '^': '6', '&': '7', '*': '8', '(': '9', ')': '0',
+    _: '-', '+': '=', '{': '[', '}': ']', '|': '\\', ':': ';', '"': "'", '~': '`', '<': ',', '>': '.', '?': '/' };
+  const PLAIN = { '-': 0x2d, '=': 0x2e, '[': 0x2f, ']': 0x30, '\\': 0x31, ';': 0x33, "'": 0x34, '`': 0x35,
+    ',': 0x36, '.': 0x37, '/': 0x38, ' ': 0x2c, '\n': 0x28, '\t': 0x2b };
+  function charToStep(ch) {
+    if (/[a-z]/.test(ch)) return [0, 0x04 + ch.charCodeAt(0) - 97];
+    if (/[A-Z]/.test(ch)) return [2, 0x04 + ch.charCodeAt(0) - 65];
+    if (/[1-9]/.test(ch)) return [0, 0x1e + Number(ch) - 1];
+    if (ch === '0') return [0, 0x27];
+    if (ch in PLAIN) return [0, PLAIN[ch]];
+    if (ch in SHIFTED) { const base = charToStep(SHIFTED[ch]); return base && [2, base[1]]; }
+    return null;
+  }
+  // Returns { steps, skipped } where skipped lists characters with no US-layout key.
+  function textToSteps(text) {
+    const steps = [];
+    const skipped = [];
+    for (const ch of text) {
+      const st = charToStep(ch);
+      if (st) steps.push(st); else skipped.push(ch);
+    }
+    return { steps, skipped };
+  }
+
+  // Label for one macro step, and for a whole sequence ("Ctrl+C, Ctrl+V").
+  const stepLabel = ([mods, key], mac) => comboLabel(mods, key, mac);
+  function macroLabel(steps, mac) {
+    // Runs of plain or shifted printable characters read better as text.
+    const out = [];
+    let text = '';
+    const flush = () => { if (text) out.push(`"${text}"`); text = ''; };
+    for (const st of steps) {
+      const ch = stepChar(st);
+      if (ch != null) text += ch;
+      else { flush(); out.push(stepLabel(st, mac)); }
+    }
+    flush();
+    return out.join(', ');
+  }
+  const charByStep = new Map();
+  for (let c = 32; c < 127; c++) {
+    const ch = String.fromCharCode(c);
+    const st = charToStep(ch);
+    if (st && !charByStep.has(st.join(':'))) charByStep.set(st.join(':'), ch);
+  }
+  const stepChar = (st) => charByStep.get(st.join(':')) ?? null;
+
+  // Fuzzy-ish search over keys and media keys for the Assign dialog.
+  // Returns [{kind: 'k'|'c', usage, label}] best match first.
+  function search(query) {
+    const q = query.trim().toLowerCase();
+    const all = [
+      ...KEYS.map((k) => ({ kind: 'k', usage: k.usage, label: k.label, hay: `${k.label} ${k.code}`.toLowerCase() })),
+      ...CONSUMER.map((c) => ({ kind: 'c', usage: c.usage, label: c.label, hay: `${c.label} ${c.code} media`.toLowerCase() })),
+    ];
+    if (!q) return all.map(({ hay, ...r }) => r);
+    const scored = [];
+    for (const r of all) {
+      const label = r.label.toLowerCase();
+      let score = -1;
+      if (label === q) score = 0;
+      else if (label.startsWith(q)) score = 1;
+      else if (r.hay.includes(q)) score = 2;
+      else if (q.split(/\s+/).every((w) => r.hay.includes(w))) score = 3;
+      if (score >= 0) scored.push([score, r]);
+    }
+    return scored.sort((a, b) => a[0] - b[0]).map(([, { hay, ...r }]) => r);
+  }
+
+  const api = { KEYS, MODS, CONSUMER, byUsage, comboLabel, consumerLabel, fromEvent, modName, textToSteps, macroLabel, stepLabel, search };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Hid = api;
 })(typeof window !== 'undefined' ? window : globalThis);
