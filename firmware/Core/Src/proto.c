@@ -90,6 +90,24 @@ static int Arg_Hex(const char *args, const char *name, int digits, uint8_t *out)
   return -1;
 }
 
+/* Finds "name=" and parses 1 to 5 decimal digits after it. 0 on success. */
+static int Arg_Dec(const char *args, const char *name, uint16_t *out)
+{
+  size_t nl = strlen(name);
+  for (const char *p = args; (p = strstr(p, name)) != NULL; p += nl)
+  {
+    if ((p != args && p[-1] != ' ') || p[nl] != '=') continue;
+    const char *v = p + nl + 1;
+    uint32_t n = 0;
+    int digits = 0;
+    for (; *v >= '0' && *v <= '9'; v++, digits++) n = n * 10 + (uint32_t)(*v - '0');
+    if (digits == 0 || digits > 5 || n > 0xFFFF || (*v != 0 && *v != ' ')) return -1;
+    *out = (uint16_t)n;
+    return 0;
+  }
+  return -1;
+}
+
 /* uid= is printed most significant byte first, stored little endian. */
 static int Arg_Uid(const char *args, uint8_t uid[UID_LEN])
 {
@@ -167,23 +185,44 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     PROTO_FormatUid(uid_s, uid);
     Reply(port, "OK MAPC uid=%s", uid_s);
   }
+  else if (strcmp(cmd, "HOLD") == 0)
+  {
+    uint8_t mods, key;
+    uint16_t ms = KEYACT_HOLD_MS_DEF;
+    if (Arg_Uid(args, uid) || Arg_Hex(args, "mods", 2, &mods) || Arg_Hex(args, "key", 2, &key)
+        || (strstr(args, "ms=") && Arg_Dec(args, "ms", &ms)))
+    {
+      Reply(port, "ERR usage: HOLD uid=<24hex> mods=<2hex> key=<2hex> ms=<dec>");
+      return;
+    }
+    if (KEYMAP_SetHold(uid, mods, key, ms) != 0)
+    {
+      Reply(port, "ERR keymap full");
+      return;
+    }
+    PROTO_FormatUid(uid_s, uid);
+    Reply(port, "OK HOLD uid=%s", uid_s);
+  }
   else if (strcmp(cmd, "MAP?") == 0)
   {
-    uint8_t mods;
-    uint16_t code;
     if (Arg_Uid(args, uid))
     {
       Reply(port, "ERR usage: MAP? uid=<24hex>");
       return;
     }
     PROTO_FormatUid(uid_s, uid);
-    if (KEYMAP_Get(uid, &mods, &code) == KEYMAP_CONSUMER)
+    const keyact_t *a = KEYMAP_Lookup(uid);
+    if (a && a->kind == KEYACT_CONSUMER)
     {
-      Reply(port, "MAPC uid=%s usage=%04X", uid_s, code);
+      Reply(port, "MAPC uid=%s usage=%04X", uid_s, a->code);
     }
     else
     {
-      Reply(port, "MAP uid=%s mods=%02X key=%02X", uid_s, mods, code);
+      Reply(port, "MAP uid=%s mods=%02X key=%02X", uid_s, a ? a->mods : 0, a ? a->code : 0);
+    }
+    if (a && (a->hold_mods || a->hold_key))
+    {
+      Reply(port, "HOLD uid=%s mods=%02X key=%02X ms=%u", uid_s, a->hold_mods, a->hold_key, a->hold_ms);
     }
   }
   else if (strcmp(cmd, "UNMAP") == 0)

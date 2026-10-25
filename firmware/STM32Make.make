@@ -103,6 +103,7 @@ Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_rcc.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_usb.c \
 Core/Src/app_entry.c \
 Core/Src/hw_timerserver.c \
+Core/Src/keyact.c \
 Core/Src/keymap.c \
 Core/Src/proto.c \
 Core/Src/stm32_lpm_if.c \

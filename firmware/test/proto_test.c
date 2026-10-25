@@ -16,7 +16,7 @@ static void write2(const char *data, uint16_t len) { strncat(out2, data, len); }
 static proto_port_t port = {.write = write1};
 static proto_port_t port2 = {.write = write2};
 
-static struct { uint8_t uid[UID_LEN], kind, mods; uint16_t code; } table[KEYMAP_MAX];
+static struct { uint8_t uid[UID_LEN]; keyact_t act; } table[KEYMAP_MAX];
 static int n;
 static keybit_info_t present[2];
 
@@ -25,21 +25,38 @@ static int find(const uint8_t *uid)
   for (int i = 0; i < n; i++) if (!memcmp(table[i].uid, uid, UID_LEN)) return i;
   return -1;
 }
+static keyact_t *entry(const uint8_t *uid)
+{
+  int i = find(uid);
+  if (i < 0) { if (n == KEYMAP_MAX) return NULL; i = n++; memset(&table[i], 0, sizeof(table[i])); memcpy(table[i].uid, uid, UID_LEN); }
+  return &table[i].act;
+}
 static int put(const uint8_t *uid, uint8_t kind, uint8_t mods, uint16_t code)
 {
-  int i = find(uid);
-  if (i < 0) { if (n == KEYMAP_MAX) return -1; i = n++; memcpy(table[i].uid, uid, UID_LEN); }
-  table[i].kind = kind; table[i].mods = mods; table[i].code = code;
+  keyact_t *a = entry(uid);
+  if (!a) return -1;
+  a->kind = kind; a->mods = mods; a->code = code;
   return 0;
 }
-int KEYMAP_Set(const uint8_t *uid, uint8_t mods, uint8_t key) { return put(uid, KEYMAP_KEY, mods, key); }
-int KEYMAP_SetConsumer(const uint8_t *uid, uint16_t usage) { return put(uid, KEYMAP_CONSUMER, 0, usage); }
-int KEYMAP_Get(const uint8_t *uid, uint8_t *mods, uint16_t *code)
+int KEYMAP_Set(const uint8_t *uid, uint8_t mods, uint8_t key) { return put(uid, KEYACT_KEY, mods, key); }
+int KEYMAP_SetConsumer(const uint8_t *uid, uint16_t usage) { return put(uid, KEYACT_CONSUMER, 0, usage); }
+void KEYMAP_Unmap(const uint8_t *uid);
+int KEYMAP_SetHold(const uint8_t *uid, uint8_t mods, uint8_t key, uint16_t ms)
 {
-  int i = find(uid);
-  *mods = i < 0 ? 0 : table[i].mods; *code = i < 0 ? 0 : table[i].code;
-  return i < 0 ? KEYMAP_NONE : table[i].kind;
+  if (!mods && !key)
+  {
+    int i = find(uid);
+    if (i < 0) return 0;
+    table[i].act.hold_mods = table[i].act.hold_key = 0; table[i].act.hold_ms = 0;
+    if (table[i].act.kind == KEYACT_NONE) KEYMAP_Unmap(uid);
+    return 0;
+  }
+  keyact_t *a = entry(uid);
+  if (!a) return -1;
+  a->hold_mods = mods; a->hold_key = key; a->hold_ms = ms;
+  return 0;
 }
+const keyact_t *KEYMAP_Lookup(const uint8_t *uid) { int i = find(uid); return i < 0 ? NULL : &table[i].act; }
 void KEYMAP_Unmap(const uint8_t *uid) { int i = find(uid); if (i >= 0) table[i] = table[--n]; }
 void KEYMAP_Clear(void) { n = 0; }
 int KEYMAP_Save(void) { return 0; }
@@ -82,7 +99,7 @@ int main(void)
 
   /* consumer keys: MAPC and MAP replace each other */
   expect("MAPC uid=" U " usage=00CD\n", "OK MAPC uid=" U "\n");
-  assert(table[0].kind == KEYMAP_CONSUMER && table[0].code == 0x00CD);
+  assert(table[0].act.kind == KEYACT_CONSUMER && table[0].act.code == 0x00CD);
   expect("MAP? uid=" U "\n", "MAPC uid=" U " usage=00CD\n");
   expect("MAP uid=" U " mods=00 key=04\n", "OK MAP uid=" U "\n");
   expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=04\n");
@@ -94,6 +111,28 @@ int main(void)
   expect("MAPC uid=" U " usage=E2\n", "ERR usage: MAPC uid=<24hex> usage=<4hex>\n");
   expect("MAPC uid=" U "\n", "ERR usage: MAPC uid=<24hex> usage=<4hex>\n");
   expect("MAPC uid=" U " usage=00E2\n", "OK MAPC uid=" U "\n");
+  expect("CLEAR\n", "OK CLEAR\n");
+  assert(n == 0);
+
+  /* HOLD: tap does the MAP action, hold does this one */
+  expect("HOLD uid=" U " mods=02 key=00 ms=250\n", "OK HOLD uid=" U "\n");
+  expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=00\nHOLD uid=" U " mods=02 key=00 ms=250\n");
+  expect("MAP uid=" U " mods=00 key=29\n", "OK MAP uid=" U "\n");   /* MAP keeps the hold */
+  expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=29\nHOLD uid=" U " mods=02 key=00 ms=250\n");
+  expect("HOLD uid=" U " mods=00 key=E0\n", "OK HOLD uid=" U "\n");   /* ms defaults to 200 */
+  expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=29\nHOLD uid=" U " mods=00 key=E0 ms=200\n");
+  expect("HOLD uid=" U " mods=00 key=00\n", "OK HOLD uid=" U "\n");   /* clears it */
+  expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=29\n");
+  expect("HOLD uid=" U " mods=02 key=00 ms=70000\n", "ERR usage: HOLD uid=<24hex> mods=<2hex> key=<2hex> ms=<dec>\n");
+  expect("HOLD uid=" U " mods=02 key=00 ms=\n", "ERR usage: HOLD uid=<24hex> mods=<2hex> key=<2hex> ms=<dec>\n");
+  expect("HOLD uid=" U " key=04\n", "ERR usage: HOLD uid=<24hex> mods=<2hex> key=<2hex> ms=<dec>\n");
+  expect("HOLD uid=" U " mods=02 key=00 ms=300\n", "OK HOLD uid=" U "\n");
+  expect("UNMAP uid=" U "\n", "OK UNMAP uid=" U "\n");   /* UNMAP drops the hold too */
+  expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=00\n");
+  expect("HOLD uid=" U " mods=02 key=00\n", "OK HOLD uid=" U "\n");
+  expect("HOLD uid=" U " mods=00 key=00\n", "OK HOLD uid=" U "\n");
+  assert(n == 0);   /* a hold-only entry goes away when cleared */
+  expect("HOLD uid=" U " mods=02 key=00\n", "OK HOLD uid=" U "\n");
   expect("CLEAR\n", "OK CLEAR\n");
   assert(n == 0);
   expect("SAVE\n", "OK SAVE\n");
