@@ -1,18 +1,20 @@
 /*
  * Host check for the config protocol parser in Core/Src/proto.c, with the
- * keymap and NUS replaced by small fakes.
- *   cc -std=c99 -Itest/stub -ICore/Inc -ISTM32_WPAN/App test/proto_test.c Core/Src/proto.c -o /tmp/proto_test && /tmp/proto_test
+ * keymap and the two transports (NUS, USB CDC) replaced by small fakes.
+ *   cc -std=c99 -Itest/stub -ICore/Inc test/proto_test.c Core/Src/proto.c -o /tmp/proto_test && /tmp/proto_test
  */
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include "keymap.h"
-#include "nus.h"
 #include "proto.h"
 
-static char out[2048];
-
-void NUS_Write(const char *data, uint16_t len) { strncat(out, data, len); }
+/* Two fake transports, like NUS and USB CDC. */
+static char out[2048], out2[2048];
+static void write1(const char *data, uint16_t len) { strncat(out, data, len); }
+static void write2(const char *data, uint16_t len) { strncat(out2, data, len); }
+static proto_port_t port = {.write = write1};
+static proto_port_t port2 = {.write = write2};
 
 static struct { uint8_t uid[UID_LEN], kind, mods; uint16_t code; } table[KEYMAP_MAX];
 static int n;
@@ -45,15 +47,18 @@ const keybit_info_t *KEYMAP_Present(int *count) { *count = 2; return present; }
 
 static void expect(const char *in, const char *want)
 {
-  out[0] = 0;
-  PROTO_Input((const uint8_t *)in, (uint16_t)strlen(in));
+  out[0] = out2[0] = 0;
+  PROTO_Input(&port, (const uint8_t *)in, (uint16_t)strlen(in));
   if (strcmp(out, want) != 0) { printf("in:   %s\nwant: %s\ngot:  %s\n", in, want, out); assert(0); }
+  assert(out2[0] == 0);   /* replies only go to the port that asked */
 }
 
 #define U  "0102030405060708090A0B0C"
 
 int main(void)
 {
+  PROTO_AddPort(&port);
+  PROTO_AddPort(&port2);
   for (int i = 0; i < UID_LEN; i++) present[0].uid[i] = (uint8_t)(12 - i);   /* prints as U */
   present[0].at = 'L';
   memset(present[1].uid, 0xAB, UID_LEN);
@@ -61,6 +66,8 @@ int main(void)
 
   expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1\n");
   expect("HELLO\r\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1\n");
+  expect("HELLO\r", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1\n");   /* terminal Enter */
+  expect("\r\n\r\n", "");
   expect("SIDES?\n", "SIDES L=1 R=0 T=1\n");
   expect("KEYS?\n", "KEY+ uid=" U " at=L\nKEY+ uid=ABABABABABABABABABABABAB at=T\nKEYS END\n");
   expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=00\n");
@@ -92,10 +99,10 @@ int main(void)
 
   /* chunked like 20 byte BLE writes */
   out[0] = 0;
-  PROTO_Input((const uint8_t *)"MAP uid=01020304050", 19);
+  PROTO_Input(&port, (const uint8_t *)"MAP uid=01020304050", 19);
   assert(out[0] == 0);
-  PROTO_Input((const uint8_t *)"60708090A0B0C mods=", 19);
-  PROTO_Input((const uint8_t *)"00 key=1E\n", 10);
+  PROTO_Input(&port, (const uint8_t *)"60708090A0B0C mods=", 19);
+  PROTO_Input(&port, (const uint8_t *)"00 key=1E\n", 10);
   assert(strcmp(out, "OK MAP uid=" U "\n") == 0);
 
   expect("MAP uid=0102 mods=00 key=04\n", "ERR usage: MAP uid=<24hex> mods=<2hex> key=<2hex>\n");
@@ -114,6 +121,34 @@ int main(void)
   longline[sizeof(longline) - 1] = 0;
   expect(longline, "ERR line too long\n");
   expect("HELLO\n", "KEYWORD v=" KEYWORD_FW_VERSION " proto=1\n");
+
+  /* Two transports at once: each has its own line buffer, so half a line
+   * on one doesn't mix with the other, and replies go back where they
+   * came from. */
+  out[0] = out2[0] = 0;
+  PROTO_Input(&port, (const uint8_t *)"HEL", 3);
+  PROTO_Input(&port2, (const uint8_t *)"SIDES?\n", 7);
+  assert(out[0] == 0);
+  assert(strcmp(out2, "SIDES L=1 R=0 T=1\n") == 0);
+  PROTO_Input(&port, (const uint8_t *)"LO\n", 3);
+  assert(strcmp(out, "KEYWORD v=" KEYWORD_FW_VERSION " proto=1\n") == 0);
+  assert(strcmp(out2, "SIDES L=1 R=0 T=1\n") == 0);
+
+  /* Unsolicited events go to every connected port, and only those. */
+  port.connected = 0;
+  port2.connected = 0;
+  out[0] = out2[0] = 0;
+  PROTO_Send("PRESS uid=%s down=%d", U, 1);
+  assert(out[0] == 0 && out2[0] == 0);
+  port2.connected = 1;   /* e.g. DTR set on CDC */
+  PROTO_Send("PRESS uid=%s down=%d", U, 1);
+  assert(out[0] == 0 && strcmp(out2, "PRESS uid=" U " down=1\n") == 0);
+  out2[0] = 0;
+  PROTO_Input(&port, (const uint8_t *)"HELLO\n", 6);   /* a line marks the port connected */
+  assert(port.connected);
+  out[0] = 0;
+  PROTO_Send("KEY- uid=%s", U);
+  assert(strcmp(out, "KEY- uid=" U "\n") == 0 && strcmp(out2, "KEY- uid=" U "\n") == 0);
 
   puts("proto_test: ok");
   return 0;

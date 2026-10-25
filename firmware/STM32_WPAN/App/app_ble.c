@@ -29,6 +29,7 @@ static const uint8_t a_BLE_CfgIrValue[16] = CFG_BLE_IR;
 static const uint8_t a_BLE_CfgErValue[16] = CFG_BLE_ER;
 
 static uint16_t conn_handle = APP_BLE_NO_CONN;
+static uint8_t ble_ready;
 static uint8_t adv_timer_id;
 static uint8_t a_BdAddr[6];
 
@@ -51,6 +52,11 @@ static void Adv_Start(uint8_t fast);
 uint16_t APP_BLE_ConnHandle(void)
 {
   return conn_handle;
+}
+
+uint8_t APP_BLE_Ready(void)
+{
+  return ble_ready;
 }
 
 static void Adv_Slow(void)
@@ -138,7 +144,7 @@ void APP_BLE_Init(void)
   BAS_Update_Char(BATTERY_LEVEL_CHAR_UUID, 0, &level);
 
   HIDSAPP_Init();
-  KEYMAP_Init();
+  ble_ready = 1;
 
   Adv_Start(1);
 }

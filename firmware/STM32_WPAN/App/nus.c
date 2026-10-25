@@ -21,6 +21,8 @@ static uint16_t tx_head, tx_tail;
 static uint8_t rx_buf[RX_SIZE];
 static uint16_t rx_head, rx_tail;
 
+static proto_port_t nus_port = {.write = NUS_Write};
+
 static void Tx_Drain(void)
 {
   while (tx_enabled && tx_tail != tx_head && APP_BLE_ConnHandle() != APP_BLE_NO_CONN)
@@ -53,6 +55,9 @@ void NUS_Write(const char *data, uint16_t len)
 void NUS_Disconnected(void)
 {
   tx_enabled = 0;
+  nus_port.connected = 0;
+  nus_port.len = 0;
+  nus_port.overflow = 0;
   tx_head = tx_tail = 0;
   rx_head = rx_tail = 0;
 }
@@ -63,7 +68,7 @@ static void Rx_Task(void)
   {
     uint16_t end = rx_head;
     uint16_t n = (end > rx_tail ? end : RX_SIZE) - rx_tail;
-    PROTO_Input(&rx_buf[rx_tail], n);
+    PROTO_Input(&nus_port, &rx_buf[rx_tail], n);
     rx_tail = (rx_tail + n) % RX_SIZE;
   }
 }
@@ -82,6 +87,7 @@ static SVCCTL_EvtAckStatus_t NUS_Event_Handler(void *Event)
       if (mod->Attr_Handle == tx_handle + 2)   /* TX CCCD */
       {
         tx_enabled = mod->Attr_Data[0] & 1;
+        nus_port.connected = tx_enabled;
         Tx_Drain();
         return SVCCTL_EvtAckFlowEnable;
       }
@@ -118,6 +124,7 @@ void NUS_Init(void)
   const uint8_t tx_uuid[16] = NUS_UUID(0x03);
 
   SVCCTL_RegisterSvcHandler(NUS_Event_Handler);
+  PROTO_AddPort(&nus_port);
   UTIL_SEQ_RegTask(1 << CFG_TASK_NUS_RX_ID, UTIL_SEQ_RFU, Rx_Task);
 
   memcpy(uuid.Char_UUID_128, svc_uuid, 16);

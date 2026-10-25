@@ -132,7 +132,15 @@ STM32_WPAN/App/hids_app.c \
 STM32_WPAN/App/nus.c \
 STM32_WPAN/Target/hw_ipcc.c \
 Utilities/lpm/tiny_lpm/stm32_lpm.c \
-Utilities/sequencer/stm32_seq.c
+Utilities/sequencer/stm32_seq.c \
+USB_Device/App/usb_device.c \
+USB_Device/App/usbd_cdc_if.c \
+USB_Device/App/usbd_desc.c \
+USB_Device/Target/usbd_conf.c \
+Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
+Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
+Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
+Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c
 
 
 CXX_SOURCES = \
@@ -243,7 +251,11 @@ C_INCLUDES =  \
 -IMiddlewares/ST/STM32_WPAN/utilities \
 -ISTM32_WPAN/App \
 -IUtilities/lpm/tiny_lpm \
--IUtilities/sequencer
+-IUtilities/sequencer \
+-IUSB_Device/App \
+-IUSB_Device/Target \
+-IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
+-IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
 
 
 

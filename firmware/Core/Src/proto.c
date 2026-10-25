@@ -2,26 +2,49 @@
 #include <stdio.h>
 #include <string.h>
 #include "keymap.h"
-#include "nus.h"
 #include "proto.h"
 
-#define LINE_MAX 128
+static proto_port_t *ports[PROTO_MAX_PORTS];
+static int port_count;
 
-static char line[LINE_MAX];
-static uint16_t line_len;
-static uint8_t line_overflow;
+void PROTO_AddPort(proto_port_t *port)
+{
+  if (port_count < PROTO_MAX_PORTS) ports[port_count++] = port;
+}
+
+/* Formats one line into out with the \n, returns its length or -1. */
+static int Format(char out[PROTO_LINE_MAX], const char *fmt, va_list ap)
+{
+  int n = vsnprintf(out, PROTO_LINE_MAX - 1, fmt, ap);
+  if (n < 0) return -1;
+  if (n > PROTO_LINE_MAX - 2) n = PROTO_LINE_MAX - 2;
+  out[n++] = '\n';
+  return n;
+}
 
 void PROTO_Send(const char *fmt, ...)
 {
-  char out[LINE_MAX];
+  char out[PROTO_LINE_MAX];
   va_list ap;
   va_start(ap, fmt);
-  int n = vsnprintf(out, sizeof(out) - 1, fmt, ap);
+  int n = Format(out, fmt, ap);
   va_end(ap);
   if (n < 0) return;
-  if (n > (int)sizeof(out) - 2) n = sizeof(out) - 2;
-  out[n++] = '\n';
-  NUS_Write(out, (uint16_t)n);   /* add USB CDC here once there is one */
+  for (int i = 0; i < port_count; i++)
+  {
+    if (ports[i]->connected) ports[i]->write(out, (uint16_t)n);
+  }
+}
+
+static void Reply(proto_port_t *port, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+static void Reply(proto_port_t *port, const char *fmt, ...)
+{
+  char out[PROTO_LINE_MAX];
+  va_list ap;
+  va_start(ap, fmt);
+  int n = Format(out, fmt, ap);
+  va_end(ap);
+  if (n >= 0) port->write(out, (uint16_t)n);
 }
 
 void PROTO_FormatUid(char *out, const uint8_t uid[UID_LEN])
@@ -76,7 +99,7 @@ static int Arg_Uid(const char *args, uint8_t uid[UID_LEN])
   return 0;
 }
 
-static void Handle_Line(char *cmd)
+static void Handle_Line(proto_port_t *port, char *cmd)
 {
   char uid_s[UID_LEN * 2 + 1];
   uint8_t uid[UID_LEN];
@@ -86,7 +109,7 @@ static void Handle_Line(char *cmd)
 
   if (strcmp(cmd, "HELLO") == 0)
   {
-    PROTO_Send("KEYWORD v=%s proto=1", KEYWORD_FW_VERSION);
+    Reply(port, "KEYWORD v=%s proto=1", KEYWORD_FW_VERSION);
   }
   else if (strcmp(cmd, "SIDES?") == 0)
   {
@@ -99,7 +122,7 @@ static void Handle_Line(char *cmd)
       r |= k[i].at == 'R';
       t |= k[i].at == 'T';
     }
-    PROTO_Send("SIDES L=%d R=%d T=%d", l, r, t);
+    Reply(port, "SIDES L=%d R=%d T=%d", l, r, t);
   }
   else if (strcmp(cmd, "KEYS?") == 0)
   {
@@ -108,41 +131,41 @@ static void Handle_Line(char *cmd)
     for (int i = 0; i < n; i++)
     {
       PROTO_FormatUid(uid_s, k[i].uid);
-      PROTO_Send("KEY+ uid=%s at=%c", uid_s, k[i].at);
+      Reply(port, "KEY+ uid=%s at=%c", uid_s, k[i].at);
     }
-    PROTO_Send("KEYS END");
+    Reply(port, "KEYS END");
   }
   else if (strcmp(cmd, "MAP") == 0)
   {
     uint8_t mods, key;
     if (Arg_Uid(args, uid) || Arg_Hex(args, "mods", 2, &mods) || Arg_Hex(args, "key", 2, &key))
     {
-      PROTO_Send("ERR usage: MAP uid=<24hex> mods=<2hex> key=<2hex>");
+      Reply(port, "ERR usage: MAP uid=<24hex> mods=<2hex> key=<2hex>");
       return;
     }
     if (KEYMAP_Set(uid, mods, key) != 0)
     {
-      PROTO_Send("ERR keymap full");
+      Reply(port, "ERR keymap full");
       return;
     }
     PROTO_FormatUid(uid_s, uid);
-    PROTO_Send("OK MAP uid=%s", uid_s);
+    Reply(port, "OK MAP uid=%s", uid_s);
   }
   else if (strcmp(cmd, "MAPC") == 0)
   {
     uint8_t usage[2];
     if (Arg_Uid(args, uid) || Arg_Hex(args, "usage", 4, usage))
     {
-      PROTO_Send("ERR usage: MAPC uid=<24hex> usage=<4hex>");
+      Reply(port, "ERR usage: MAPC uid=<24hex> usage=<4hex>");
       return;
     }
     if (KEYMAP_SetConsumer(uid, (uint16_t)(usage[0] << 8 | usage[1])) != 0)
     {
-      PROTO_Send("ERR keymap full");
+      Reply(port, "ERR keymap full");
       return;
     }
     PROTO_FormatUid(uid_s, uid);
-    PROTO_Send("OK MAPC uid=%s", uid_s);
+    Reply(port, "OK MAPC uid=%s", uid_s);
   }
   else if (strcmp(cmd, "MAP?") == 0)
   {
@@ -150,67 +173,69 @@ static void Handle_Line(char *cmd)
     uint16_t code;
     if (Arg_Uid(args, uid))
     {
-      PROTO_Send("ERR usage: MAP? uid=<24hex>");
+      Reply(port, "ERR usage: MAP? uid=<24hex>");
       return;
     }
     PROTO_FormatUid(uid_s, uid);
     if (KEYMAP_Get(uid, &mods, &code) == KEYMAP_CONSUMER)
     {
-      PROTO_Send("MAPC uid=%s usage=%04X", uid_s, code);
+      Reply(port, "MAPC uid=%s usage=%04X", uid_s, code);
     }
     else
     {
-      PROTO_Send("MAP uid=%s mods=%02X key=%02X", uid_s, mods, code);
+      Reply(port, "MAP uid=%s mods=%02X key=%02X", uid_s, mods, code);
     }
   }
   else if (strcmp(cmd, "UNMAP") == 0)
   {
     if (Arg_Uid(args, uid))
     {
-      PROTO_Send("ERR usage: UNMAP uid=<24hex>");
+      Reply(port, "ERR usage: UNMAP uid=<24hex>");
       return;
     }
     KEYMAP_Unmap(uid);
     PROTO_FormatUid(uid_s, uid);
-    PROTO_Send("OK UNMAP uid=%s", uid_s);
+    Reply(port, "OK UNMAP uid=%s", uid_s);
   }
   else if (strcmp(cmd, "CLEAR") == 0)
   {
     KEYMAP_Clear();
-    PROTO_Send("OK CLEAR");
+    Reply(port, "OK CLEAR");
   }
   else if (strcmp(cmd, "SAVE") == 0)
   {
-    if (KEYMAP_Save() != 0) PROTO_Send("ERR flash write failed");
-    else PROTO_Send("OK SAVE");
+    if (KEYMAP_Save() != 0) Reply(port, "ERR flash write failed");
+    else Reply(port, "OK SAVE");
   }
   else
   {
-    PROTO_Send("ERR unknown command");
+    Reply(port, "ERR unknown command");
   }
 }
 
-void PROTO_Input(const uint8_t *data, uint16_t len)
+void PROTO_Input(proto_port_t *port, const uint8_t *data, uint16_t len)
 {
   for (uint16_t i = 0; i < len; i++)
   {
     char c = (char)data[i];
-    if (c == '\n')
+    /* \n ends a line; so does a bare \r, which is what terminals send
+     * on Enter. \r\n just leaves an empty line, which is ignored. */
+    if (c == '\n' || c == '\r')
     {
-      if (line_len && line[line_len - 1] == '\r') line_len--;
-      line[line_len] = 0;
-      if (line_overflow) PROTO_Send("ERR line too long");
-      else if (line_len) Handle_Line(line);
-      line_len = 0;
-      line_overflow = 0;
+      port->line[port->len] = 0;
+      if (port->len || port->overflow) port->connected = 1;
+      if (port->overflow) Reply(port, "ERR line too long");
+      else if (port->len) Handle_Line(port, port->line);
+      port->len = 0;
+      port->overflow = 0;
     }
-    else if (line_len < LINE_MAX - 1)
+    else if (port->len < PROTO_LINE_MAX - 1)
     {
-      line[line_len++] = c;
+      port->line[port->len++] = c;
     }
     else
     {
-      line_overflow = 1;
+      port->overflow = 1;
     }
   }
 }

@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app_entry.h"
+#include "usb_device.h"
 
 /* USER CODE END Includes */
 
@@ -325,6 +326,7 @@ static void MX_RF_Init(void)
   /* USER CODE END RF_Init 1 */
   /* USER CODE BEGIN RF_Init 2 */
   MX_APPE_Init();     /* STM32_WPAN: RTC timer server, transport layer, boots CPU2 */
+  MX_USB_Device_Init(); /* USB CDC serial for the config protocol */
   /* USER CODE END RF_Init 2 */
 
 }

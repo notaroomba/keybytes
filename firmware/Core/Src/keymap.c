@@ -4,6 +4,7 @@
 #include "shci.h"
 #include "utilities_conf.h"
 #include "hids_app.h"
+#include "app_ble.h"
 #include "proto.h"
 #include "keymap.h"
 
@@ -170,9 +171,10 @@ int KEYMAP_Save(void)
   HAL_FLASH_Unlock();
   __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
 
-  SHCI_C2_FLASH_EraseActivity(ERASE_ACTIVITY_ON);
+  /* Without the BLE stack running there is nobody to answer SHCI. */
+  if (APP_BLE_Ready()) SHCI_C2_FLASH_EraseActivity(ERASE_ACTIVITY_ON);
   err |= Flash_Op(1, Map_Page(), 0);
-  SHCI_C2_FLASH_EraseActivity(ERASE_ACTIVITY_OFF);
+  if (APP_BLE_Ready()) SHCI_C2_FLASH_EraseActivity(ERASE_ACTIVITY_OFF);
 
   uint32_t addr = (uint32_t)Map_Flash();
   const uint64_t *src = (const uint64_t *)&map;

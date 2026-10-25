@@ -94,6 +94,10 @@ includeDirectories:
   - Middlewares/ST/STM32_WPAN/utilities
   - Utilities/lpm/tiny_lpm
   - Utilities/sequencer
+  - USB_Device/App
+  - USB_Device/Target
+  - Middlewares/ST/STM32_USB_Device_Library/Core/Inc
+  - Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
 
 
 # Files that should be included in the compilation.
@@ -129,6 +133,11 @@ sourceFiles:
   - Middlewares/ST/STM32_WPAN/utilities/stm_queue.c
   - Utilities/lpm/tiny_lpm/stm32_lpm.c
   - Utilities/sequencer/stm32_seq.c
+  - USB_Device/**
+  - Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c
+  - Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c
+  - Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c
+  - Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c
 
 
 # When no makefile is present it will show a warning pop-up.

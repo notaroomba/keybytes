@@ -109,6 +109,7 @@ typedef enum
   CFG_TASK_ADV_UPDATE_ID,
   CFG_TASK_KEYS_ID,
   CFG_TASK_NUS_RX_ID,
+  CFG_TASK_CDC_RX_ID,
   CFG_TASK_HCI_ASYNCH_EVT_ID,
   CFG_LAST_TASK_ID_WITH_HCICMD,   /* shall be last in this list */
 } CFG_Task_Id_With_HCI_Cmd_t;

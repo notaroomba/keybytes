@@ -19,6 +19,7 @@
 #include "stm32_lpm.h"
 #include "shci.h"
 #include "otp.h"
+#include "keymap.h"
 
 RTC_HandleTypeDef hrtc;
 
@@ -119,6 +120,9 @@ void MX_APPE_Init(void)
 
   HW_TS_Init(hw_ts_InitMode_Full, &hrtc);
   UTIL_LPM_SetOffMode(1 << CFG_LPM_APP, UTIL_LPM_DISABLE);
+
+  /* Keys run whether or not the radio comes up, USB CDC needs them too. */
+  KEYMAP_Init();
 
   /* Transport layer. CPU2 boots once TL_Enable() runs and answers with
    * SHCI_SUB_EVT_CODE_READY, which brings up the BLE app. */

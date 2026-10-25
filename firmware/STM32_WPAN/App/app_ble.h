@@ -15,4 +15,7 @@ void APP_BLE_Init(void);
 /* Handle of the current link, APP_BLE_NO_CONN when nobody is connected. */
 uint16_t APP_BLE_ConnHandle(void);
 
+/* 1 once the CPU2 stack is up and the services exist. */
+uint8_t APP_BLE_Ready(void);
+
 #endif /* APP_BLE_H */

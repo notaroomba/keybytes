@@ -20,7 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 /* USER CODE BEGIN Includes */
-
+#include "usb_device.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -282,7 +282,7 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* hpcd)
     /* Peripheral clock enable */
     __HAL_RCC_USB_CLK_ENABLE();
     /* USER CODE BEGIN USB_MspInit 1 */
-
+    USB_Clock_HSI48();   /* use HSI48 + CRS instead of PLLSAI1, see usb_device.c */
     /* USER CODE END USB_MspInit 1 */
 
   }
