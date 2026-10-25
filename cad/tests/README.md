@@ -7,25 +7,25 @@ Test cases for different ways of joining modules. Resin print, pair them up and 
 - **Keybit:** J7, 8x 4mm x 3mm magnets sticking out 0.75mm, glued with the inner jig
 - **Keyword:** J7.1b, 2x 4mm x 1mm magnets on collars per side, sticking out 0.75mm
 - The press fit coupon (v1) was loose in every pocket, so the magnets are glued
-- The final cases are in `production/CAD` (`Keybit_Case_Big` and `Keyword_Case_Big_Inner`, STEP and STL)
+- The final cases are in `production/CAD` (`Keybit_Case_Big.step` and `Keyword_Case_Big_Inner.step`)
 
 | File | Board | Joint | Magnets | Print |
 | --- | --- | --- | --- | --- |
-| `J1_magnets_only.stl` | keybit | magnets only (baseline) | 4mm x 1mm, 8 | 2 |
-| `J2_bowtie_case.stl` | keybit | dovetail sockets, joined with a drop in key from the top | 4mm x 1mm, 8 | 2 |
-| `J2_bowtie_key.stl` | - | bow tie key for J2 | - | 4 |
-| `J3_snap_hooks.stl` | keybit | snap hook + window on each side | 4mm x 1mm, 8 | 2 |
-| `J4_sliding_dovetail.stl` | keybit | built in dovetail, slide one module down onto the other | 4mm x 1mm, 8 | 2 |
-| `J5_slip_pegs.stl` | keybit | loose alignment pegs, magnets hold | 4mm x 1mm, 8 | 2 |
-| `J6_crush_rib_pegs.stl` | keybit | press fit pegs with crush ribs (will probably crack in clear resin) | 4mm x 1mm, 8 | 2 |
-| `J7_keybit_protruding.stl` | keybit | magnets stick out 0.75mm, 1.5mm gap between cases (same as the main keybit case now) | 4mm x 3mm, 8 | 2 |
-| `J7.1_keybit_protruding.stl` | keybit | J7 + 0.2mm floor behind each magnet so it stops at 0.75mm out, 0.3mm pocket clearance | 4mm x 3mm, 8 | 2 |
-| `J7.1_keyword_protruding.stl` | keyword (inner) | 2 magnets per side on collars (4x2 at the front corner spot, 4x1 at the other), same as the main keyword case now | 4mm x 2mm, 3 + 4mm x 1mm, 3 | 1 |
-| `J7.1b_keyword_2x4x1.stl` | keyword (inner) | same as J7.1 but 4x1 on collars at both spots, so both sides pull the same | 4mm x 1mm, 6 | 1 |
-| `J7.2_keybit_pressfit.stl` | keybit | J7.1 with 3 crush ribs in each pocket (0.05mm interference) + 0.2mm lead in, no glue | 4mm x 3mm, 8 | 2 |
-| `MAGNET_pressfit_coupon.stl` | test | 7 numbered 4x3 pockets to find the right press fit, see below | 4mm x 3mm, 7 | 1 |
-| `JIG_keybit_J7_inner.stl` | tool | drops inside a J7 keybit case (no switch), 8 pads stop each magnet at 0.75mm out | - | 1 |
-| `JIG_keybit_J7_outer_gauge.stl` | tool | bar pressed on the outside of one side, pads set 2 magnets at 0.75mm out | - | 1 |
+| `J1_magnets_only.step` | keybit | magnets only (baseline) | 4mm x 1mm, 8 | 2 |
+| `J2_bowtie_case.step` | keybit | dovetail sockets, joined with a drop in key from the top | 4mm x 1mm, 8 | 2 |
+| `J2_bowtie_key.step` | - | bow tie key for J2 | - | 4 |
+| `J3_snap_hooks.step` | keybit | snap hook + window on each side | 4mm x 1mm, 8 | 2 |
+| `J4_sliding_dovetail.step` | keybit | built in dovetail, slide one module down onto the other | 4mm x 1mm, 8 | 2 |
+| `J5_slip_pegs.step` | keybit | loose alignment pegs, magnets hold | 4mm x 1mm, 8 | 2 |
+| `J6_crush_rib_pegs.step` | keybit | press fit pegs with crush ribs (will probably crack in clear resin) | 4mm x 1mm, 8 | 2 |
+| `J7_keybit_protruding.step` | keybit | magnets stick out 0.75mm, 1.5mm gap between cases (same as the main keybit case now) | 4mm x 3mm, 8 | 2 |
+| `J7.1_keybit_protruding.step` | keybit | J7 + 0.2mm floor behind each magnet so it stops at 0.75mm out, 0.3mm pocket clearance | 4mm x 3mm, 8 | 2 |
+| `J7.1_keyword_protruding.step` | keyword (inner) | 2 magnets per side on collars (4x2 at the front corner spot, 4x1 at the other), same as the main keyword case now | 4mm x 2mm, 3 + 4mm x 1mm, 3 | 1 |
+| `J7.1b_keyword_2x4x1.step` | keyword (inner) | same as J7.1 but 4x1 on collars at both spots, so both sides pull the same | 4mm x 1mm, 6 | 1 |
+| `J7.2_keybit_pressfit.step` | keybit | J7.1 with 3 crush ribs in each pocket (0.05mm interference) + 0.2mm lead in, no glue | 4mm x 3mm, 8 | 2 |
+| `MAGNET_pressfit_coupon.step` | test | 7 numbered 4x3 pockets to find the right press fit, see below | 4mm x 3mm, 7 | 1 |
+| `JIG_keybit_J7_inner.step` | tool | drops inside a J7 keybit case (no switch), 8 pads stop each magnet at 0.75mm out | - | 1 |
+| `JIG_keybit_J7_outer_gauge.step` | tool | bar pressed on the outside of one side, pads set 2 magnets at 0.75mm out | - | 1 |
 
 ## Pairing
 
