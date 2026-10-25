@@ -11,15 +11,25 @@
   <header>
     <h1>Keyword Monitor</h1>
     <div class="actions">
-      <button id="btn-usb">USB serial</button>
-      <button id="btn-ble">Bluetooth</button>
+      <button id="btn-usb" title="Connect over USB (Cmd/Ctrl+U)">USB serial</button>
+      <button id="btn-ble" title="Connect over Bluetooth (Cmd/Ctrl+B)">Bluetooth</button>
       <button id="btn-demo" class="ghost">Demo</button>
       <button id="btn-disconnect" class="ghost" hidden>Disconnect</button>
+      <span class="sep"></span>
+      <button id="btn-undo" class="icon ghost" title="Undo" aria-label="Undo">↶</button>
+      <button id="btn-redo" class="icon ghost" title="Redo" aria-label="Redo">↷</button>
+      <button id="btn-theme" class="icon ghost" title="Toggle light/dark (Cmd/Ctrl+Shift+L)" aria-label="Toggle theme">◐</button>
+      <button id="btn-settings" class="icon ghost" title="Settings" aria-label="Settings">⚙</button>
     </div>
   </header>
 
   <div id="status" class="status">
     <span class="dot"></span><span id="status-text">Not connected</span>
+    <span class="pills">
+      <span id="pill-app" class="pill" hidden></span>
+      <span id="pill-fw" class="pill" hidden></span>
+      <span id="pill-batt" class="pill batt" hidden><span class="batt-icon"><span class="batt-fill"></span></span><span class="batt-text"></span></span>
+    </span>
   </div>
 
   <main>
@@ -27,21 +37,22 @@
       <div class="board" aria-label="Keyword and its sides">
         <div class="slot slot-T" data-side="T"><span class="slot-label"></span></div>
         <div class="slot slot-L" data-side="L"><span class="slot-label"></span></div>
-        <div class="keyword">Keyword</div>
+        <div class="keyword"><span>Keyword</span><small id="board-profile"></small></div>
         <div class="slot slot-R" data-side="R"><span class="slot-label"></span></div>
       </div>
       <p id="demo-hint" class="hint center" hidden>Demo: click a side to attach or remove a Keybit.</p>
 
-      <h2>Keys</h2>
+      <div class="section-head">
+        <h2>Keys</h2>
+        <input id="key-filter" type="search" placeholder="Find a key…" aria-label="Find a key">
+      </div>
       <ul id="keys" class="keys"></ul>
-      <p id="keys-empty" class="hint">No Keybits connected. Attach one to the Keyword's left, right or top edge.</p>
+      <p id="keys-empty" class="hint"></p>
     </section>
 
     <section class="col side">
       <h2>Profile</h2>
-      <div class="profile-row">
-        <select id="profile-select" aria-label="Active profile"></select>
-      </div>
+      <select id="profile-select" aria-label="Active profile"></select>
       <div class="btn-row">
         <button id="p-new" class="ghost small">New</button>
         <button id="p-dup" class="ghost small">Duplicate</button>
@@ -49,13 +60,22 @@
         <button id="p-delete" class="ghost small">Delete</button>
       </div>
       <div class="btn-row">
+        <button id="p-library" class="ghost small">Library…</button>
         <button id="p-import" class="ghost small">Import…</button>
         <button id="p-export" class="ghost small">Export…</button>
-        <button id="p-apply" class="small">Send to Keyword</button>
       </div>
-      <p id="profile-note" class="hint">Profiles save automatically on this computer.</p>
+      <button id="p-apply" class="small">Send to Keyword</button>
 
-      <h2>Activity</h2>
+      <div id="apps-box" class="apps-box">
+        <div class="apps-head"><b>Use automatically in</b> <button id="p-add-app" class="link">+ Add app</button></div>
+        <div id="apps" class="chips"></div>
+        <p id="apps-hint" class="hint small-text"></p>
+      </div>
+
+      <div class="section-head">
+        <h2>Activity</h2>
+        <button id="activity-clear" class="link">Clear</button>
+      </div>
       <ul id="activity" class="activity"></ul>
     </section>
   </main>
@@ -65,6 +85,8 @@
     <pre id="log"></pre>
   </details>
 
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
   <dialog id="chooser">
     <h2 id="chooser-title">Choose a device</h2>
     <ul id="chooser-list"></ul>
@@ -72,26 +94,97 @@
     <div class="dialog-actions"><button id="chooser-cancel" class="ghost">Cancel</button></div>
   </dialog>
 
-  <dialog id="assign">
+  <dialog id="assign" class="wide">
     <h2>Assign <span id="assign-name"></span></h2>
-    <div id="capture" class="capture" tabindex="0">
-      <span id="capture-combo">Press a key or shortcut…</span>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="shortcut" class="tab">Key or shortcut</button>
+      <button role="tab" data-tab="macro" class="tab">Macro</button>
+      <button role="tab" data-tab="host" class="tab">Computer action</button>
     </div>
-    <p class="hint">Or build it by hand, for keys your OS keeps for itself:</p>
-    <div id="assign-mods" class="mods"></div>
-    <select id="assign-key" aria-label="Key"></select>
+
+    <div class="tab-panel" data-panel="shortcut">
+      <div id="capture" class="capture" tabindex="0"><span id="capture-combo"></span></div>
+      <input id="key-search" type="search" placeholder="Search keys: volume, f13, page down…" aria-label="Search keys">
+      <div id="key-results" class="chips results"></div>
+      <div id="assign-mods" class="mods"></div>
+      <select id="assign-key" aria-label="Key"></select>
+    </div>
+
+    <div class="tab-panel" data-panel="macro">
+      <p class="hint">Keys are tapped in order. Click the box and press keys to record, or type text to add it.</p>
+      <div id="macro-capture" class="capture macro" tabindex="0"><span id="macro-steps" class="chips"></span></div>
+      <div class="row">
+        <input id="macro-text" placeholder="Text to type, e.g. your email">
+        <button id="macro-add-text" class="ghost small">Add text</button>
+        <button id="macro-clear" class="ghost small">Clear</button>
+      </div>
+      <p id="macro-note" class="hint small-text"></p>
+    </div>
+
+    <div class="tab-panel" data-panel="host">
+      <p class="hint">Runs on this computer while Keyword Monitor is open. The Keyword sends no key for it.</p>
+      <select id="host-type" aria-label="Action">
+        <option value="url">Open a website or link</option>
+        <option value="app">Open an app</option>
+        <option value="cmd">Run a command</option>
+        <option value="next-profile">Switch to the next profile</option>
+        <option value="profile">Switch to a profile</option>
+      </select>
+      <input id="host-value" aria-label="Value">
+      <select id="host-profile" aria-label="Profile"></select>
+      <datalist id="app-names"></datalist>
+    </div>
+
+    <details id="hold-box" class="hold-box">
+      <summary>When held <span id="hold-summary" class="hint"></span></summary>
+      <div id="hold-capture" class="capture small" tabindex="0"><span id="hold-combo"></span></div>
+      <div class="row">
+        <label class="inline">Hold for <input id="hold-ms" type="number" min="50" max="2000" step="10" value="200"> ms</label>
+        <button id="hold-clear" class="ghost small">No hold action</button>
+      </div>
+      <p id="hold-note" class="hint small-text"></p>
+    </details>
+
     <label class="field">Name <input id="assign-label" maxlength="40" placeholder="optional, e.g. Mute mic"></label>
     <div class="dialog-actions">
       <button id="assign-clear" class="ghost">Unassign</button>
+      <button id="assign-test" class="ghost">Test</button>
       <span class="spacer"></span>
       <button id="assign-cancel" class="ghost">Cancel</button>
       <button id="assign-save">Save</button>
     </div>
   </dialog>
 
+  <dialog id="library" class="wide">
+    <h2>Profile library</h2>
+    <p class="hint">Ready-made layouts. Actions go to your Keybits in order: left, top edge, right.</p>
+    <ul id="library-list" class="library"></ul>
+    <div class="dialog-actions"><button id="library-close" class="ghost">Close</button></div>
+  </dialog>
+
+  <dialog id="settings">
+    <h2>Settings</h2>
+    <label class="field">Theme
+      <select id="set-theme"><option value="system">Match system</option><option value="light">Light</option><option value="dark">Dark</option></select>
+    </label>
+    <label class="check"><input type="checkbox" id="set-autoReconnect"> Reconnect to the last Keyword automatically</label>
+    <label class="check"><input type="checkbox" id="set-perApp"> Switch profiles by the app in front</label>
+    <label class="check"><input type="checkbox" id="set-notifications"> Notify when Keybits connect or disconnect</label>
+    <label class="check"><input type="checkbox" id="set-closeToTray"> Keep running in the menu bar / tray when closed</label>
+    <label class="check"><input type="checkbox" id="set-launchAtLogin"> Open at login</label>
+    <div class="btn-row">
+      <button id="set-export-all" class="ghost small">Export all profiles…</button>
+      <button id="set-reset-stats" class="ghost small">Reset press counts</button>
+      <button id="set-data" class="ghost small">Open data folder</button>
+    </div>
+    <p id="set-about" class="hint small-text"></p>
+    <div class="dialog-actions"><button id="settings-close">Done</button></div>
+  </dialog>
+
   <dialog id="prompt">
     <h2 id="prompt-title"></h2>
-    <input id="prompt-input" maxlength="40">
+    <input id="prompt-input" maxlength="80" list="prompt-list">
+    <datalist id="prompt-list"></datalist>
     <div class="dialog-actions">
       <button id="prompt-cancel" class="ghost">Cancel</button>
       <button id="prompt-ok">OK</button>
@@ -101,6 +194,7 @@
   <script src="protocol.js"></script>
   <script src="hid.js"></script>
   <script src="profiles.js"></script>
+  <script src="templates.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
