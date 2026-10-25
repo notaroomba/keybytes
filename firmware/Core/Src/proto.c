@@ -108,6 +108,28 @@ static int Arg_Dec(const char *args, const char *name, uint16_t *out)
   return -1;
 }
 
+/* seq=MMKK,MMKK,... (mods byte, key usage), 1 to KEYACT_MACRO_MAX taps.
+ * Returns the count, or -1. */
+static int Arg_Seq(const char *args, uint8_t seq[KEYACT_MACRO_MAX][2])
+{
+  const char *v = strstr(args, "seq=");
+  if (!v || (v != args && v[-1] != ' ')) return -1;
+  v += 4;
+  for (int n = 0; n < KEYACT_MACRO_MAX; n++)
+  {
+    for (int i = 0; i < 4; i++)
+    {
+      if (Hex_Digit(v[i]) < 0) return -1;
+    }
+    seq[n][0] = (uint8_t)(Hex_Digit(v[0]) << 4 | Hex_Digit(v[1]));
+    seq[n][1] = (uint8_t)(Hex_Digit(v[2]) << 4 | Hex_Digit(v[3]));
+    v += 4;
+    if (*v == 0 || *v == ' ') return n + 1;
+    if (*v++ != ',') return -1;
+  }
+  return -1;   /* more than KEYACT_MACRO_MAX */
+}
+
 /* uid= is printed most significant byte first, stored little endian. */
 static int Arg_Uid(const char *args, uint8_t uid[UID_LEN])
 {
@@ -185,6 +207,23 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     PROTO_FormatUid(uid_s, uid);
     Reply(port, "OK MAPC uid=%s", uid_s);
   }
+  else if (strcmp(cmd, "MACRO") == 0)
+  {
+    uint8_t seq[KEYACT_MACRO_MAX][2];
+    int n = -1;
+    if (Arg_Uid(args, uid) || (n = Arg_Seq(args, seq)) < 0)
+    {
+      Reply(port, "ERR usage: MACRO uid=<24hex> seq=<MMKK,...> (1-%d taps)", KEYACT_MACRO_MAX);
+      return;
+    }
+    if (KEYMAP_SetMacro(uid, (const uint8_t (*)[2])seq, (uint8_t)n) != 0)
+    {
+      Reply(port, "ERR keymap full");
+      return;
+    }
+    PROTO_FormatUid(uid_s, uid);
+    Reply(port, "OK MACRO uid=%s", uid_s);
+  }
   else if (strcmp(cmd, "HOLD") == 0)
   {
     uint8_t mods, key;
@@ -215,6 +254,19 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     if (a && a->kind == KEYACT_CONSUMER)
     {
       Reply(port, "MAPC uid=%s usage=%04X", uid_s, a->code);
+    }
+    else if (a && a->kind == KEYACT_MACRO)
+    {
+      /* 16 taps is 79 chars of seq, the line still fits PROTO_LINE_MAX */
+      char seq_s[KEYACT_MACRO_MAX * 5];
+      int len = 0;
+      for (int i = 0; i < a->macro_len; i++)
+      {
+        len += snprintf(&seq_s[len], sizeof(seq_s) - (size_t)len, "%s%02X%02X",
+                        i ? "," : "", a->macro[i][0], a->macro[i][1]);
+      }
+      seq_s[len] = 0;
+      Reply(port, "MACRO uid=%s seq=%s", uid_s, seq_s);
     }
     else
     {

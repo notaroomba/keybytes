@@ -10,12 +10,15 @@
 
 #define KEYACT_TAP_MS       10    /* how long a tap stays in the reports */
 #define KEYACT_HOLD_MS_DEF  200
+#define KEYACT_MACRO_MAX    16
+#define KEYACT_MACRO_STEP_MS 5    /* press, release, press...: a tap every 10 ms */
 
-enum { KEYACT_NONE = 0, KEYACT_KEY = 1, KEYACT_CONSUMER = 2 };
+enum { KEYACT_NONE = 0, KEYACT_KEY = 1, KEYACT_CONSUMER = 2, KEYACT_MACRO = 3 };
 
-/* Stored per Keybit in the keymap (and in flash, so keep it 4-byte sized).
- * code is the keyboard usage for KEYACT_KEY and the consumer usage for
- * KEYACT_CONSUMER. With a hold set (hold_mods or hold_key non zero) a
+/* Stored per Keybit in the keymap and in flash. code is the keyboard
+ * usage for KEYACT_KEY and the consumer usage for KEYACT_CONSUMER.
+ * KEYACT_MACRO types macro[0..macro_len) as (mods, key) taps, once per
+ * press. With a hold set (hold_mods or hold_key non zero) a
  * press shorter than hold_ms fires the normal action as a tap on release,
  * a longer one holds hold_mods/hold_key down until release. */
 typedef struct
@@ -26,6 +29,8 @@ typedef struct
   uint8_t hold_mods;
   uint8_t hold_key;
   uint16_t hold_ms;
+  uint8_t macro_len;
+  uint8_t macro[KEYACT_MACRO_MAX][2];
 } keyact_t;
 
 /* Per key runtime state, kept by the caller across calls (by UID). The

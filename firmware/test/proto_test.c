@@ -35,7 +35,7 @@ static int put(const uint8_t *uid, uint8_t kind, uint8_t mods, uint16_t code)
 {
   keyact_t *a = entry(uid);
   if (!a) return -1;
-  a->kind = kind; a->mods = mods; a->code = code;
+  a->kind = kind; a->mods = mods; a->code = code; a->macro_len = 0;
   return 0;
 }
 int KEYMAP_Set(const uint8_t *uid, uint8_t mods, uint8_t key) { return put(uid, KEYACT_KEY, mods, key); }
@@ -54,6 +54,14 @@ int KEYMAP_SetHold(const uint8_t *uid, uint8_t mods, uint8_t key, uint16_t ms)
   keyact_t *a = entry(uid);
   if (!a) return -1;
   a->hold_mods = mods; a->hold_key = key; a->hold_ms = ms;
+  return 0;
+}
+int KEYMAP_SetMacro(const uint8_t *uid, const uint8_t seq[][2], uint8_t len)
+{
+  keyact_t *a = entry(uid);
+  if (!a) return -1;
+  a->kind = KEYACT_MACRO; a->mods = 0; a->code = 0; a->macro_len = len;
+  memcpy(a->macro, seq, (size_t)len * 2);
   return 0;
 }
 const keyact_t *KEYMAP_Lookup(const uint8_t *uid) { int i = find(uid); return i < 0 ? NULL : &table[i].act; }
@@ -135,6 +143,34 @@ int main(void)
   expect("HOLD uid=" U " mods=02 key=00\n", "OK HOLD uid=" U "\n");
   expect("CLEAR\n", "OK CLEAR\n");
   assert(n == 0);
+
+  /* MACRO: replaces MAP/MAPC, MAP? prints it back, UNMAP clears it */
+  expect("MACRO uid=" U " seq=020B,0008,000F,000F,0012\n", "OK MACRO uid=" U "\n");   /* "Hello" */
+  assert(table[0].act.kind == KEYACT_MACRO && table[0].act.macro_len == 5);
+  assert(table[0].act.macro[0][0] == 0x02 && table[0].act.macro[0][1] == 0x0B);
+  expect("MAP? uid=" U "\n", "MACRO uid=" U " seq=020B,0008,000F,000F,0012\n");
+  expect("MACRO uid=" U " seq=0004\n", "OK MACRO uid=" U "\n");
+  expect("MAP? uid=" U "\n", "MACRO uid=" U " seq=0004\n");
+  expect("MAP uid=" U " mods=00 key=05\n", "OK MAP uid=" U "\n");   /* MAP replaces it */
+  expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=05\n");
+  expect("MACRO uid=" U " seq=0004,0005\n", "OK MACRO uid=" U "\n");
+  expect("MAPC uid=" U " usage=00CD\n", "OK MAPC uid=" U "\n");   /* so does MAPC */
+  expect("MAP? uid=" U "\n", "MAPC uid=" U " usage=00CD\n");
+  expect("MACRO uid=" U " seq=0004,0005\n", "OK MACRO uid=" U "\n");
+  expect("UNMAP uid=" U "\n", "OK UNMAP uid=" U "\n");
+  expect("MAP? uid=" U "\n", "MAP uid=" U " mods=00 key=00\n");
+  /* all 16 taps, then a seventeenth is too many */
+  expect("MACRO uid=" U " seq=0004,0005,0006,0007,0008,0009,000A,000B,000C,000D,000E,000F,0010,0011,0012,0013\n",
+         "OK MACRO uid=" U "\n");
+  expect("MAP? uid=" U "\n",
+         "MACRO uid=" U " seq=0004,0005,0006,0007,0008,0009,000A,000B,000C,000D,000E,000F,0010,0011,0012,0013\n");
+  expect("MACRO uid=" U " seq=0004,0005,0006,0007,0008,0009,000A,000B,000C,000D,000E,000F,0010,0011,0012,0013,0014\n",
+         "ERR usage: MACRO uid=<24hex> seq=<MMKK,...> (1-16 taps)\n");
+  expect("MACRO uid=" U " seq=\n", "ERR usage: MACRO uid=<24hex> seq=<MMKK,...> (1-16 taps)\n");
+  expect("MACRO uid=" U " seq=004\n", "ERR usage: MACRO uid=<24hex> seq=<MMKK,...> (1-16 taps)\n");
+  expect("MACRO uid=" U " seq=0004,\n", "ERR usage: MACRO uid=<24hex> seq=<MMKK,...> (1-16 taps)\n");
+  expect("MACRO uid=" U " seq=0004;0005\n", "ERR usage: MACRO uid=<24hex> seq=<MMKK,...> (1-16 taps)\n");
+  expect("CLEAR\n", "OK CLEAR\n");
   expect("SAVE\n", "OK SAVE\n");
 
   /* chunked like 20 byte BLE writes */

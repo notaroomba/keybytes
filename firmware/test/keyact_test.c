@@ -153,6 +153,46 @@ int main(void)
   KEYACT_Step(many, p7, 7, 1005, report, &consumer);
   for (int i = 2; i < 8; i++) assert(report[i] == 0x01);
 
+  /* macro: each tap pressed for one 5 ms tick, released for the next */
+  reset();
+  const keyact_t hi = {.kind = KEYACT_MACRO, .macro_len = 3,
+                       .macro = {{0x02, 0x0B}, {0x00, 0x0C}, {0x00, 0x0C}}};   /* H i i */
+  acts[0] = &hi;
+  keys[0].down = 1;
+  KEYACT_Step(keys, acts, 3, 1000, report, &consumer);
+  assert(report[0] == 0x02 && has_key(0x0B));
+  keys[0].down = 0;   /* releasing the key doesn't stop the macro */
+  KEYACT_Step(keys, acts, 3, 1005, report, &consumer);
+  assert(report[0] == 0 && report[2] == 0);
+  KEYACT_Step(keys, acts, 3, 1010, report, &consumer);
+  assert(report[0] == 0 && has_key(0x0C));
+  KEYACT_Step(keys, acts, 3, 1015, report, &consumer);
+  assert(report[2] == 0);   /* release between the two i's */
+  KEYACT_Step(keys, acts, 3, 1020, report, &consumer);
+  assert(has_key(0x0C));
+  KEYACT_Step(keys, acts, 3, 1025, report, &consumer);
+  KEYACT_Step(keys, acts, 3, 1030, report, &consumer);
+  KEYACT_Step(keys, acts, 3, 1035, report, &consumer);
+  assert(report[0] == 0 && report[2] == 0);   /* done */
+
+  /* a second press runs it again; held keys stay in the reports alongside */
+  acts[1] = &a;
+  keys[1].down = 1;
+  keys[0].down = 1;
+  KEYACT_Step(keys, acts, 3, 1040, report, &consumer);
+  assert(has_key(0x0B) && has_key(0x04));
+
+  /* macro as the tap action of a hold key */
+  reset();
+  const keyact_t hi_ctrl = {.kind = KEYACT_MACRO, .macro_len = 1, .macro = {{0x00, 0x0B}}, .hold_mods = 0x01};
+  acts[0] = &hi_ctrl;
+  keys[0].down = 1;
+  run_to(1050);
+  assert(report[2] == 0);
+  keys[0].down = 0;
+  KEYACT_Step(keys, acts, 3, 1055, report, &consumer);
+  assert(has_key(0x0B) && report[0] == 0);
+
   puts("keyact_test: ok");
   return 0;
 }

@@ -26,6 +26,8 @@ int KEYMAP_Set(const uint8_t uid[UID_LEN], uint8_t mods, uint8_t key);
 int KEYMAP_SetConsumer(const uint8_t uid[UID_LEN], uint16_t usage);
 /* Hold action, see keyact.h. mods 0 and key 0 clears it. */
 int KEYMAP_SetHold(const uint8_t uid[UID_LEN], uint8_t mods, uint8_t key, uint16_t ms);
+/* MACRO: up to KEYACT_MACRO_MAX (mods, key) taps, replaces MAP/MAPC. */
+int KEYMAP_SetMacro(const uint8_t uid[UID_LEN], const uint8_t seq[][2], uint8_t len);
 /* NULL when the Keybit has no entry. */
 const keyact_t *KEYMAP_Lookup(const uint8_t uid[UID_LEN]);
 void KEYMAP_Unmap(const uint8_t uid[UID_LEN]);

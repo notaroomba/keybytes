@@ -10,7 +10,7 @@
 
 #define KEYS_PERIOD_MS 5
 #define MAP_MAGIC      0x50414D4BUL   /* "KMAP" */
-#define MAP_VERSION    3   /* 2: kind + 16-bit code, 3: hold action */
+#define MAP_VERSION    4   /* 2: kind + 16-bit code, 3: hold action, 4: macros */
 
 /* Owned by main.c's Keybit code, refreshed from its own poll calls in the
  * main loop. The key task runs from the same loop, so no locking. */
@@ -18,11 +18,12 @@ extern keybit_info_t keybits[KEYBIT_MAX];
 extern int keybit_count;
 extern volatile uint32_t keybit_changed;
 
-/* 24 bytes, three flash doublewords. */
+/* 56 bytes, seven flash doublewords. 32 of them plus the header are
+ * 1800 bytes, under half the 4 KB page. */
 typedef struct {
   uint8_t uid[UID_LEN];
   keyact_t act;
-  uint8_t pad[4];
+  uint8_t pad[2];
 } map_entry_t;
 
 /* Flash image: one header doubleword, then the entries. */
@@ -92,6 +93,7 @@ static int Put(const uint8_t uid[UID_LEN], uint8_t kind, uint8_t mods, uint16_t 
   a->kind = kind;
   a->mods = mods;
   a->code = code;
+  a->macro_len = 0;   /* MAP/MAPC replace a macro too */
   return 0;
 }
 
@@ -103,6 +105,20 @@ int KEYMAP_Set(const uint8_t uid[UID_LEN], uint8_t mods, uint8_t key)
 int KEYMAP_SetConsumer(const uint8_t uid[UID_LEN], uint16_t usage)
 {
   return Put(uid, KEYACT_CONSUMER, 0, usage);
+}
+
+int KEYMAP_SetMacro(const uint8_t uid[UID_LEN], const uint8_t seq[][2], uint8_t len)
+{
+  if (len > KEYACT_MACRO_MAX) return -1;
+  keyact_t *a = Entry(uid);
+  if (!a) return -1;
+  a->kind = KEYACT_MACRO;
+  a->mods = 0;
+  a->code = 0;
+  a->macro_len = len;
+  memset(a->macro, 0, sizeof(a->macro));
+  memcpy(a->macro, seq, (size_t)len * 2);
+  return 0;
 }
 
 int KEYMAP_SetHold(const uint8_t uid[UID_LEN], uint8_t mods, uint8_t key, uint16_t ms)
