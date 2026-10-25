@@ -14,7 +14,8 @@
     if (!keys || typeof keys !== 'object') return out;
     for (const [uid, m] of Object.entries(keys)) {
       if (!/^([0-9a-fA-F]{24}|[0-9a-fA-F]{8})$/.test(uid) || !m || typeof m !== 'object') continue;
-      const entry = { mods: (Number(m.mods) || 0) & 0xff, key: (Number(m.key) || 0) & 0xff };
+      const consumer = (Number(m.consumer) || 0) & 0xffff;
+      const entry = consumer ? { mods: 0, key: 0, consumer } : { mods: (Number(m.mods) || 0) & 0xff, key: (Number(m.key) || 0) & 0xff };
       if (typeof m.name === 'string' && m.name.trim()) entry.name = m.name.trim().slice(0, 40);
       out[uid.toUpperCase()] = entry;
     }

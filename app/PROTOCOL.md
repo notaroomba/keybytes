@@ -5,7 +5,9 @@ How the desktop app talks to the Keyword. The same protocol runs over USB and Bl
 ## Transport
 
 - **USB:** CDC ACM (virtual serial port). The baud rate is ignored.
-- **Bluetooth LE:** Nordic UART Service, with the advertised name starting with `Keyword`.
+- **Bluetooth LE:** Nordic UART Service.
+  - The 128-bit UUID isn't in the advertising packet, so scan for names starting with `Keyword`.
+  - Writes to RX need an encrypted, bonded link, so the host pairs first. The app pairs when it connects.
   - Service `6e400001-b5a3-f393-e0a9-e50e24dcca9e`
   - RX `6e400002-…` (the host writes here, in chunks of 20 bytes or less)
   - TX `6e400003-…` (the Keyword notifies here)
@@ -28,9 +30,10 @@ Only Keybits that touch the Keyword directly are visible. `at` is the Keyword si
 | `SIDES?` | `SIDES L=<0\|1> R=<0\|1> T=<0\|1>` |
 | `KEYS?` | one `KEY+ uid=<uid> at=<L\|R\|T>` per present Keybit, then `KEYS END` |
 | `MAP uid=<uid> mods=<2hex> key=<2hex>` | `OK MAP uid=<uid>` |
-| `MAP? uid=<uid>` | `MAP uid=<uid> mods=<2hex> key=<2hex>` (`00`/`00` if unmapped) |
+| `MAPC uid=<uid> usage=<4hex>` | `OK MAPC uid=<uid>` (media key) |
+| `MAP? uid=<uid>` | `MAP uid=<uid> mods=<2hex> key=<2hex>` (`00`/`00` if unmapped), or `MAPC uid=<uid> usage=<4hex>` for a media key |
 | `UNMAP uid=<uid>` | `OK UNMAP uid=<uid>` |
-| `CLEAR` | `OK CLEAR` (drop every mapping) |
+| `CLEAR` | `OK CLEAR` (drop every mapping, both kinds) |
 | `SAVE` | `OK SAVE` (write the table to flash) |
 | anything invalid | `ERR <text>` |
 
@@ -39,7 +42,9 @@ Only Keybits that touch the Keyword directly are visible. `at` is the Keyword si
   - bits 4 to 7 are the right-hand versions of the same keys
 - `key` is a HID keyboard usage ID (page 0x07): `04` = A, `3A` = F1, `68` = F13.
 - `key=00` with only `mods` set is a valid mapping.
-- When a mapped Keybit is pressed, the Keyword sends a HID report containing `mods` and `key`.
+- `usage` in `MAPC` is a Consumer page (0x0C) usage: `00CD` = play/pause, `00E9` = volume up, `00E2` = mute.
+- Each Keybit has one mapping, so `MAPC` replaces a `MAP` for that UID and `MAP` replaces a `MAPC`. `UNMAP` clears either kind.
+- When a mapped Keybit is pressed, the Keyword sends a keyboard report with `mods` and `key`, or a consumer report with `usage`.
 
 ## Keyword → host (unsolicited)
 
@@ -52,7 +57,7 @@ Only Keybits that touch the Keyword directly are visible. `at` is the Keyword si
 
 ## How the app uses it
 
-- **On connect,** the app sends `HELLO`, `SIDES?` and `KEYS?`, then pushes the active profile: `CLEAR`, one `MAP` per key, then `SAVE`. Firmware can skip the flash write when the table is unchanged.
+- **On connect,** the app sends `HELLO`, `SIDES?` and `KEYS?`, then pushes the active profile: `CLEAR`, one `MAP` or `MAPC` per key, then `SAVE`. Firmware can skip the flash write when the table is unchanged.
 - **While connected,** it polls `SIDES?` every 2 s and `KEYS?` every 10 s, in case an unsolicited line was missed.
 - **Profiles** live only in the app. The Keyword holds just the current table.
 

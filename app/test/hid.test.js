@@ -25,3 +25,8 @@ test('fromEvent and labels', () => {
   assert.strictEqual(Hid.comboLabel(0x09, 0x2c, false), 'Ctrl+Win+Space');
   assert.strictEqual(Hid.comboLabel(0x02, 0, false), 'Shift');
 });
+
+test('media keys', () => {
+  assert.deepStrictEqual(Hid.fromEvent({ code: 'MediaPlayPause' }), { consumer: 0xcd });
+  assert.strictEqual(Hid.consumerLabel(0xe9), 'Volume Up');
+});

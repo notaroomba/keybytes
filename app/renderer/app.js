@@ -1,5 +1,5 @@
 /* global KeywordProtocol, Hid, Profiles */
-const { SIDES, NUS, LineBuffer, parseLine, cmd, profileCommands } = KeywordProtocol;
+const { SIDES, NUS, LineBuffer, parseLine, cmd, mapCommand, profileCommands } = KeywordProtocol;
 
 const POLL_MS = 2000;      // ask for SIDES? this often in case a push was missed
 const KEYS_POLL_MS = 10000; // full KEYS? resync
@@ -67,7 +67,8 @@ class BleTransport {
   label = 'Bluetooth';
   async open(onText, onClose) {
     this.device = await navigator.bluetooth.requestDevice({
-      filters: [{ namePrefix: 'Keyword' }, { services: [NUS.service] }],
+      // NUS's 128-bit UUID isn't advertised, so match on the name.
+      filters: [{ namePrefix: 'Keyword' }],
       optionalServices: [NUS.service],
     });
     this.device.addEventListener('gattserverdisconnected', () => { if (!this.closed) onClose(); });
@@ -124,6 +125,7 @@ class DemoTransport {
         for (const s of SIDES) if (this.present[s]) this.emit(`KEY+ uid=${this.uids[s]} at=${s}`);
         this.emit('KEYS END');
       } else if (c === 'MAP') { this.maps[f.uid] = f; this.emit(`OK MAP uid=${f.uid}`); }
+      else if (c === 'MAPC') { this.maps[f.uid] = f; this.emit(`OK MAPC uid=${f.uid}`); }
       else if (c === 'UNMAP') { delete this.maps[f.uid]; this.emit(`OK UNMAP uid=${f.uid}`); }
       else if (c === 'CLEAR') { this.maps = {}; this.emit('OK CLEAR'); }
       else if (c === 'SAVE') this.emit('OK SAVE');
@@ -172,7 +174,8 @@ const shortUid = (uid) => uid.slice(-4);
 const keyName = (uid) => activeProfile().keys[uid]?.name || `Keybit ${shortUid(uid)}`;
 const comboFor = (uid) => {
   const m = activeProfile().keys[uid];
-  return m && (m.mods || m.key) ? Hid.comboLabel(m.mods, m.key, MAC) : '';
+  if (!m) return '';
+  return m.consumer ? Hid.consumerLabel(m.consumer) : Hid.comboLabel(m.mods, m.key, MAC);
 };
 
 function addKey(uid, at, quiet) {
@@ -400,28 +403,38 @@ chooser.addEventListener('cancel', () => window.devicePicker?.pick(''));
 const assign = $('#assign');
 const capture = $('#capture');
 let assignUid = null;
-let draft = { mods: 0, key: 0 };
+let draft = { mods: 0, key: 0, consumer: 0 };
 
 $('#assign-mods').append(...Hid.MODS.map((m) =>
   el('label', {}, el('input', { type: 'checkbox', value: m.bit }), Hid.modName(m, MAC))));
-$('#assign-key').append(el('option', { value: 0, textContent: '(no key, modifiers only)' }),
-  ...Hid.KEYS.map((k) => el('option', { value: k.usage, textContent: k.label })));
+// Option values are "k:<usage>" for keyboard keys and "c:<usage>" for media keys.
+$('#assign-key').append(el('option', { value: 'k:0', textContent: '(no key, modifiers only)' }),
+  el('optgroup', { label: 'Keys' }, ...Hid.KEYS.map((k) => el('option', { value: `k:${k.usage}`, textContent: k.label }))),
+  el('optgroup', { label: 'Media' }, ...Hid.CONSUMER.map((c) => el('option', { value: `c:${c.usage}`, textContent: c.label }))));
+
+const draftLabel = () => (draft.consumer ? Hid.consumerLabel(draft.consumer) : Hid.comboLabel(draft.mods, draft.key, MAC));
+const draftEmpty = () => !draft.consumer && !draft.mods && !draft.key;
 
 function showDraft() {
   $('#assign-mods').querySelectorAll('input').forEach((c) => { c.checked = !!(draft.mods & (1 << c.value)); });
-  $('#assign-key').value = draft.key;
-  $('#capture-combo').textContent = Hid.comboLabel(draft.mods, draft.key, MAC) || 'Press a key or shortcut…';
+  $('#assign-key').value = draft.consumer ? `c:${draft.consumer}` : `k:${draft.key}`;
+  $('#capture-combo').textContent = draftLabel() || 'Press a key or shortcut…';
 }
 $('#assign-mods').addEventListener('change', () => {
   draft.mods = [...$('#assign-mods').querySelectorAll('input')].reduce((m, c) => m | (c.checked ? 1 << c.value : 0), 0);
+  draft.consumer = 0; // media keys can't take modifiers
   showDraft();
 });
-$('#assign-key').addEventListener('change', (e) => { draft.key = Number(e.target.value); showDraft(); });
+$('#assign-key').addEventListener('change', (e) => {
+  const [kind, usage] = e.target.value.split(':');
+  draft = kind === 'c' ? { mods: 0, key: 0, consumer: Number(usage) } : { ...draft, key: Number(usage), consumer: 0 };
+  showDraft();
+});
 
 function captureKey(e) {
   const r = Hid.fromEvent(e);
   if (!r) return;
-  draft = { mods: r.mods, key: r.usage };
+  draft = r.consumer ? { mods: 0, key: 0, consumer: r.consumer } : { mods: r.mods, key: r.usage, consumer: 0 };
   showDraft();
 }
 capture.addEventListener('keydown', (e) => { e.preventDefault(); e.stopPropagation(); captureKey(e); });
@@ -432,7 +445,7 @@ window.desktop?.onCaptureKey((k) => { if (k.type === 'keyDown') captureKey(k); }
 function openAssign(uid) {
   assignUid = uid;
   const m = activeProfile().keys[uid];
-  draft = { mods: m?.mods || 0, key: m?.key || 0 };
+  draft = { mods: m?.mods || 0, key: m?.key || 0, consumer: m?.consumer || 0 };
   $('#assign-name').textContent = keyName(uid);
   $('#assign-label').value = m?.name || '';
   $('#assign-clear').disabled = !m;
@@ -450,11 +463,11 @@ $('#assign-save').onclick = () => {
   const uid = assignUid;
   const name = $('#assign-label').value.trim();
   const p = activeProfile();
-  if (!draft.mods && !draft.key && !name) delete p.keys[uid];
-  else p.keys[uid] = { mods: draft.mods, key: draft.key, ...(name ? { name } : {}) };
+  if (draftEmpty() && !name) delete p.keys[uid];
+  else p.keys[uid] = { ...draft, ...(name ? { name } : {}) };
+  if (!draft.consumer) delete p.keys[uid]?.consumer;
   persist();
-  if (draft.mods || draft.key) send(cmd.map(uid, draft.mods, draft.key), cmd.save());
-  else send(cmd.unmap(uid), cmd.save());
+  send(mapCommand(uid, draft) || cmd.unmap(uid), cmd.save());
   activity(`${keyName(uid)} → ${comboFor(uid) || 'nothing'}`);
   closeAssign();
   render();

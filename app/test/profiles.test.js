@@ -29,3 +29,8 @@ test('normalizeStore fills in a default', () => {
   const s2 = P.normalizeStore({ active: 'zz', profiles: [{ id: 'a', name: 'A', keys: {} }] });
   assert.strictEqual(s2.active, 'a');
 });
+
+test('consumer entries survive a round trip', () => {
+  const p = P.importProfile(P.exportProfile(P.newProfile('M', { '5F1821C1': { consumer: 0xcd, mods: 3 } })));
+  assert.deepStrictEqual(p.keys, { '5F1821C1': { mods: 0, key: 0, consumer: 0xcd } });
+});

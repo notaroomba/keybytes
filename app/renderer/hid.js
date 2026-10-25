@@ -30,10 +30,20 @@
     ['ContextMenu', 0x65, 'Menu'], ['NumpadEqual', 0x67, 'Num ='],
   ].forEach((k) => add(...k));
   for (let i = 13; i <= 24; i++) add(`F${i}`, 0x5b + i, `F${i}`);
-  [
-    ['AudioVolumeMute', 0x7f, 'Mute'], ['AudioVolumeUp', 0x80, 'Volume Up'],
-    ['AudioVolumeDown', 0x81, 'Volume Down'],
-  ].forEach((k) => add(...k));
+
+  // Media keys go through the Consumer page (0x0C), sent with MAPC. Keyed by
+  // KeyboardEvent.code where the browser reports one.
+  const CONSUMER = [
+    ['MediaPlayPause', 0xcd, 'Play/Pause'], ['MediaTrackNext', 0xb5, 'Next Track'],
+    ['MediaTrackPrevious', 0xb6, 'Previous Track'], ['MediaStop', 0xb7, 'Stop'],
+    ['AudioVolumeMute', 0xe2, 'Mute'], ['AudioVolumeUp', 0xe9, 'Volume Up'],
+    ['AudioVolumeDown', 0xea, 'Volume Down'], ['', 0x6f, 'Brightness Up'],
+    ['', 0x70, 'Brightness Down'], ['LaunchApp2', 0x192, 'Calculator'],
+    ['LaunchMail', 0x18a, 'Mail'], ['BrowserSearch', 0x221, 'Search'],
+    ['BrowserHome', 0x223, 'Browser Home'],
+  ].map(([code, usage, label]) => ({ code, usage, label }));
+  const consumerByCode = new Map(CONSUMER.filter((c) => c.code).map((c) => [c.code, c]));
+  const consumerByUsage = new Map(CONSUMER.map((c) => [c.usage, c]));
 
   const byCode = new Map(KEYS.map((k) => [k.code, k]));
   const byUsage = new Map(KEYS.map((k) => [k.usage, k]));
@@ -56,6 +66,10 @@
     return m.name.replace('GUI', 'Cmd').replace('Alt', 'Option');
   }
 
+  function consumerLabel(usage) {
+    return consumerByUsage.get(usage)?.label || `Media 0x${usage.toString(16).padStart(4, '0')}`;
+  }
+
   // "Ctrl+Shift+A", "Cmd+Space", "Shift" (modifier only), "" when empty.
   function comboLabel(mods, usage, mac) {
     const parts = MODS.filter((m) => mods & (1 << m.bit)).map((m) => modName(m, mac));
@@ -63,9 +77,12 @@
     return parts.join('+');
   }
 
-  // Turns a key event ({code, ctrlKey, shiftKey, altKey, metaKey}) into {mods, usage}.
-  // usage is 0 when only modifiers are held. Returns null for keys HID can't send.
+  // Turns a key event ({code, ctrlKey, shiftKey, altKey, metaKey}) into {mods, usage},
+  // or {consumer} for a media key. usage is 0 when only modifiers are held.
+  // Returns null for keys HID can't send.
   function fromEvent(e) {
+    const media = consumerByCode.get(e.code);
+    if (media) return { consumer: media.usage };
     let mods = (e.ctrlKey ? 1 : 0) | (e.shiftKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0);
     const mod = modByCode.get(e.code);
     if (mod) return { mods: mods | (1 << mod.bit), usage: 0 };
@@ -74,7 +91,7 @@
     return { mods, usage: k.usage };
   }
 
-  const api = { KEYS, MODS, byUsage, comboLabel, fromEvent, modName };
+  const api = { KEYS, MODS, CONSUMER, byUsage, comboLabel, consumerLabel, fromEvent, modName };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Hid = api;
 })(typeof window !== 'undefined' ? window : globalThis);

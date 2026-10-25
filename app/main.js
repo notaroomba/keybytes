@@ -43,6 +43,13 @@ function createWindow() {
   ses.setDevicePermissionHandler((details) =>
     ['serial', 'bluetooth'].includes(details.deviceType));
 
+  // The Keyword's NUS needs an encrypted link. macOS pairs through its own prompt;
+  // on Windows and Linux Electron asks us, and the user already picked the device.
+  ses.setBluetoothPairingHandler((details, callback) => {
+    if (details.pairingKind === 'providePin') callback({ confirmed: false });
+    else callback({ confirmed: true });
+  });
+
   ses.on('select-serial-port', (event, portList, _wc, callback) => {
     event.preventDefault();
     finishPick(''); // cancel any older picker

@@ -57,3 +57,11 @@ test('formats commands', () => {
   assert.deepStrictEqual(profileCommands({ '5F1821C1': { mods: 1, key: 6 }, '00000001': { mods: 0, key: 0 }, bad: { key: 4 } }),
     ['CLEAR', 'MAP uid=5F1821C1 mods=01 key=06', 'SAVE']);
 });
+
+test('media key mappings', () => {
+  const { mapCommand } = require('../renderer/protocol.js');
+  assert.strictEqual(mapCommand('5F1821C1', { consumer: 0xcd }), 'MAPC uid=5F1821C1 usage=00CD');
+  assert.strictEqual(mapCommand('5F1821C1', { mods: 0, key: 0 }), null);
+  assert.deepStrictEqual(parseLine('MAPC uid=5F1821C1 usage=00E9'), { type: 'mapConsumer', uid: '5F1821C1', usage: 0xe9 });
+  assert.deepStrictEqual(profileCommands({ '5F1821C1': { consumer: 0x192 } }), ['CLEAR', 'MAPC uid=5F1821C1 usage=0192', 'SAVE']);
+});

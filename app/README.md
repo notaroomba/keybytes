@@ -28,11 +28,12 @@ They cover the protocol parser, the HID key table and profile import/export.
 
 ## Using it
 
-- **USB serial / Bluetooth:** pick the Keyword from the list. ST devices (USB VID 0483) and BLE names starting with `Keyword` are highlighted.
+- **USB serial / Bluetooth:** pick the Keyword from the list. Bluetooth pairs the first time, which the Keyword requires. ST devices (USB VID 0483) and BLE names starting with `Keyword` are highlighted.
 - **Keys:** every Keybit the Keyword reports, with its side, its UID and what it's assigned to.
   - A key lights up while it's held.
   - Keys from the profile that aren't attached right now show greyed out.
 - **Assign…:** press the key or shortcut you want, for example `Ctrl+Shift+K`, `Cmd+Space` or `F13`. Modifiers on their own work too.
+  - Media keys (play/pause, volume, mute, brightness and so on) are in the key list under **Media**, or you can press them.
   - For combos the OS grabs first, like Cmd+Tab, tick the modifiers and pick the key from the list instead.
   - You can also give the key a name.
 - **Profiles:** edits save automatically to `profiles.json` in the app's user-data folder. Switching profiles sends the new keymap to the Keyword.
@@ -47,10 +48,11 @@ They cover the protocol parser, the HID key table and profile import/export.
 
 The app is ready, but the Keyword firmware doesn't speak this protocol yet:
 
-- USB CDC, the BLE Nordic UART Service, the I2C3 side scan and the keymap table still need adding on the Keyword.
+- The BLE side (HID keyboard, Nordic UART Service and keymap table) is done in the Keyword firmware.
+- USB CDC isn't there yet, so for now connect over Bluetooth.
 - The Keybit side (assigned addresses, and the side register 0x07) lives in `firmware/keybit/`.
 
-Until then, use **Demo**.
+**Demo** works without any firmware.
 
 ## Ways to detect a Keybit's side
 

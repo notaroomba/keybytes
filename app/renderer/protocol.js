@@ -40,6 +40,14 @@
 
   const isUid = (u) => typeof u === 'string' && /^([0-9a-fA-F]{24}|[0-9a-fA-F]{8})$/.test(u);
   const hex2 = (n) => (n & 0xff).toString(16).toUpperCase().padStart(2, '0');
+  const hex4 = (n) => (n & 0xffff).toString(16).toUpperCase().padStart(4, '0');
+
+  // One profile entry -> the MAP/MAPC command for it, or null if it maps nothing.
+  function mapCommand(uid, m) {
+    if (m.consumer) return cmd.mapConsumer(uid, m.consumer);
+    if (m.mods || m.key) return cmd.map(uid, m.mods || 0, m.key || 0);
+    return null;
+  }
 
   // Host -> Keyword commands.
   const cmd = {
@@ -47,6 +55,7 @@
     sides: () => 'SIDES?',
     keys: () => 'KEYS?',
     map: (uid, mods, key) => `MAP uid=${uid} mods=${hex2(mods)} key=${hex2(key)}`,
+    mapConsumer: (uid, usage) => `MAPC uid=${uid} usage=${hex4(usage)}`,
     mapQuery: (uid) => `MAP? uid=${uid}`,
     unmap: (uid) => `UNMAP uid=${uid}`,
     clear: () => 'CLEAR',
@@ -57,7 +66,8 @@
   function profileCommands(keys) {
     const out = [cmd.clear()];
     for (const [uid, m] of Object.entries(keys)) {
-      if (isUid(uid) && (m.mods || m.key)) out.push(cmd.map(uid.toUpperCase(), m.mods || 0, m.key || 0));
+      const c = isUid(uid) && mapCommand(uid.toUpperCase(), m);
+      if (c) out.push(c);
     }
     out.push(cmd.save());
     return out;
@@ -92,6 +102,9 @@
       case 'MAP':
         if (!isUid(f.uid)) break;
         return { type: 'map', uid: f.uid.toUpperCase(), mods: parseInt(f.mods || '0', 16) || 0, key: parseInt(f.key || '0', 16) || 0 };
+      case 'MAPC':
+        if (!isUid(f.uid)) break;
+        return { type: 'mapConsumer', uid: f.uid.toUpperCase(), usage: parseInt(f.usage || '0', 16) || 0 };
       case 'OK':
         return { type: 'ok', what: parts[1] || '', ...parseFields(parts.slice(2)) };
       case 'ERR':
@@ -100,7 +113,7 @@
     return { type: 'unknown', line };
   }
 
-  const api = { SIDES, NUS, LineBuffer, parseLine, cmd, profileCommands, isUid };
+  const api = { SIDES, NUS, LineBuffer, parseLine, cmd, mapCommand, profileCommands, isUid };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.KeywordProtocol = api;
 })(typeof window !== 'undefined' ? window : globalThis);
