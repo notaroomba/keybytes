@@ -58,7 +58,11 @@ For J7 I made the magnets stick out 0.75mm so theyre the length of the pogo pins
 
 _Time spent: 3h_
 
-So after the first magnet cases I noticed the magnets werent strong enough to hold the modules together against the pogo pins. I spent some time looking on digikey for single right angle pogo pins with a low enough spring force that a 4mm x 1mm N52 magnet could hold it. The closest thing was the Mill-Max 0967 horizontal SMT pins with the low force springs, but they need a different footprint so I would have to redo the boards, so I decided to make the magnets stronger instead.
+So after the first magnet cases I noticed the magnets werent strong enough to hold the modules together against the pogo pins. I also tried putting the magnets into the pockets and sometimes they just wouldnt stick and would fall out.
+
+![image](assets/journal/magnet_falling_out.png)
+
+I spent some time looking on digikey for single right angle pogo pins with a low enough spring force that a 4mm x 1mm N52 magnet could hold it. The closest thing was the Mill-Max 0967 horizontal SMT pins with the low force springs, but they need a different footprint so I would have to redo the boards, so I decided to make the magnets stronger instead.
 
 # 10/20/2026 9 PM - Tinkering With Designs and LED Blink
 
