@@ -65,7 +65,6 @@ Reads and writes auto-increment from the pointer written first.
 | 0x10-0x1B | 96-bit UID, little endian |
 | 0x20-0x2B | ASSIGN: UID to match (write) |
 | 0x2C | ASSIGN: new address, 0 = forget. Writing this applies it. |
-| 0x50 | (write) depth of the Keybit polling us over a link |
 | 0x51 | our depth, 0xFF if we can't reach the keyword |
 | 0x52 | events ready, at most 8 |
 | 0x53-0x7A | up to 8 events of 5 bytes: UID bits 0..31, flags |
@@ -83,20 +82,50 @@ private link between two Keybits, so key state hops inward along a tree:
   takes one more than the shallowest neighbour that polls it. Depth only
   comes from being polled, so when a Keybit is pulled out everything behind
   it drops to "no depth" within 600 ms, with no loops.
-- **Polling.** A Keybit with a depth acts as I2C controller (address 0x31,
-  about 100 kHz) on each other side every ~5 ms, unless that neighbour polls
-  it or is no deeper. A poll writes our depth to 0x50, reads 0x51 onwards
-  (the child's depth, event count and up to 8 events), then writes 0x7B to
-  drop the ones we kept.
+- **Polling.** A Keybit with a depth polls each other side over the link
+  protocol below, unless that neighbour polls it or is no deeper. It polls
+  a known child every ~100 ms to keep its depth fresh, probes empty sides
+  every ~100 ms, and polls at once when a child rings the doorbell.
 - **Events.** Each Keybit queues its own key changes plus a heartbeat about
   once a second, and forwards its children's. The keyword drains the
-  touching Keybits the same way (`keybit_bus_poll_relay`) into
-  `keybit_remotes[]`, and drops a remote Keybit after 3 s without a
-  heartbeat.
-- **Safety.** A side where any address other than 0x31 shows up is the
-  keyword's shared bus; a Keybit never drives that side as controller. It
-  also listens for 600 ms after power-up before polling anything.
+  touching Keybits over I2C (`keybit_bus_poll_relay`, registers
+  0x51-0x7B) into `keybit_remotes[]`, and drops a remote Keybit after 3 s
+  without a heartbeat.
+- **Safety.** A side where an I2C address shows up is the keyword's shared
+  bus; a Keybit never starts a link frame or rings there. It also listens
+  for 600 ms after power-up before driving anything.
 
-Latency is roughly 5 ms per hop plus retries when a poll lands while the
-neighbour is busy on another side. Remote Keybits are identified by the low
-32 bits of their UID.
+## Link protocol
+
+Keybit-to-Keybit links use the same two pins as I2C, renamed DT (SDA) and
+CK (SCL), with a lighter protocol (`link.c`):
+
+1. **Idle and handshake are open-drain**, on the 10k pull-ups, because
+   either end may pull a line and an unknown side could be the keyword's
+   bus.
+   - *Request:* the parent pulls CK low. On a side not yet known to be a
+     link, the child only answers once CK has been low for 50 us with DT
+     high, which never happens on I2C.
+   - *Doorbell:* a child with events holds DT low (CK high) towards its
+     parent, which polls it straight away.
+   - *Ack:* the child pulls DT low; the parent releases CK, the child
+     releases DT, and both lines high starts the frame.
+2. **The frame is push-pull.** The parent drives CK; whoever is sending
+   drives DT, and at each turnaround one end lets go 1 us before the other
+   drives, so outputs never fight. Half a clock period is 0.5 us, so about
+   1 Mbit/s, MSB first. The parent never waits on the child mid-frame, so
+   a Keybit pulled out mid-frame can't hang it; a child that falls behind
+   just fails the CRC.
+
+| Direction | Bytes |
+|---|---|
+| parent -> child | 0xA5, parent depth |
+| child -> parent | child depth, n (0-8), n x 5 event bytes, CRC-8 (poly 0x07) |
+| parent -> child | kept, ~kept |
+
+The child drops the first `kept` events. A frame with one event takes about
+120 us including the handshake, so a key press moves one hop in well under
+a millisecond. If frames fail on real hardware, raise `HALF` in `link.c`
+first.
+
+Remote Keybits are identified by the low 32 bits of their UID.

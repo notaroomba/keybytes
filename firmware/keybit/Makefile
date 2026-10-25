@@ -2,7 +2,7 @@ all : build
 
 TARGET := main
 TARGET_MCU ?= CH32V003
-ADDITIONAL_C_FILES := soft_i2c.c
+ADDITIONAL_C_FILES := soft_i2c.c link.c
 
 # ch32v003fun is fetched on first build (pinned) unless you point CH32V003FUN
 # at your own checkout.

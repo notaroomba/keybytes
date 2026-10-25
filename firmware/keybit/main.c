@@ -20,20 +20,24 @@
  * again.
  *
  * Relaying: only Keybits touching the keyword are on its bus. The rest sit
- * behind private two-Keybit links, so key state hops inward:
+ * behind private two-Keybit links, which don't use I2C but the protocol in
+ * link.h, so key state hops inward:
  *   - Every Keybit has a depth: 1 when the keyword talks to it directly,
  *     otherwise one more than the shallowest neighbour that polls it.
  *     Depth only comes from being polled, so when a Keybit is pulled out
  *     everything behind it goes quiet within FRESH_MS instead of looping.
- *   - A Keybit with a depth polls each other side as I2C controller (at
- *     LINK_ADDR) unless the neighbour there is no deeper than it is. Each
- *     poll tells the child our depth, reads the child's depth, and takes
- *     up to 8 queued events.
+ *   - A Keybit with a depth polls each other side over the link unless the
+ *     neighbour there is no deeper than it is: about every CHILD_POLL_MS,
+ *     and at once when the child rings the doorbell because it has events.
+ *     Each poll tells the child our depth, reads the child's depth, and
+ *     takes up to 8 queued events.
  *   - Events are (UID low 32 bits, flags): key changes and a heartbeat
  *     about once a second. Each Keybit queues its own and forwards its
  *     children's, so they drain towards the keyword.
- *   A side where we ever see an address that isn't LINK_ADDR is the
- *   keyword's shared bus, and we never act as controller there.
+ *   A side where we see an I2C address is the keyword's shared bus. We
+ *   never start a link frame there, and only answer one on a side that
+ *   isn't known to be either after the line has been held for LINK_REQ_US,
+ *   which I2C never does.
  *
  * Registers (reads and writes auto-increment from the pointer):
  *   0x00       0x4B ('K') magic
@@ -45,7 +49,6 @@
  *   0x10-0x1B  96-bit UID, little endian
  *   0x20-0x2B  ASSIGN: UID to match (write only)
  *   0x2C       ASSIGN: new address, 0 = forget it. Writing this applies it.
- *   0x50       (write) depth of the Keybit polling us over a link
  *   0x51       our depth, 0xFF if we can't reach the keyword yet
  *   0x52       events ready to read, at most 8
  *   0x53-0x7A  up to 8 events, 5 bytes each: UID bits 0..31, then flags
@@ -56,18 +59,23 @@
  */
 #include "ch32fun.h"
 #include "soft_i2c.h"
+#include "link.h"
 #include <string.h>
 
-#define FW_VERSION          3
+#define FW_VERSION          4
 #define KEYBIT_DEFAULT_ADDR 0x30
-#define LINK_ADDR           0x31  /* Keybit-to-Keybit links; the keyword never assigns it */
+#define LINK_ADDR           0x31  /* reserved: the keyword never assigns it */
 #define BTN_PIN             PD6   /* MX switch to GND */
 #define DEBOUNCE            200   /* main loop passes */
 
 #define DEPTH_NONE          0xFF
 #define FRESH_MS            600   /* a neighbour's depth counts this long */
-#define POLL_MS             5     /* child poll interval per side */
+#define CHILD_POLL_MS       100   /* keeps a child's depth fresh; events come by doorbell */
+#define PROBE_MS            100   /* look for a new neighbour on an empty side */
 #define PEER_RECHECK_MS     2000
+#define LINK_FRESH_MS       1000  /* a side counts as a link this long after a frame */
+#define KEYWORD_FRESH_MS    2000  /* the keyword scans every 250 ms */
+#define LINK_REQ_US         50    /* CK held low this long on an unknown side = link request */
 #define HEARTBEAT_MS        1000
 #define QUEUE_LEN           32
 #define BATCH               8
@@ -100,8 +108,14 @@ typedef struct {
   /* Learned when we poll the neighbour. */
   uint8_t child_depth;   /* DEPTH_NONE if unknown */
   uint32_t child_seen;
-  uint8_t keyword;       /* this side is the keyword's shared bus */
-  uint32_t next_poll;    /* tick of our next controller poll here */
+  uint8_t keyword;       /* the keyword's shared bus, seen at keyword_seen */
+  uint32_t keyword_seen;
+  uint8_t link;          /* a link frame ran here at link_seen */
+  uint32_t link_seen;
+  uint8_t ck_low;        /* CK low on an unknown side since ck_low_at */
+  uint32_t ck_low_at;
+  uint8_t ringing;       /* we're holding DT low as a doorbell */
+  uint32_t next_poll;    /* tick of our next link poll here */
 } side_t;
 
 static soft_i2c_bus_t buses[4] = {
@@ -130,6 +144,22 @@ static inline uint32_t ticks(void) { return SysTick->CNT; }
 static inline int elapsed(uint32_t since, uint32_t span) { return ticks() - since >= span; }
 
 static int side_index(soft_i2c_bus_t *bus) { return (int)(bus - buses); }
+
+static int is_keyword(int s)
+{
+  side_t *sd = &sides[s];
+  if (sd->keyword && elapsed(sd->keyword_seen, MS(KEYWORD_FRESH_MS))) sd->keyword = 0;
+  return sd->keyword;
+}
+
+static int is_link(int s)
+{
+  side_t *sd = &sides[s];
+  if (sd->link && elapsed(sd->link_seen, MS(LINK_FRESH_MS))) sd->link = 0;
+  return sd->link;
+}
+
+static link_pins_t pins(int s) { return (link_pins_t){ .dt = buses[s].sda, .ck = buses[s].scl }; }
 
 /* ------------------------------------------------------------------------ */
 /* Event queue                                                              */
@@ -221,10 +251,10 @@ static void polled_by(int s, uint8_t depth)
 static int match_addr(uint8_t addr, soft_i2c_bus_t *bus)
 {
   int s = side_index(bus);
-  if (addr == LINK_ADDR) return !sides[s].keyword;
-
-  /* Anything else only happens on the keyword's bus. */
+  /* I2C only happens on the keyword's bus. */
   sides[s].keyword = 1;
+  sides[s].keyword_seen = ticks();
+  sides[s].link = 0;
   int mine = my_addr ? addr == my_addr : addr == KEYBIT_DEFAULT_ADDR;
   if (mine) polled_by(s, 0);
   return mine;
@@ -254,7 +284,6 @@ static uint8_t read_reg(uint8_t reg, soft_i2c_bus_t *bus)
 
 static void write_reg(uint8_t reg, uint8_t value, soft_i2c_bus_t *bus)
 {
-  if (reg == 0x50) { polled_by(side_index(bus), value); return; }
   if (reg == 0x7B) { queue_pop(value); return; }
   if (reg < 0x20 || reg > 0x2C) return;
   assign_buf[reg - 0x20] = value;
@@ -299,73 +328,148 @@ static void update_depth(void)
   my_depth = best == DEPTH_NONE || best >= 0xFE ? DEPTH_NONE : (uint8_t)(best + 1);
 }
 
-/* Poll the Keybit on side s: tell it our depth, read its depth and up to
- * BATCH of its events, then tell it how many we kept. */
-static void poll_child(int s)
+static void fill_reply(link_reply_t *r)
 {
-  soft_i2c_bus_t *b = &buses[s];
-  uint8_t depth = 0, count = 0;
-  event_t got[BATCH];
-  int n = 0, ok = 0;
-
-  if (!soft_i2c_start(b)) return;
-  if (soft_i2c_write(b, LINK_ADDR << 1) == 1 && soft_i2c_write(b, 0x50) == 1 &&
-      soft_i2c_write(b, my_depth) == 1 && soft_i2c_restart(b) &&
-      soft_i2c_write(b, (LINK_ADDR << 1) | 1) == 1 &&
-      soft_i2c_read(b, &depth, 1) && soft_i2c_read(b, &count, 1)) {
-    int room = QUEUE_LEN - q_count;
-    if (count > BATCH) count = BATCH;
-    n = count < room ? count : room;
-    ok = 1;
-    for (int i = 0; i < n && ok; i++)
-      for (int j = 0; j < 5 && ok; j++) {
-        uint8_t v;
-        ok = soft_i2c_read(b, &v, !(i == n - 1 && j == 4));
-        if (j < 4) got[i].uid[j] = v; else got[i].flags = v;
-      }
-    if (n == 0) { uint8_t dummy; ok = soft_i2c_read(b, &dummy, 0); }
-  }
-  soft_i2c_stop(b);
-  if (!ok) return;
-
-  sides[s].child_depth = depth;
-  sides[s].child_seen = ticks();
-  if (n == 0) return;
-  for (int i = 0; i < n; i++) queue_push(&got[i]);
-
-  if (soft_i2c_start(b)) {
-    if (soft_i2c_write(b, LINK_ADDR << 1) == 1 && soft_i2c_write(b, 0x7B) == 1)
-      soft_i2c_write(b, (uint8_t)n);
-    soft_i2c_stop(b);
+  r->depth = my_depth;
+  r->n = q_count < BATCH ? q_count : BATCH;
+  for (int i = 0; i < r->n; i++) {
+    const event_t *e = queue_at(i);
+    memcpy(&r->ev[i * LINK_EV_SIZE], e->uid, 4);
+    r->ev[i * LINK_EV_SIZE + 4] = e->flags;
   }
 }
 
-static void relay(void)
+/* Keep serving I2C on the other sides while a link request waits for its
+ * ack. Returns 1 (give up on the request) if we served something, so the
+ * keyword never waits on us for long. */
+static int link_side = -1;
+static int serve_others(void)
 {
-  static uint32_t boot;
-  static uint8_t started;
-  if (!started) { boot = ticks(); started = 1; }
-  /* Listen first so the keyword's bus is recognised before we ever drive
-   * a side as controller. */
-  if (!elapsed(boot, MS(FRESH_MS))) return;
+  for (int s = 0; s < 4; s++) {
+    if (s == link_side || is_link(s)) continue;
+    if (soft_i2c_poll(&buses[s], &target)) return 1;
+  }
+  return 0;
+}
 
+static void reset_i2c_edge(int s)
+{
+  buses[s].prev_sda = funDigitalRead(buses[s].sda);
+  buses[s].prev_scl = funDigitalRead(buses[s].scl);
+}
+
+/* Parent side: run a link frame with the Keybit on side s. */
+static void poll_child(int s, int doorbell)
+{
+  link_pins_t p = pins(s);
+  link_reply_t got;
+  uint8_t kept = 0;
+
+  link_side = s;
+  int ok = link_poll(&p, doorbell, my_depth, &got, (uint8_t)(QUEUE_LEN - q_count), &kept, serve_others);
+  link_side = -1;
+  reset_i2c_edge(s);
+  if (!ok) return;
+
+  side_t *sd = &sides[s];
+  sd->link = 1;
+  sd->link_seen = ticks();
+  sd->child_depth = got.depth;
+  sd->child_seen = ticks();
+  for (int i = 0; i < kept; i++) {
+    event_t e;
+    memcpy(e.uid, &got.ev[i * LINK_EV_SIZE], 4);
+    e.flags = got.ev[i * LINK_EV_SIZE + 4];
+    queue_push(&e);
+  }
+}
+
+/* Child side: CK is low on side s. Answer if it's a link request. */
+static void answer_link(int s, int listening)
+{
+  side_t *sd = &sides[s];
+  if (funDigitalRead(buses[s].scl)) { sd->ck_low = 0; return; }
+  if (is_keyword(s)) return;
+
+  if (!is_link(s)) {
+    /* An unknown side might be the keyword's bus mid-transfer, where SCL
+     * is never held low this long with SDA high. */
+    if (listening || !funDigitalRead(buses[s].sda)) { sd->ck_low = 0; return; }
+    if (!sd->ck_low) { sd->ck_low = 1; sd->ck_low_at = ticks(); return; }
+    if (!elapsed(sd->ck_low_at, LINK_REQ_US * DELAY_US_TIME)) return;
+  }
+  sd->ck_low = 0;
+
+  link_pins_t p = pins(s);
+  link_reply_t r;
+  uint8_t depth, kept;
+  fill_reply(&r);
+  int ok = link_serve(&p, sd->ringing, &r, &depth, &kept);
+  sd->ringing = 0;
+  reset_i2c_edge(s);
+  if (!ok) return;
+
+  sd->link = 1;
+  sd->link_seen = ticks();
+  polled_by(s, depth);
+  queue_pop(kept);
+}
+
+/* With events queued, hold DT low towards our parent so it polls us now.
+ * Only on a link side, never the keyword's bus: the keyword polls often
+ * anyway, and SDA low there would look like an I2C START. */
+static void doorbell(void)
+{
+  int want = -1;
+  if (q_count) {
+    uint8_t best = DEPTH_NONE;
+    for (int s = 0; s < 4; s++)
+      if (is_link(s) && !is_keyword(s) && sides[s].parent_depth < best) {
+        best = sides[s].parent_depth;
+        want = s;
+      }
+  }
+  for (int s = 0; s < 4; s++) {
+    side_t *sd = &sides[s];
+    if (s == want && !sd->ringing && funDigitalRead(buses[s].scl)) {
+      funDigitalWrite(buses[s].sda, FUN_LOW);
+      sd->ringing = 1;
+    } else if (s != want && sd->ringing) {
+      funDigitalWrite(buses[s].sda, FUN_HIGH);
+      sd->ringing = 0;
+    }
+  }
+}
+
+static uint8_t jitter(void) { return uid[0] & 7; }
+
+static void relay(int listening)
+{
+  if (listening) return;
   update_depth();
   if (my_depth == DEPTH_NONE) return;
 
   for (int s = 0; s < 4; s++) {
     side_t *sd = &sides[s];
-    if (sd->keyword) continue;
+    if (is_keyword(s)) continue;
     if (sd->parent_depth != DEPTH_NONE) continue;  /* it polls us */
-    /* A peer at the same depth or shallower isn't our child; look again
-     * now and then in case that changed. */
-    if (sd->child_depth != DEPTH_NONE && sd->child_depth <= my_depth &&
-        !elapsed(sd->child_seen, MS(PEER_RECHECK_MS))) continue;
-    if ((int32_t)(ticks() - sd->next_poll) < 0) continue;
-    /* A little UID-based jitter so two Keybits don't keep polling each
-     * other in lockstep. */
-    sd->next_poll = ticks() + MS(POLL_MS) + (uid[0] & 3) * DELAY_MS_TIME / 2;
-    poll_child(s);
-    buses[s].prev_sda = buses[s].prev_scl = 1;
+    if (sd->ringing) continue;
+
+    int child = sd->child_depth != DEPTH_NONE && sd->child_depth > my_depth &&
+                !elapsed(sd->child_seen, MS(FRESH_MS));
+    /* A ringing child holds DT low with CK high. */
+    int rang = child && is_link(s) && !funDigitalRead(buses[s].sda) && funDigitalRead(buses[s].scl);
+    if (!rang) {
+      /* A peer at the same depth or shallower isn't our child; look again
+       * now and then in case that changed. */
+      if (sd->child_depth != DEPTH_NONE && sd->child_depth <= my_depth &&
+          !elapsed(sd->child_seen, MS(PEER_RECHECK_MS))) continue;
+      if ((int32_t)(ticks() - sd->next_poll) < 0) continue;
+    }
+    /* Some UID-based jitter so two Keybits don't keep asking each other
+     * in lockstep. */
+    sd->next_poll = ticks() + MS((child ? CHILD_POLL_MS : PROBE_MS) + jitter());
+    poll_child(s, rang);
   }
 }
 
@@ -407,10 +511,19 @@ int main(void)
 
   for (int i = 0; i < 4; i++) soft_i2c_init(&buses[i]);
 
+  uint32_t boot = ticks();
+  int listening = 1;
   for (;;) {
-    for (int i = 0; i < 4; i++) soft_i2c_poll(&buses[i], &target);
+    /* Listen first so the keyword's bus is recognised before we ever
+     * drive a side. */
+    if (listening && elapsed(boot, MS(FRESH_MS))) listening = 0;
+    for (int i = 0; i < 4; i++) {
+      if (!is_link(i)) soft_i2c_poll(&buses[i], &target);
+      answer_link(i, listening);
+    }
     debounce_key();
-    relay();
+    relay(listening);
+    doorbell();
     heartbeat();
     if (save_addr >= 0) {
       store_config((uint8_t)save_addr);

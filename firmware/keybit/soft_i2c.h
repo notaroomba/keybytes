@@ -43,15 +43,4 @@ void soft_i2c_init(soft_i2c_bus_t *bus);
  * writes auto-increment it. */
 int soft_i2c_poll(soft_i2c_bus_t *bus, const soft_i2c_target_t *t);
 
-/* Controller side, for polling the Keybit on the far side of a link.
- * Every call returns 1 on success / ACK, 0 on NACK or timeout, and -1 if
- * another controller won arbitration (then the bus is already released).
- * Start fails (0) if the bus isn't idle. */
-int soft_i2c_start(soft_i2c_bus_t *bus);
-int soft_i2c_restart(soft_i2c_bus_t *bus);
-void soft_i2c_stop(soft_i2c_bus_t *bus);
-int soft_i2c_write(soft_i2c_bus_t *bus, uint8_t v);
-/* Reads one byte; ack = 1 to ask for more, 0 on the last byte. */
-int soft_i2c_read(soft_i2c_bus_t *bus, uint8_t *v, int ack);
-
 #endif
