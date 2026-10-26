@@ -37,6 +37,12 @@ That builds the OTA bootloader (`ota_bootloader/`) and the app, and writes
 | `keyword_full.bin` / `.hex` | bootloader + app in one image | 0x08000000, first install over USB DFU |
 | `keyword_app.bin` | app only | 0x08007000, updates over BLE |
 
+`make -C ota_bootloader complete STACK=/path/to/stm32wb5x_BLE_Stack_full_fw.bin`
+also writes `release/keyword_complete.hex` and `.dfu`: bootloader, app and the
+CPU2 BLE stack 1.24.0 in one file (see [One-flash setup](#one-flash-setup)). It
+checks the stack's SHA-256 and that both files decode back to the three images.
+They aren't committed, since ST's SLA0044 covers the stack.
+
 The app alone still builds with `make -f STM32Make.make` (`build/debug/keyword.elf`).
 
 ## Flash map
@@ -55,7 +61,54 @@ the app asked for an update.
 
 ## Flash
 
-### First install over USB DFU
+### One-flash setup
+
+> [!CAUTION]
+> **Over USB DFU, never use STM32CubeProgrammer's `-startfus`, `-fwupgrade`,
+> `-startwirelessstack`, "run after programming" (`-g`, `-s`, `-rst`) or any
+> `-ob`.** On this board `-startfus` over USB left `nSWBOOT0=0`, `nBOOT0=1`:
+> it boots from flash only, ignores BOOT0, and can't get back into DFU without
+> SWD. Plain writes (`-d ... -v`) and reads only. The keyword installs the BLE
+> stack itself and `BOOTLOCK` sets the boot option bytes from the app.
+
+One file has everything: the bootloader at 0x08000000, the app at 0x08007000
+and the BLE stack at 0x080D0000. The gaps aren't in it, so it never writes the
+keymap page or anything of FUS.
+
+1. **Get into DFU.** On a fresh chip, BOOT0 (PH3, U11 pin 5) high at reset
+   starts ST's ROM DFU. PH3 and NRST (pin 8) aren't routed on the keyword, so
+   hold a wire from pin 5 to 3V3 while plugging in USB. It shows up as
+   `0483:df11`. A keyword that already runs this firmware gets there with
+   `DFU` over USB serial instead.
+2. **Flash it once.** Either one:
+   ```sh
+   STM32_Programmer_CLI -c port=usb1 -d release/keyword_complete.hex -v
+   dfu-util -a 0 -d 0483:df11 -D release/keyword_complete.dfu
+   ```
+3. **Start the app.** Unplug, take the wire off pin 5, and plug it back in.
+   Until step 5 the chip still reads the BOOT0 pin, and PH3 floats on this
+   board, so tie pin 5 to GND for the first boot: the stack install resets the
+   chip and a floating BOOT0 could land it in DFU halfway. (ST's AN3156 says
+   DfuSe "leave" only jumps to the address, and the WB isn't in its list of
+   parts that reset there, so `dfu-util -a 0 -d 0483:df11 -s 0x08000000:leave`
+   should start it too without touching the option bytes. I haven't tried that
+   on the keyword.)
+4. **Let it install the stack.** It comes up on USB serial, finds the stack at
+   0x080D0000 and has FUS install it (`STACK PROGRESS ...` lines), resets and
+   comes back as **Keyword**. Check:
+   ```
+   HELLO      -> KEYWORD v=0.1.0 proto=1 caps=batt,hold,macro,ota kb=...
+   STACK?     -> STACK ble v=1.24.0 fus=2.2.0
+   BOOTCFG?   -> BOOTCFG nBOOT0=1 nSWBOOT0=1 nBOOT1=1 RDP=0xAA
+   ```
+5. **Lock the boot.** Only once `STACK?` shows the stack and the app has run
+   more than 10 s, send `BOOTLOCK yes` over USB serial. It changes only
+   `nSWBOOT0` to 0 and keeps `nBOOT0` at 1, never RDP or anything else, then
+   reloads the option bytes (a reset). `BOOTCFG?` should then show
+   `nSWBOOT0=0`. From then on BOOT0 doesn't matter and `DFU` is the way back
+   into the ROM bootloader. The pin 5 wire can go.
+
+### First install over USB DFU, two files
 
 > **Warning: over USB DFU, only ever use plain writes (`-d ... -v`) and reads.**
 > STM32CubeProgrammer's "run after programming" steps rewrite the option bytes
@@ -125,6 +178,8 @@ into the system bootloader instead of the firmware. That's why its option bytes
 were set to ignore the pin and always boot from flash (`nSWBOOT0 = 0`,
 `nBOOT0 = 1`). Leave them like that: `DFU` above gets into the system
 bootloader without them.
+`BOOTLOCK yes` over USB serial sets exactly those two from the app (see
+[One-flash setup](#one-flash-setup)), and `BOOTCFG?` shows them.
 
 ## Keybit dock and side bus
 
@@ -183,6 +238,7 @@ The parser and the tap/hold/macro logic have host checks:
 cc -std=c99 -Itest/stub -ICore/Inc test/proto_test.c Core/Src/proto.c Core/Src/keytable.c -o /tmp/proto_test && /tmp/proto_test
 cc -std=c99 -ICore/Inc test/keyact_test.c Core/Src/keyact.c -o /tmp/keyact_test && /tmp/keyact_test
 cc -std=c99 -Itest/stub -ICore/Inc test/batt_test.c Core/Src/batt.c -o /tmp/batt_test && /tmp/batt_test
+cc -std=c99 -ICore/Inc test/bootcfg_test.c -o /tmp/bootcfg_test && /tmp/bootcfg_test
 ```
 
 ### The CPU2 BLE stack
