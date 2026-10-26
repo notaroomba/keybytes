@@ -16,6 +16,8 @@ npm install
 npm start
 ```
 
+On macOS, `npm start` launches Electron through `open`. macOS would otherwise blame the terminal for the Bluetooth scan and kill the app when you press **Bluetooth**. The app's output still shows in the terminal. Set `KEYWORD_DIRECT_START=1` to run Electron directly, for example under a debugger.
+
 **Demo** works without hardware and pretends to be a Keyword with every optional feature (battery, hold, macros, reflashing):
 
 - Click a side of the Keyword to attach or remove a Keybit.

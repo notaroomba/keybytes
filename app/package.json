@@ -6,7 +6,7 @@
   "main": "main.js",
   "private": true,
   "scripts": {
-    "start": "electron .",
+    "start": "node scripts/start.js",
     "test": "node --test",
     "dist": "electron-builder"
   },
@@ -18,16 +18,32 @@
     "appId": "com.keybytes.keyword-monitor",
     "productName": "Keyword Monitor",
     "publish": null,
-    "files": ["main.js", "preload.js", "renderer/**", "package.json"],
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**",
+      "package.json"
+    ],
     "mac": {
       "category": "public.app-category.utilities",
-      "target": ["dmg"],
+      "target": [
+        "dmg"
+      ],
       "extendInfo": {
         "NSBluetoothAlwaysUsageDescription": "Keyword Monitor connects to your Keyword keyboard over Bluetooth.",
         "NSBluetoothPeripheralUsageDescription": "Keyword Monitor connects to your Keyword keyboard over Bluetooth."
       }
     },
-    "win": { "target": ["nsis"] },
-    "linux": { "target": ["AppImage"], "category": "Utility" }
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility"
+    }
   }
 }
