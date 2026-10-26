@@ -2,3 +2,4 @@
 .claude/
 .DS_Store
 *.lck
+/firmware/build
