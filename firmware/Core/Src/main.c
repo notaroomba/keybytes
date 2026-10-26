@@ -26,6 +26,7 @@
 #include "ch32v003_swio.h"
 #include "keybit_image.h"
 #include "keybit_bus.h"
+#include "proto.h"
 
 /* USER CODE END Includes */
 
@@ -95,18 +96,21 @@ static void LED_Set(uint8_t r, uint8_t g, uint8_t b)
 
 /* Status LED, highest priority first:
  *   red    Keybit on the dock failed to flash (until it's taken off)
+ *   red    blinking: SDA held low, a Keybit is on backwards (bus paused)
  *   white  blinking: a Keybit just connected on a side
  *   blue   Keybit on the dock (flashed or up to date)
  *   green  idle */
-static uint8_t dock_present, dock_failed;
+static uint8_t dock_present, dock_failed, bus_held;
 static uint32_t white_until;
 
 #define WHITE_BLINK_MS 1200
+#define BUS_HELD_MS 100
 
 static void LED_Update(void)
 {
   uint32_t now = HAL_GetTick();
   if (dock_failed) LED_Set(1, 0, 0);
+  else if (bus_held) LED_Set(((now / 250) & 1) == 0, 0, 0);
   else if ((int32_t)(white_until - now) > 0) {
     uint8_t on = ((now / 100) & 1) == 0;
     LED_Set(on, on, on);
@@ -152,7 +156,22 @@ static void Keybit_Dock_Poll(void)
 /* Hand addresses to new Keybits, then refresh the list of who is there. */
 static void Keybit_Bus_Poll(void)
 {
-  static uint32_t last_scan, last_keys;
+  static uint32_t last_scan, last_keys, held_since;
+
+  /* A backwards Keybit holds SDA low; tell the host once it has lasted
+   * BUS_HELD_MS and once it clears, and leave the bus alone meanwhile. */
+  uint32_t now = HAL_GetTick();
+  if (!keybit_bus_held()) {
+    held_since = now;
+    if (bus_held) {
+      bus_held = 0;
+      PROTO_Send("OK BUS clear");
+    }
+  } else if (!bus_held && now - held_since >= BUS_HELD_MS) {
+    bus_held = 1;
+    PROTO_Send("ERR bus SDA held low, a Keybit on the Keyword may be turned the wrong way");
+  }
+  if (keybit_bus_jammed()) return;
   if (HAL_GetTick() - last_keys >= KEYBIT_KEYS_MS) {
     last_keys = HAL_GetTick();
     keybit_changed |= keybit_bus_poll_keys(&hi2c3, keybits, keybit_count);

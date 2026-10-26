@@ -80,6 +80,10 @@ int link_poll(const link_pins_t *p, int doorbell, uint8_t my_depth,
               link_reply_t *child, uint8_t room, uint8_t *kept, link_idle_fn idle)
 {
   if (!CK(p)) return 0;
+  /* DT low with CK high and no doorbell expected: a Keybit turned the
+   * wrong way round has our DT on its GND and our CK on its 3V3. Pulling
+   * CK low would short its rail through our pin, so leave the side alone. */
+  if (!doorbell && !DT(p)) return 0;
   CK_LOW(p);
 
   /* A ringing child already holds DT low, so wait for it to let go

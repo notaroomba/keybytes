@@ -18,6 +18,32 @@
 #define EV_PRESSED   0x01
 #define MAGIC      0x4B
 
+/* I2C3's pins (see stm32wbxx_hal_msp.c); IDR still reads them in AF mode. */
+#define BUS_PORT GPIOB
+#define BUS_SCL  GPIO_PIN_13
+#define BUS_SDA  GPIO_PIN_14
+#define JAM_RETRY_MS 1000
+
+int keybit_bus_held(void)
+{
+  return HAL_GPIO_ReadPin(BUS_PORT, BUS_SDA) == GPIO_PIN_RESET &&
+         HAL_GPIO_ReadPin(BUS_PORT, BUS_SCL) == GPIO_PIN_SET;
+}
+
+int keybit_bus_jammed(void)
+{
+  static uint32_t last_try;
+  if (!keybit_bus_held()) return 0;
+  /* Let one attempt through now and then: its few clocks free a Keybit
+   * that really did get stuck mid-byte, at a tiny fraction of the usual
+   * poll rate. */
+  if (HAL_GetTick() - last_try >= JAM_RETRY_MS) {
+    last_try = HAL_GetTick();
+    return 0;
+  }
+  return 1;
+}
+
 static int is_ready(I2C_HandleTypeDef *i2c, uint8_t addr)
 {
   return HAL_I2C_IsDeviceReady(i2c, (uint16_t)(addr << 1), 1, I2C_TIMEOUT_MS) == HAL_OK;
@@ -179,11 +205,13 @@ int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, const keybit_info_t *k, int n,
 
 int keybit_bus_read(I2C_HandleTypeDef *i2c, uint8_t addr7, uint8_t reg, uint8_t *buf, uint8_t len)
 {
+  if (keybit_bus_jammed()) return 0;
   return read_regs(i2c, addr7, reg, buf, len);
 }
 
 int keybit_bus_write(I2C_HandleTypeDef *i2c, uint8_t addr7, uint8_t reg, const uint8_t *buf, uint8_t len)
 {
+  if (keybit_bus_jammed()) return 0;
   return HAL_I2C_Mem_Write(i2c, (uint16_t)(addr7 << 1), reg, I2C_MEMADD_SIZE_8BIT,
                            (uint8_t *)buf, len, I2C_TIMEOUT_MS) == HAL_OK;
 }

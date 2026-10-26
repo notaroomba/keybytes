@@ -62,7 +62,7 @@
 #include "link.h"
 #include <string.h>
 
-#define FW_VERSION          4
+#define FW_VERSION          5
 #define KEYBIT_DEFAULT_ADDR 0x30
 #define LINK_ADDR           0x31  /* reserved: the keyword never assigns it */
 #define BTN_PIN             PD6   /* MX switch to GND */
@@ -457,8 +457,14 @@ static void relay(int listening)
 
     int child = sd->child_depth != DEPTH_NONE && sd->child_depth > my_depth &&
                 !elapsed(sd->child_seen, MS(FRESH_MS));
-    /* A ringing child holds DT low with CK high. */
-    int rang = child && is_link(s) && !funDigitalRead(buses[s].sda) && funDigitalRead(buses[s].scl);
+    /* A ringing child holds DT low with CK high. So does a Keybit turned
+     * the wrong way round (its GND on our DT, its 3V3 on our CK), but that
+     * side never completes a frame, so it never counts as a link. Never
+     * probe it: CK low there shorts the neighbour's rail through our pin,
+     * or pushes current into its SCL clamp diode if it's only fed from us. */
+    int held = !funDigitalRead(buses[s].sda) && funDigitalRead(buses[s].scl);
+    if (held && !is_link(s)) continue;
+    int rang = held;
     if (!rang) {
       /* A peer at the same depth or shallower isn't our child; look again
        * now and then in case that changed. */

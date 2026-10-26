@@ -34,6 +34,16 @@ typedef struct {
   uint32_t last_seen;  /* HAL_GetTick() */
 } keybit_remote_t;
 
+/* SDA low with SCL high while we aren't using the bus. A Keybit turned the
+ * wrong way round on the keyword does this: its GND lands on our SDA and
+ * its 3V3 on our SCL, so every SCL low we drive pulls its supply down
+ * through its SCL clamp diode. keybit_bus_held() reports the state;
+ * keybit_bus_jammed() is the same but lets one attempt through about once
+ * a second, so a Keybit stuck mid-byte still gets clocked free. Check
+ * keybit_bus_jammed() before starting any transfer. */
+int keybit_bus_held(void);
+int keybit_bus_jammed(void);
+
 /* Give every Keybit still on the default address its own address. Returns
  * how many were assigned. */
 int keybit_bus_assign(I2C_HandleTypeDef *i2c);
