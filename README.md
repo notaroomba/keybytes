@@ -96,6 +96,7 @@ This project uses:
 - [Blender](https://www.blender.org/) for 3D renders
 - [STM32CubeMX](https://www.st.com/en/development-tools/stm32cubemx.html)
 - [Hack Club Forge](https://forge.hackclub.com/)
+- [JLCPCB](https://jlcpcb.com/) for PCB fabrication and assembly
 
 ## You may also like...
 

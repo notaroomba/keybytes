@@ -1,0 +1,95 @@
+@import 'tailwindcss';
+
+/* dark: follows the resolved theme the app writes to <html data-theme>. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root {
+  --app: #f5f6f8;
+  --panel: #ffffff;
+  --fg: #1b1d22;
+  --muted: #6b7280;
+  --line: #d6d9df;
+  --accent: #2f6fde;
+  --accent-fg: #ffffff;
+  --on: #1f9d63;
+  --on-soft: #d9f2e6;
+  --warn: #b7790a;
+  --warn-soft: #fbefd6;
+  --danger: #c2413a;
+  --off: #9aa1ad;
+  --keyword: #2a2f3a;
+  --keyword-fg: #f0f2f5;
+  --press: #e3ecfb;
+}
+
+[data-theme='dark'] {
+  --app: #14161a;
+  --panel: #1d2026;
+  --fg: #e8eaee;
+  --muted: #9099a8;
+  --line: #333844;
+  --accent: #6c9cf0;
+  --accent-fg: #0d1220;
+  --on: #3cc287;
+  --on-soft: #18392b;
+  --warn: #e0a83a;
+  --warn-soft: #3a2e15;
+  --danger: #ef6b63;
+  --off: #5d6472;
+  --keyword: #3a4150;
+  --keyword-fg: #f0f2f5;
+  --press: #1d2c47;
+}
+
+@theme inline {
+  --color-app: var(--app);
+  --color-panel: var(--panel);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-on: var(--on);
+  --color-on-soft: var(--on-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-off: var(--off);
+  --color-keyword: var(--keyword);
+  --color-keyword-fg: var(--keyword-fg);
+  --color-press: var(--press);
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --animate-pop: pop 1.4s ease-out;
+  --animate-blink: blink 0.5s ease-out;
+
+  @keyframes pop {
+    0% { box-shadow: 0 0 0 3px var(--on); }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+  @keyframes blink {
+    0% { color: var(--accent); }
+    100% { color: inherit; }
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-app font-sans text-[13px] text-fg antialiased;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+  dialog::backdrop {
+    background: rgb(0 0 0 / 0.4);
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-1 outline-accent;
+  }
+}

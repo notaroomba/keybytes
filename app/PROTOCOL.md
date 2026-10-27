@@ -117,6 +117,7 @@ How the app does it (Settings → **Update Keyword firmware…**, or File → Up
 
 - It checks the file first: a Cortex-M vector table whose reset handler is inside 0x08007000 plus the image size. That rejects `keyword_full.bin`, which is for USB DFU.
 - It sends writes of 240 bytes (176 on macOS, whose usual MTU is 185), stepping down to 176 and then 16 if the first write is refused. Every write is a multiple of 8, and the last one is padded with `FF`, because the bootloader programs flash 8 bytes at a time.
+- On macOS it waits 20 ms after each write. macOS drops write-without-response packets that come faster (a run of 131 × 176 B went missing at 4 ms).
 - If the Keyword reports no BLE stack, the app offers **Restart into USB DFU** instead. After DFU, flash with STM32CubeProgrammer and replug. Never use `-g`, `:leave`, `-startfus` or `-fwupgrade` over USB DFU: they rewrite nSWBOOT0 and can lock the Keyword out of DFU.
 - With no Keyword connected, it goes straight to finding `Keyword OTA`, so it can recover a Keyword stuck in the bootloader.
 

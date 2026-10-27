@@ -6,26 +6,47 @@ A desktop app for the Keyword. It connects over USB serial or Bluetooth and lets
 - assign any key, shortcut, media key, macro or computer action to each Keybit, with an optional hold action
 - keep keymap profiles, switch them automatically by app, and import or export them
 
-It's built with Electron, so it runs on macOS, Windows and Linux. It uses Chromium's Web Serial and Web Bluetooth, so there are no native modules to compile.
+It runs on macOS, Windows and Linux. It talks to the Keyword with Chromium's Web Serial and Web Bluetooth, so there are no native modules to compile.
 
 ## Run
 
 ```sh
 cd app
 npm install
-npm start
+npm run dev     # hot reload while you edit the UI
+npm start       # build, then run the built app
 ```
 
-On macOS, `npm start` launches Electron through `open`. macOS would otherwise blame the terminal for the Bluetooth scan and kill the app when you press **Bluetooth**. The app's output still shows in the terminal. Set `KEYWORD_DIRECT_START=1` to run Electron directly, for example under a debugger.
+Node 22.12 or newer is needed.
 
-**Demo** works without hardware and pretends to be a Keyword with every optional feature (battery, hold, macros, reflashing):
+On macOS, both commands launch Electron through `open` (see `scripts/mac-electron.sh`). Otherwise macOS would blame the terminal for the Bluetooth scan and kill the app when you press **Bluetooth**. The app's output still shows in the terminal. Two things follow from this:
+
+- Ctrl+C in the terminal doesn't close the app, so quit it with Cmd+Q.
+- After changing code in `src/main`, quit the app before `npm run dev` restarts it.
+
+Set `KEYWORD_DIRECT_START=1` to run Electron directly, for example under a debugger.
+
+**Demo** works without hardware and pretends to be a Keyword with every optional feature (battery, hold, macros, reflashing, firmware updates):
 
 - Click a side of the Keyword to attach or remove a Keybit.
 - Click **Tap** on a key to simulate a press.
 
-To build a standalone app, run `npm run dist`. It writes a `.dmg` on macOS, an installer on Windows or an AppImage on Linux, into `dist/`. The build includes the Bluetooth permission text that macOS requires.
+Other commands:
 
-Run the tests with `npm test`. They cover the protocol parser, the HID tables and text-to-macro, profiles, undo history and the template library.
+| Command | What it does |
+|---|---|
+| `npm run dist` | Builds a standalone app into `dist/`: a `.dmg` on macOS, an installer on Windows or an AppImage on Linux. It includes the Bluetooth permission text that macOS requires. |
+| `npm test` | Tests the protocol parser, the HID tables and text-to-macro, profiles, undo history and the template library. |
+| `npm run typecheck` | Type-checks the main process, the preload and the page. |
+
+## How it's built
+
+- **Stack:** Electron 44, [electron-vite](https://electron-vite.org) with Vite 7, React 19, TypeScript and Tailwind CSS 4, with zustand for state and lucide icons.
+- **`src/main/`** is the Electron main process: the window, the device picker, menus, the tray, the app-in-front watcher and computer actions.
+- **`src/preload/`** exposes a small typed bridge (`src/shared/bridge.ts`) to the page.
+- **`src/renderer/src/lib/`** holds the parts with no UI: the protocol, the HID tables, profiles, templates and the transports (USB serial, Bluetooth, Demo and the firmware-update bootloader).
+- **`src/renderer/src/controller.ts`** holds the app's behaviour, and **`store.ts`** holds what the UI shows. The components in `components/` read the store and call the controller.
+- **Saved data** stays in the same `profiles.json`, so profiles from the earlier version carry over.
 
 ## Connecting
 
@@ -37,6 +58,10 @@ Run the tests with `npm test`. They cover the protocol parser, the HID tables an
   - A Keyword plugged back in over USB reconnects straight away.
   - On launch, the app reconnects to the last Keyword if its permission is still granted.
 - **The status bar** shows the Keyword firmware version and, if the firmware reports it, the battery level. A low-battery warning pops up at 15%.
+- **Console** (`Cmd/Ctrl+Shift+K`, or the terminal button) shows every line to and from the Keyword.
+  - You can type any command to send, with arrow-key history. Quick buttons send `HELLO`, `KEYS?`, `SIDES?`, `BATT?`, `STACK?`, `DOCK?` and `BOOTCFG?`.
+  - **Hide polling** hides the `SIDES?`, `KEYS?` and `BATT?` traffic the app sends on a timer.
+  - You can copy or clear the log.
 
 ## Keys
 

@@ -1,6 +1,7 @@
-const test = require('node:test');
-const assert = require('node:assert');
-const { LineBuffer, parseLine, cmd, profileCommands } = require('../renderer/protocol.js');
+import test from 'node:test';
+import assert from 'node:assert';
+import { LineBuffer, parseLine, cmd, profileCommands, mapCommand, entryCommands, OTA, otaBaseCommand, checkAppImage, otaChunks } from '../src/renderer/src/lib/protocol.ts';
+import type { Step } from '../src/renderer/src/lib/types.ts';
 
 test('parses SIDES', () => {
   assert.deepStrictEqual(parseLine('SIDES L=1 R=0 T=0'), {
@@ -10,13 +11,14 @@ test('parses SIDES', () => {
 });
 
 test('SIDES with only some fields', () => {
-  assert.deepStrictEqual(parseLine('SIDES R=1').sides, { R: true });
+  assert.deepStrictEqual((parseLine('SIDES R=1') as { sides: object }).sides, { R: true });
   assert.strictEqual(parseLine('SIDES').type, 'unknown');
 });
 
 test('parses HELLO reply', () => {
   assert.deepStrictEqual(parseLine('KEYWORD v=0.1 proto=1'), { type: 'hello', fw: '0.1', proto: 1, caps: new Set(), kb: null });
   const h = parseLine('KEYWORD v=0.2 proto=1 caps=batt,hold kb=3');
+  assert.ok(h.type === 'hello');
   assert.deepStrictEqual([...h.caps], ['batt', 'hold']);
   assert.strictEqual(h.kb, 3);
 });
@@ -33,7 +35,7 @@ test('parses ERR', () => {
 });
 
 test('line buffer splits chunks and CRLF', () => {
-  const lines = [];
+  const lines: string[] = [];
   const lb = new LineBuffer((l) => lines.push(l));
   lb.push('SIDES L=1 ');
   lb.push('R=0\r\nKEYW');
@@ -57,12 +59,11 @@ test('parses MAP and OK', () => {
 
 test('formats commands', () => {
   assert.strictEqual(cmd.map('5F1821C1', 0x0a, 0x04), 'MAP uid=5F1821C1 mods=0A key=04');
-  assert.deepStrictEqual(profileCommands({ '5F1821C1': { mods: 1, key: 6 }, '00000001': { mods: 0, key: 0 }, bad: { key: 4 } }),
+  assert.deepStrictEqual(profileCommands({ '5F1821C1': { mods: 1, key: 6 }, '00000001': { mods: 0, key: 0 }, bad: { key: 4 } }, new Set()),
     ['CLEAR', 'MAP uid=5F1821C1 mods=01 key=06', 'SAVE']);
 });
 
 test('media key mappings', () => {
-  const { mapCommand } = require('../renderer/protocol.js');
   assert.strictEqual(mapCommand('5F1821C1', { consumer: 0xcd }), 'MAPC uid=5F1821C1 usage=00CD');
   assert.strictEqual(mapCommand('5F1821C1', { mods: 0, key: 0 }), null);
   assert.deepStrictEqual(parseLine('MAPC uid=5F1821C1 usage=00E9'), { type: 'mapConsumer', uid: '5F1821C1', usage: 0xe9 });
@@ -70,23 +71,22 @@ test('media key mappings', () => {
 });
 
 test('optional features: battery, macro, hold, flash', () => {
-  const { entryCommands } = require('../renderer/protocol.js');
   assert.deepStrictEqual(parseLine('BATT pct=81 chg=1 usb=1'), { type: 'battery', pct: 81, charging: true, usb: true });
   assert.deepStrictEqual(parseLine('MACRO uid=5F1821C1 seq=0006,0119,zz'), { type: 'macro', uid: '5F1821C1', steps: [[0, 6], [1, 0x19]] });
   assert.deepStrictEqual(parseLine('HOLD uid=5F1821C1 mods=02 key=00 ms=250'), { type: 'hold', uid: '5F1821C1', mods: 2, key: 0, ms: 250 });
   assert.deepStrictEqual(parseLine('FLASH uid=5F1821C1 pct=40'), { type: 'flashProgress', uid: '5F1821C1', pct: 40 });
-  assert.deepStrictEqual(parseLine('KEY+ uid=5F1821C1 at=L v=2').v, 2);
+  assert.deepStrictEqual((parseLine('KEY+ uid=5F1821C1 at=L v=2') as { v: number }).v, 2);
 
   const all = new Set(['macro', 'hold']);
-  const e = { macro: [[1, 6], [1, 0x19]], hold: { mods: 2, key: 0, ms: 300 } };
+  const e = { macro: [[1, 6], [1, 0x19]] as Step[], hold: { mods: 2, key: 0, ms: 300 } };
   assert.deepStrictEqual(entryCommands('5F1821C1', e, all), ['MACRO uid=5F1821C1 seq=0106,0119', 'HOLD uid=5F1821C1 mods=02 key=00 ms=300']);
   assert.deepStrictEqual(entryCommands('5F1821C1', e, new Set()), [], 'unsupported features are not sent');
   assert.deepStrictEqual(entryCommands('5F1821C1', { host: { type: 'url', value: 'x' } }, all), []);
-  assert.strictEqual(cmd.macro('5F1821C1', Array(20).fill([0, 4])).split(',').length, 16);
+  assert.strictEqual(cmd.macro('5F1821C1', Array<Step>(20).fill([0, 4])).split(',').length, 16);
 });
 
 test('line buffer accepts a bare CR', () => {
-  const lines = [];
+  const lines: string[] = [];
   const lb = new LineBuffer((l) => lines.push(l));
   lb.push('HELLO\rSIDES?\r');
   lb.push('\nKEYS?\n');
@@ -99,22 +99,21 @@ test('relayed Keybits', () => {
 });
 
 test('OTA: stack reply, image checks and chunks', () => {
-  const { OTA, otaBaseCommand, checkAppImage, otaChunks } = require('../renderer/protocol.js');
   assert.deepStrictEqual(parseLine('STACK ble v=1.24.0 fus=2.2.0'), { type: 'stack', stack: 'ble', v: '1.24.0', fus: '2.2.0' });
   assert.deepStrictEqual(parseLine('STACK none fus=2.2.0'), { type: 'stack', stack: 'none', v: null, fus: '2.2.0' });
   assert.deepStrictEqual([...otaBaseCommand(OTA.START, OTA.APP_OFFSET)], [0x02, 0x00, 0x70, 0x00]);
   assert.deepStrictEqual([...otaBaseCommand(OTA.FINISH)], [0x07, 0, 0, 0]);
 
-  const image = (sp, reset, len = 1000) => {
+  const image = (sp: number, reset: number, len = 1000) => {
     const b = new Uint8Array(len);
     new DataView(b.buffer).setUint32(0, sp, true);
     new DataView(b.buffer).setUint32(4, reset, true);
     return b;
   };
   assert.ok(checkAppImage(image(0x20030000, 0x08007119)).ok);
-  assert.match(checkAppImage(image(0x20030000, 0x08000119)).error, /keyword_app\.bin/);
-  assert.match(checkAppImage(image(0x12345678, 0x08007119)).error, /vector table/);
-  assert.match(checkAppImage(new Uint8Array(10)).error, /too small/);
+  assert.match((checkAppImage(image(0x20030000, 0x08000119)) as { error: string }).error, /keyword_app\.bin/);
+  assert.match((checkAppImage(image(0x12345678, 0x08007119)) as { error: string }).error, /vector table/);
+  assert.match((checkAppImage(new Uint8Array(10)) as { error: string }).error, /too small/);
 
   const chunks = otaChunks(new Uint8Array(500).fill(1), 244);
   assert.deepStrictEqual(chunks.map((c) => c.length), [240, 240, 24]);

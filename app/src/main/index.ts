@@ -3,36 +3,38 @@
 // the device lists to the renderer and hand back whatever the user picks.
 // This side also owns the tray, the app menu, the frontmost-app watcher used for
 // per-app profiles, and running "host actions" (open URL/app, run a command).
-const { app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage, nativeTheme, shell } = require('electron');
-const { execFile, spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, nativeTheme, shell, Tray } from 'electron';
+import type { MenuItemConstructorOptions } from 'electron';
+import { execFile, spawn } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import type { HostAction, MainSettings, MenuCommand, PickerDevice, TrayState } from '../shared/bridge';
 
 const IS_MAC = process.platform === 'darwin';
 const IS_WIN = process.platform === 'win32';
-const dataPath = (name) => path.join(app.getPath('userData'), name);
+const dataPath = (name: string) => path.join(app.getPath('userData'), name);
 
 // Chromium gates Web Bluetooth behind this flag on some platforms.
 app.commandLine.appendSwitch('enable-experimental-web-platform-features');
 
 if (!app.requestSingleInstanceLock()) app.quit();
 
-let win;
-let tray = null;
+let win: BrowserWindow | null = null;
+let tray: Tray | null = null;
 let quitting = false;
-let pendingPick = null; // { kind, callback }
+let pendingPick: { kind: 'serial' | 'bluetooth'; callback: (id: string) => void } | null = null;
 let capturing = false;
-let settings = { closeToTray: false, perApp: false };
-let trayState = { status: 'Not connected', profiles: [], active: null, battery: null };
+let settings: Partial<MainSettings> = { closeToTray: false, perApp: false };
+let trayState: TrayState = { status: 'Not connected', profiles: [], active: null, battery: null };
 
-function finishPick(id) {
+function finishPick(id: string) {
   if (!pendingPick) return;
   const { callback } = pendingPick;
   pendingPick = null;
   callback(id || '');
 }
 
-const send = (channel, ...args) => { if (win && !win.isDestroyed()) win.webContents.send(channel, ...args); };
+const send = (channel: string, ...args: unknown[]) => { if (win && !win.isDestroyed()) win.webContents.send(channel, ...args); };
 
 function showWindow() {
   if (!win || win.isDestroyed()) return createWindow();
@@ -46,7 +48,7 @@ function showWindow() {
 function loadBounds() {
   try {
     const b = JSON.parse(fs.readFileSync(dataPath('window.json'), 'utf8'));
-    if ([b.width, b.height].every(Number.isFinite)) return b;
+    if ([b.width, b.height].every(Number.isFinite)) return b as Electron.Rectangle;
   } catch {}
   return { width: 1000, height: 700 };
 }
@@ -64,22 +66,24 @@ function createWindow() {
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#14161a' : '#f5f6f8',
     show: false,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(import.meta.dirname, '../preload/index.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
-  win.once('ready-to-show', () => win.show());
-  win.on('resize', saveBounds);
-  win.on('move', saveBounds);
-  win.on('close', (e) => {
+  const w = win;
+  w.once('ready-to-show', () => w.show());
+  w.on('resize', saveBounds);
+  w.on('move', saveBounds);
+  w.on('close', (e) => {
     if (settings.closeToTray && !quitting) {
       e.preventDefault();
-      win.hide();
+      w.hide();
     }
   });
 
-  const ses = win.webContents.session;
+  const ses = w.webContents.session;
 
   ses.setPermissionCheckHandler((_wc, permission) =>
     ['serial', 'bluetooth', 'notifications'].includes(permission));
@@ -100,7 +104,7 @@ function createWindow() {
     pendingPick = { kind: 'serial', callback };
     send('chooser:list', {
       kind: 'serial',
-      devices: portList.map((p) => ({
+      devices: portList.map((p): PickerDevice => ({
         id: p.portId,
         name: p.displayName || p.portName,
         detail: [p.portName, p.vendorId && `VID ${p.vendorId}`, p.productId && `PID ${p.productId}`]
@@ -115,7 +119,7 @@ function createWindow() {
   ses.on('serial-port-removed', () => {});
 
   // Fires again every time a new device is found while the scan runs.
-  win.webContents.on('select-bluetooth-device', (event, devices, callback) => {
+  w.webContents.on('select-bluetooth-device', (event, devices, callback) => {
     event.preventDefault();
     if (!pendingPick || pendingPick.kind !== 'bluetooth') {
       finishPick('');
@@ -125,7 +129,7 @@ function createWindow() {
     }
     send('chooser:list', {
       kind: 'bluetooth',
-      devices: devices.map((d) => ({
+      devices: devices.map((d): PickerDevice => ({
         id: d.deviceId,
         name: d.deviceName || 'Unnamed device',
         detail: d.deviceId,
@@ -136,7 +140,7 @@ function createWindow() {
 
   // While the shortcut recorder is open, swallow keys before menus and the OS-level
   // accelerators (Cmd+W, Cmd+Q, Alt+F4...) see them and pass them to the page.
-  win.webContents.on('before-input-event', (event, input) => {
+  w.webContents.on('before-input-event', (event, input) => {
     if (!capturing) return;
     event.preventDefault();
     send('capture:key', {
@@ -146,24 +150,28 @@ function createWindow() {
   });
 
   // Links in the page open in the browser, never in the app.
-  win.webContents.setWindowOpenHandler(({ url }) => {
+  w.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:/i.test(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
 
-  win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  // In development the page comes from electron-vite's dev server. scripts/mac-electron.sh
+  // passes its URL as a switch, since `open` drops environment variables.
+  const devUrl = process.env.ELECTRON_RENDERER_URL || app.commandLine.getSwitchValue('renderer-url');
+  if (!app.isPackaged && devUrl) w.loadURL(devUrl);
+  else w.loadFile(path.join(import.meta.dirname, '../renderer/index.html'));
 }
 
 // ---- Menu ----
 
 function buildMenu() {
-  const m = (cmd) => () => send('menu', cmd);
-  const profileItems = trayState.profiles.slice(0, 9).map((p, i) => ({
+  const m = (cmd: MenuCommand) => () => send('menu', cmd);
+  const profileItems = trayState.profiles.slice(0, 9).map((p, i): MenuItemConstructorOptions => ({
     label: p.name, type: 'radio', checked: p.id === trayState.active,
     accelerator: `CmdOrCtrl+${i + 1}`, click: () => send('menu', 'profile', p.id),
   }));
-  const template = [
-    ...(IS_MAC ? [{
+  const template: MenuItemConstructorOptions[] = [
+    ...(IS_MAC ? [<MenuItemConstructorOptions>{
       label: app.name,
       submenu: [
         { role: 'about' }, { type: 'separator' },
@@ -184,7 +192,8 @@ function buildMenu() {
         { label: 'Export All Profiles…', accelerator: 'CmdOrCtrl+Shift+E', click: m('export-all') },
         { type: 'separator' },
         { label: 'Update Keyword Firmware…', click: m('update-firmware') },
-        ...(IS_MAC ? [] : [{ type: 'separator' }, { label: 'Settings…', accelerator: 'Ctrl+,', click: m('settings') },
+        { label: 'Console', accelerator: 'CmdOrCtrl+Shift+K', click: m('console') },
+        ...(IS_MAC ? [] : <MenuItemConstructorOptions[]>[{ type: 'separator' }, { label: 'Settings…', accelerator: 'Ctrl+,', click: m('settings') },
           { type: 'separator' }, { role: 'quit' }]),
       ],
     },
@@ -238,8 +247,8 @@ function trayIcon() {
   const size = 32; // @2x
   const buf = Buffer.alloc(size * size * 4);
   const [r, g, b] = IS_MAC ? [0, 0, 0] : [128, 128, 128];
-  const put = (x, y, a) => { const i = (y * size + x) * 4; buf[i] = b; buf[i + 1] = g; buf[i + 2] = r; buf[i + 3] = a; };
-  const inRounded = (x, y, x0, y0, x1, y1, rad) => {
+  const put = (x: number, y: number, a: number) => { const i = (y * size + x) * 4; buf[i] = b; buf[i + 1] = g; buf[i + 2] = r; buf[i + 3] = a; };
+  const inRounded = (x: number, y: number, x0: number, y0: number, x1: number, y1: number, rad: number) => {
     const cx = Math.min(Math.max(x, x0 + rad), x1 - rad);
     const cy = Math.min(Math.max(y, y0 + rad), y1 - rad);
     return (x - cx) ** 2 + (y - cy) ** 2 <= rad * rad;
@@ -270,7 +279,7 @@ function updateTray() {
     { label: status, enabled: false },
     ...(battery != null ? [{ label: `Battery ${battery}%`, enabled: false }] : []),
     { type: 'separator' },
-    ...profiles.map((p) => ({ label: p.name, type: 'radio', checked: p.id === active, click: () => send('menu', 'profile', p.id) })),
+    ...profiles.map((p): MenuItemConstructorOptions => ({ label: p.name, type: 'radio', checked: p.id === active, click: () => send('menu', 'profile', p.id) })),
     { type: 'separator' },
     { label: 'Show Keyword Monitor', click: showWindow },
     { label: 'Quit', click: () => { quitting = true; app.quit(); } },
@@ -279,10 +288,10 @@ function updateTray() {
 
 // ---- Frontmost app, for per-app profiles ----
 
-let watcher = null;
-let lastFront = null;
+let watcher: { stop: () => void } | null = null;
+let lastFront: string | null = null;
 
-function reportFront(name) {
+function reportFront(name: string) {
   name = (name || '').trim();
   if (!name || name === lastFront) return;
   lastFront = name;
@@ -337,8 +346,8 @@ function stopWatcher() {
 
 // ---- Host actions ----
 
-function runHostAction({ type, value }) {
-  value = String(value || '').trim();
+function runHostAction({ type, value: raw }: HostAction): { ok: boolean; error?: string } {
+  let value = String(raw || '').trim();
   if (!value) return { ok: false, error: 'Nothing to run' };
   try {
     if (type === 'url') {
@@ -355,14 +364,14 @@ function runHostAction({ type, value }) {
     }
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e.message };
+    return { ok: false, error: (e as Error).message };
   }
 }
 
 // ---- IPC ----
 
-ipcMain.on('chooser:pick', (_e, id) => finishPick(id));
-ipcMain.on('capture:set', (_e, on) => { capturing = !!on; });
+ipcMain.on('chooser:pick', (_e, id: string) => finishPick(id));
+ipcMain.on('capture:set', (_e, on: boolean) => { capturing = !!on; });
 
 ipcMain.handle('store:load', () => {
   try { return JSON.parse(fs.readFileSync(dataPath('profiles.json'), 'utf8')); } catch { return null; }
@@ -372,8 +381,8 @@ ipcMain.handle('store:save', (_e, store) => {
   fs.writeFileSync(tmp, JSON.stringify(store, null, 2));
   fs.renameSync(tmp, dataPath('profiles.json'));
 });
-ipcMain.handle('file:save', async (_e, defaultName, text) => {
-  const { canceled, filePath } = await dialog.showSaveDialog(win, {
+ipcMain.handle('file:save', async (_e, defaultName: string, text: string) => {
+  const { canceled, filePath } = await dialog.showSaveDialog(win!, {
     title: 'Export',
     defaultPath: defaultName.replace(/[^\w .-]+/g, '_') || 'profile.keyword.json',
     filters: [{ name: 'Keyword profile', extensions: ['json'] }],
@@ -383,7 +392,7 @@ ipcMain.handle('file:save', async (_e, defaultName, text) => {
   return true;
 });
 ipcMain.handle('file:open', async () => {
-  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+  const { canceled, filePaths } = await dialog.showOpenDialog(win!, {
     title: 'Import profiles',
     filters: [{ name: 'Keyword profile', extensions: ['json'] }],
     properties: ['openFile', 'multiSelections'],
@@ -391,20 +400,20 @@ ipcMain.handle('file:open', async () => {
   if (canceled || !filePaths.length) return [];
   return filePaths.map((p) => ({ name: path.basename(p), text: fs.readFileSync(p, 'utf8') }));
 });
-ipcMain.handle('host:run', (_e, action) => runHostAction(action));
+ipcMain.handle('host:run', (_e, action: HostAction) => runHostAction(action));
 ipcMain.handle('app:info', () => ({ version: app.getVersion(), platform: process.platform }));
 ipcMain.on('open:data', () => shell.openPath(app.getPath('userData')));
 
-ipcMain.on('settings:apply', (_e, s) => {
+ipcMain.on('settings:apply', (_e, s: MainSettings) => {
   settings = { ...settings, ...s };
   nativeTheme.themeSource = ['light', 'dark'].includes(s.theme) ? s.theme : 'system';
   if (!process.env.KEYWORD_NO_LOGIN_ITEM && (IS_MAC || IS_WIN)) {
-    try { app.setLoginItemSettings({ openAtLogin: !!s.launchAtLogin, openAsHidden: true }); } catch {}
+    try { app.setLoginItemSettings({ openAtLogin: !!s.launchAtLogin }); } catch {}
   }
   if (s.perApp) startWatcher(); else stopWatcher();
 });
 
-ipcMain.on('state:update', (_e, s) => {
+ipcMain.on('state:update', (_e, s: TrayState) => {
   const profilesChanged = JSON.stringify(s.profiles) !== JSON.stringify(trayState.profiles) || s.active !== trayState.active;
   trayState = s;
   updateTray();

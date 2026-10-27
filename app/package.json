@@ -1,27 +1,52 @@
 {
   "name": "keyword-monitor",
   "productName": "Keyword Monitor",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Shows which sides of the Keyword have a Keybit attached, and remaps them, over USB serial or Bluetooth",
-  "main": "main.js",
+  "main": "out/main/index.js",
   "private": true,
+  "type": "module",
   "scripts": {
-    "start": "node scripts/start.js",
-    "test": "node --test",
-    "dist": "electron-builder"
+    "dev": "electron-vite dev",
+    "start": "electron-vite preview",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "node --experimental-strip-types --no-warnings --test test/*.test.ts",
+    "dist": "electron-vite build && electron-builder"
   },
   "devDependencies": {
-    "electron": "33.2.1",
-    "electron-builder": "25.1.8"
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "22.19.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/w3c-web-serial": "1.0.8",
+    "@types/web-bluetooth": "0.0.21",
+    "@vitejs/plugin-react": "5.2.0",
+    "clsx": "2.1.1",
+    "electron": "44.7.0",
+    "electron-builder": "26.17.0",
+    "electron-vite": "5.0.0",
+    "lucide-react": "1.55.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vite": "7.3.7",
+    "zustand": "5.0.15"
+  },
+  "engines": {
+    "node": ">=22.12"
   },
   "build": {
     "appId": "com.keybytes.keyword-monitor",
     "productName": "Keyword Monitor",
     "publish": null,
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
     "files": [
-      "main.js",
-      "preload.js",
-      "renderer/**",
+      "out/**",
       "package.json"
     ],
     "mac": {

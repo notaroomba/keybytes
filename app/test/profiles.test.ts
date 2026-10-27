@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert');
-const P = require('../renderer/profiles.js');
+import test from 'node:test';
+import assert from 'node:assert';
+import * as P from '../src/renderer/src/lib/profiles.ts';
 
 test('export then import round-trips', () => {
   const p = P.newProfile('Gaming', { '5f1821c1': { mods: 2, key: 4, name: 'Jump' } });
@@ -67,20 +67,20 @@ test('settings are kept and repaired', () => {
 
 test('per-app lookup is case-insensitive', () => {
   const ps = [P.newProfile('Zoom', {}, ['zoom.us']), P.newProfile('Code', {}, ['Code'])];
-  assert.strictEqual(P.profileForApp(ps, 'ZOOM.US').name, 'Zoom');
+  assert.strictEqual(P.profileForApp(ps, 'ZOOM.US')?.name, 'Zoom');
   assert.strictEqual(P.profileForApp(ps, 'Safari'), null);
 });
 
 test('history undoes and redoes', () => {
-  const h = new P.History(2);
+  const h = new P.History<{ n: number }>(2);
   let state = { n: 1 };
   h.record(state, 'one'); state = { n: 2 };
   h.record(state, 'two'); state = { n: 3 };
   h.record(state, 'three'); state = { n: 4 }; // oldest entry drops (limit 2)
-  let r = h.undo(state); assert.deepStrictEqual([r.state, r.label], [{ n: 3 }, 'three']); state = r.state;
-  r = h.undo(state); assert.deepStrictEqual(r.state, { n: 2 }); state = r.state;
+  let r = h.undo(state)!; assert.deepStrictEqual([r.state, r.label], [{ n: 3 }, 'three']); state = r.state;
+  r = h.undo(state)!; assert.deepStrictEqual(r.state, { n: 2 }); state = r.state;
   assert.strictEqual(h.undo(state), null);
-  r = h.redo(state); assert.deepStrictEqual(r.state, { n: 3 }); state = r.state;
+  r = h.redo(state)!; assert.deepStrictEqual(r.state, { n: 3 }); state = r.state;
   h.record(state, 'new');
   assert.strictEqual(h.canRedo, false);
 });

@@ -1,9 +1,9 @@
-const test = require('node:test');
-const assert = require('node:assert');
-const Hid = require('../renderer/hid.js');
+import test from 'node:test';
+import assert from 'node:assert';
+import * as Hid from '../src/renderer/src/lib/hid.ts';
 
 test('usages match the HID table', () => {
-  const u = (code) => Hid.KEYS.find((k) => k.code === code).usage;
+  const u = (code: string) => Hid.KEYS.find((k) => k.code === code)!.usage;
   assert.strictEqual(u('KeyA'), 0x04);
   assert.strictEqual(u('KeyZ'), 0x1d);
   assert.strictEqual(u('Digit1'), 0x1e);
