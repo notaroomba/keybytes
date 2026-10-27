@@ -86,9 +86,11 @@ class BleTransport {
       this.device = await navigator.bluetooth.requestDevice({
         // NUS's 128-bit UUID isn't advertised, so match on the name.
         filters: [{ namePrefix: 'Keyword' }],
-        optionalServices: [NUS.service],
+        optionalServices: [NUS.service, OTA.service],
       });
     }
+    // Picked a Keyword sitting in its update bootloader: hand it to the update dialog.
+    if (this.device.name === OTA.name) throw Object.assign(new Error('in update mode'), { name: 'OtaModeError', device: this.device });
     this.onClose = onClose;
     this.onDisconnect = () => { if (!this.closed) this.onClose(); };
     this.device.addEventListener('gattserverdisconnected', this.onDisconnect);
@@ -199,8 +201,9 @@ class DemoTransport {
 
 // ST's BLE_Ota bootloader, which the Keyword restarts into after OTA.
 class BleOtaTarget {
+  constructor(device) { this.device = device || null; }
   async connect() {
-    this.device = await navigator.bluetooth.requestDevice({
+    this.device ??= await navigator.bluetooth.requestDevice({
       filters: [{ name: OTA.name }],
       optionalServices: [OTA.service],
     });
@@ -701,6 +704,11 @@ async function connect(t, { auto = false } = {}) {
     await t.open((text) => lines.push(text), () => onLinkLost(t));
   } catch (e) {
     closeDialog($('#chooser'));
+    if (e.name === 'OtaModeError') {
+      setStatus('Not connected');
+      openOta({ device: e.device });
+      return false;
+    }
     if (auto) throw e;
     setStatus(e.name === 'NotFoundError' ? 'Not connected' : `Could not connect: ${e.message}`);
     return false;
@@ -1304,7 +1312,7 @@ $('#library-close').onclick = () => closeDialog($('#library'));
 // The Keyword restarts into ST's BLE_Ota bootloader on OTA, erasing its app first (4-5 s).
 // From there the image goes over Bluetooth whatever link the app was using.
 const OTA_RESTART_MS = 6500;
-const ota = { busy: false, image: null, fileName: '', stage: 'pick', target: null, demo: false, cancelled: false };
+const ota = { busy: false, image: null, fileName: '', stage: 'pick', target: null, demo: false, cancelled: false, device: null };
 
 function otaSet(text, { error = false, pct = null } = {}) {
   const st = $('#ota-status');
@@ -1319,7 +1327,7 @@ function otaButtons() {
   const realLink = transport && !(transport instanceof DemoTransport);
   const labels = {
     pick: realLink || transport ? 'Start update' : `Find ${OTA.name}`,
-    find: `Find ${OTA.name}`,
+    find: ota.device ? 'Start update' : `Find ${OTA.name}`,
     sending: 'Sending…', done: 'Done', waiting: 'Restarting…',
   };
   go.textContent = labels[ota.stage];
@@ -1328,14 +1336,17 @@ function otaButtons() {
   $('#ota-file').disabled = ota.busy;
 }
 
-async function openOta() {
+// device: a Keyword already in its update bootloader, picked from the normal Bluetooth chooser.
+async function openOta({ device = null } = {}) {
   if (ota.busy) { $('#ota').showModal(); return; }
-  Object.assign(ota, { stage: 'pick', cancelled: false, demo: transport instanceof DemoTransport });
+  Object.assign(ota, { stage: device ? 'find' : 'pick', cancelled: false, demo: transport instanceof DemoTransport, device });
   $('#ota-dfu').hidden = true;
   $('#ota-stack').textContent = '';
-  otaSet(transport
-    ? (can('ota') ? '' : 'This Keyword firmware does not report OTA support. The update will be tried anyway.')
-    : `Not connected. If the Keyword is already in update mode (it shows up as "${OTA.name}"), pick the image and find it.`);
+  otaSet(device
+    ? 'This Keyword is in update mode. Pick the firmware image and click Start update.'
+    : transport
+      ? (can('ota') ? '' : 'This Keyword firmware does not report OTA support. The update will be tried anyway.')
+      : `Not connected. If the Keyword is already in update mode (it shows up as "${OTA.name}"), pick the image and find it.`);
   otaButtons();
   closeDialog($('#settings'));
   $('#ota').showModal();
@@ -1438,7 +1449,7 @@ async function otaSend() {
   ota.busy = true;
   ota.cancelled = false;
   stopReconnect();
-  const target = ota.demo ? new DemoOtaTarget() : new BleOtaTarget();
+  const target = ota.demo ? new DemoOtaTarget() : new BleOtaTarget(ota.device);
   ota.target = target;
   try {
     otaSet(`Connecting to ${OTA.name}…`);
@@ -1468,7 +1479,9 @@ async function otaSend() {
         continue;
       }
       sent += chunks[i].length;
-      await sleep(Math.max(2, Math.ceil(chunks[i].length / 248 * 3) + 1));
+      // macOS drops write-without-response packets that come too fast (a run of
+      // 131 x 176 B went missing at 4 ms), so pace it much slower there.
+      await sleep(MAC ? 20 : Math.max(2, Math.ceil(chunks[i].length / 248 * 3) + 1));
       if (i % 8 === 0 || i === chunks.length - 1) {
         const rate = sent / Math.max(1, Date.now() - t0); // bytes per ms
         const left = Math.ceil((ota.image.length - sent) / rate / 1000);
