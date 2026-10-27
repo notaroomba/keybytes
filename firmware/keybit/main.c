@@ -46,13 +46,15 @@
  *   0x06       key state, bit 0 = pressed
  *   0x07       side this request came in on: 'N', 'E', 'S' or 'W'
  *   0x08       our address, 0 if none yet
+ *   0x09       sides with a Keybit on backwards: bit 0 N, 1 E, 2 S, 3 W
  *   0x10-0x1B  96-bit UID, little endian
  *   0x20-0x2B  ASSIGN: UID to match (write only)
  *   0x2C       ASSIGN: new address, 0 = forget it. Writing this applies it.
  *   0x51       our depth, 0xFF if we can't reach the keyword yet
  *   0x52       events ready to read, at most 8
  *   0x53-0x7A  up to 8 events, 5 bytes each: UID bits 0..31, then flags
- *              (bit 0 pressed, bit 1 heartbeat, bits 4-7 origin depth)
+ *              (bit 0 pressed, bit 1 heartbeat, bit 2 a neighbour is on
+ *              backwards, bits 4-7 origin depth)
  *   0x7B       (write) n: drop the first n events, they were received
  *
  * PD1 stays SWIO so the keyword can always reflash us. Don't remap it.
@@ -62,7 +64,7 @@
 #include "link.h"
 #include <string.h>
 
-#define FW_VERSION          5
+#define FW_VERSION          6
 #define KEYBIT_DEFAULT_ADDR 0x30
 #define LINK_ADDR           0x31  /* reserved: the keyword never assigns it */
 #define BTN_PIN             PD6   /* MX switch to GND */
@@ -77,6 +79,7 @@
 #define KEYWORD_FRESH_MS    2000  /* the keyword scans every 250 ms */
 #define LINK_REQ_US         50    /* CK held low this long on an unknown side = link request */
 #define HEARTBEAT_MS        1000
+#define BACKWARDS_MS        200   /* DT low, CK high this long = neighbour on backwards */
 #define QUEUE_LEN           32
 #define BATCH               8
 
@@ -87,6 +90,7 @@
 
 #define EV_PRESSED   0x01
 #define EV_HEARTBEAT 0x02
+#define EV_BACKWARDS 0x04
 
 typedef struct {
   uint16_t magic;
@@ -116,6 +120,8 @@ typedef struct {
   uint32_t ck_low_at;
   uint8_t ringing;       /* we're holding DT low as a doorbell */
   uint32_t next_poll;    /* tick of our next link poll here */
+  uint8_t held;          /* DT low with CK high since held_at */
+  uint32_t held_at;
 } side_t;
 
 static soft_i2c_bus_t buses[4] = {
@@ -125,6 +131,7 @@ static soft_i2c_bus_t buses[4] = {
   { .sda = PA1, .scl = PA2, .side = 'N' },
 };
 static side_t sides[4];
+static uint8_t backwards;  /* reg 0x09: sides with a Keybit on backwards */
 
 static uint8_t uid[12];
 static volatile uint8_t key_down;
@@ -186,7 +193,7 @@ static void queue_own(uint8_t flags)
   event_t e;
   memcpy(e.uid, uid, 4);
   uint8_t d = my_depth > 15 ? 15 : my_depth;
-  e.flags = (uint8_t)(flags | (key_down ? EV_PRESSED : 0) | (d << 4));
+  e.flags = (uint8_t)(flags | (key_down ? EV_PRESSED : 0) | (backwards ? EV_BACKWARDS : 0) | (d << 4));
   queue_push(&e);
 }
 
@@ -276,6 +283,7 @@ static uint8_t read_reg(uint8_t reg, soft_i2c_bus_t *bus)
   case 0x06: return key_down;
   case 0x07: return (uint8_t)bus->side;
   case 0x08: return my_addr;
+  case 0x09: return backwards;
   case 0x51: return my_depth;
   case 0x52: return q_count < BATCH ? q_count : BATCH;
   default:   return 0xFF;
@@ -494,6 +502,29 @@ static void debounce_key(void)
   if (key_down != was) queue_own(0);
 }
 
+/* A Keybit turned the wrong way round puts its GND on our DT and its 3V3
+ * on our CK, so that side sits with DT low and CK high and never becomes a
+ * link (relay() leaves it alone). Report it in reg 0x09 and on every event
+ * we queue, and queue one at once when it changes, so it reaches the
+ * keyword and the app. */
+static void watch_backwards(int listening)
+{
+  static const uint8_t bit[4] = { 1u << 2, 1u << 1, 1u << 3, 1u << 0 };  /* S E W N */
+  uint8_t mask = 0;
+  for (int s = 0; s < 4; s++) {
+    side_t *sd = &sides[s];
+    int held = !listening && !is_keyword(s) && !is_link(s) &&
+               !funDigitalRead(buses[s].sda) && funDigitalRead(buses[s].scl);
+    if (!held) { sd->held = 0; continue; }
+    if (!sd->held) { sd->held = 1; sd->held_at = ticks(); }
+    if (elapsed(sd->held_at, MS(BACKWARDS_MS)) || (backwards & bit[s])) mask |= bit[s];
+  }
+  if (mask != backwards) {
+    backwards = mask;
+    if (my_depth != DEPTH_NONE) queue_own(0);
+  }
+}
+
 static void heartbeat(void)
 {
   static uint32_t last;
@@ -530,6 +561,7 @@ int main(void)
     debounce_key();
     relay(listening);
     doorbell();
+    watch_backwards(listening);
     heartbeat();
     if (save_addr >= 0) {
       store_config((uint8_t)save_addr);

@@ -192,6 +192,7 @@ function addKey(uid: string, at: Side | null, v: number | null, relay: { via: st
     flashing: known?.flashing ?? null,
     via: relay?.via ? resolveUid(relay.via) : known?.via ?? null,
     depth: relay?.depth ?? known?.depth ?? null,
+    backwards: known?.backwards ?? null,
   };
   set((st) => ({ keys: { ...st.keys, [uid]: next } }));
   if (!known) {
@@ -297,6 +298,19 @@ function handleLine(line: string) {
     case 'press':
       onPress(resolveUid(msg.uid), msg.down);
       break;
+    case 'backwards': {
+      const uid = resolveUid(msg.uid);
+      if (!get().keys[uid]) break;
+      patchKey(uid, { backwards: msg.sides });
+      if (msg.sides) {
+        const where = /^[NESW]+$/.test(msg.sides) ? ` on its ${msg.sides.split('').join(', ')} side` : '';
+        toast(`A Keybit next to ${keyName(uid)}${where} is turned the wrong way`, { error: true });
+        activity(`Keybit on backwards next to ${keyName(uid)}${where}`, 'remove');
+      } else {
+        activity(`Backwards Keybit next to ${keyName(uid)} fixed`, 'add');
+      }
+      break;
+    }
     case 'battery': {
       const prev = get().device.battery;
       set((s) => ({ device: { ...s.device, battery: { pct: msg.pct, charging: msg.charging, usb: msg.usb } } }));

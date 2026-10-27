@@ -100,6 +100,11 @@ function KeyCard({ uid }: { uid: string }) {
           {k?.v != null && (
             <Badge tone={outdated ? 'warn' : undefined} title={outdated ? 'Firmware update available' : 'Keybit firmware'}>v{k.v}</Badge>
           )}
+          {k?.backwards && (
+            <Badge tone="warn" title={`A Keybit touching this one is turned the wrong way${/^[NESW]+$/.test(k.backwards) ? ` (side ${k.backwards})` : ''}. Turn it until it sits flush and lights up.`}>
+              backwards neighbour
+            </Badge>
+          )}
           {m?.host && <Badge title="Runs on this computer while the app is open">computer</Badge>}
           {!!m?.macro?.length && <Badge>macro</Badge>}
         </div>

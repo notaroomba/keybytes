@@ -168,6 +168,7 @@ export type Message =
   | { type: 'keyRemove'; uid: string }
   | { type: 'keysEnd' }
   | { type: 'press'; uid: string; down: boolean }
+  | { type: 'backwards'; uid: string; sides: string | null }
   | { type: 'map'; uid: string; mods: number; key: number }
   | { type: 'mapConsumer'; uid: string; usage: number }
   | { type: 'macro'; uid: string; steps: Step[] }
@@ -221,6 +222,10 @@ export function parseLine(line: string): Message {
     case 'PRESS':
       if (!uid) break;
       return { type: 'press', uid, down: f.down === '1' };
+    case 'BACKWARDS':
+      // BACKWARDS uid=<uid> sides=<NESW letters | ? | ->
+      if (!uid) break;
+      return { type: 'backwards', uid, sides: !f.sides || f.sides === '-' ? null : f.sides };
     case 'MAP':
       if (!uid) break;
       return { type: 'map', uid, mods: int(f.mods, 16), key: int(f.key, 16) };

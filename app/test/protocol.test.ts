@@ -30,6 +30,12 @@ test('accepts 96-bit UIDs', () => {
   assert.strictEqual(parseLine('KEY+ uid=3B0A4F1C88D2 at=L').type, 'unknown');
 });
 
+test('parses BACKWARDS', () => {
+  assert.deepStrictEqual(parseLine('BACKWARDS uid=5F1821C1 sides=NE'), { type: 'backwards', uid: '5F1821C1', sides: 'NE' });
+  assert.deepStrictEqual(parseLine('BACKWARDS uid=5F1821C1 sides=?'), { type: 'backwards', uid: '5F1821C1', sides: '?' });
+  assert.deepStrictEqual(parseLine('BACKWARDS uid=5F1821C1 sides=-'), { type: 'backwards', uid: '5F1821C1', sides: null });
+});
+
 test('parses ERR', () => {
   assert.deepStrictEqual(parseLine('ERR i2c timeout'), { type: 'error', message: 'i2c timeout' });
 });

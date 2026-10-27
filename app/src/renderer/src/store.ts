@@ -12,6 +12,9 @@ export interface KeyState {
   flashing: number | null;
   via: string | null;
   depth: number | null;
+  // Its own sides (N/E/S/W) where another Keybit is on backwards, '?' when only
+  // known to be one of them, null when none.
+  backwards: string | null;
 }
 
 export interface Battery {

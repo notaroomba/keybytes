@@ -20,6 +20,7 @@ typedef struct {
   uint8_t key_down;
   char keybit_side;  /* the Keybit's own side touching us: N/E/S/W */
   char at;           /* where it is on the keyword: L, R or T, '?' if unknown */
+  uint8_t backwards; /* its sides with a Keybit on backwards: bit 0 N, 1 E, 2 S, 3 W */
 } keybit_info_t;
 
 /* A Keybit further out, known only through events relayed by its
@@ -29,6 +30,7 @@ typedef struct {
   uint8_t present;     /* 0 once it has gone quiet for KEYBIT_REMOTE_TIMEOUT_MS */
   uint8_t key_down;
   uint8_t depth;       /* hops from the keyword, 2 or more */
+  uint8_t backwards;   /* it has a neighbour on backwards (side unknown) */
   uint8_t via;         /* address of the touching Keybit it came through */
   uint8_t dirty;       /* set on any change; the consumer clears it */
   uint32_t last_seen;  /* HAL_GetTick() */

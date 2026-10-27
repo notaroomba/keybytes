@@ -63,6 +63,7 @@ Keybits relayed through other Keybits are reported as `KEY+ uid=<uid> at=X via=<
 | `KEY+ uid=<uid> at=<L\|R\|T>` | a Keybit is attached |
 | `KEY- uid=<uid>` | a Keybit is removed |
 | `PRESS uid=<uid> down=<0\|1>` | a Keybit is pressed or released |
+| `BACKWARDS uid=<uid> sides=<letters\|?\|->` | a Keybit sees another Keybit turned the wrong way round on those of its own sides (N, E, S, W). `?` when it is further out and only known to have one, `-` once it's fixed. Needs Keybit firmware v6 |
 | `ERR bus SDA held low, ...` | SDA has been held low for 100 ms: usually a Keybit on the Keyword turned the wrong way round. The Keyword stops polling until it clears (one retry a second) and blinks red |
 | `OK BUS clear` | the bus is free again after that |
 

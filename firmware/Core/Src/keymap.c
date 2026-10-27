@@ -32,6 +32,7 @@ static int present_count;
 static keyact_key_t key_state[KEYBIT_MAX + KEYBIT_REMOTE_MAX];
 static uint8_t remote_shown[KEYBIT_REMOTE_MAX];   /* KEY+ sent, no KEY- yet */
 static uint8_t remote_down[KEYBIT_REMOTE_MAX];    /* last PRESS sent */
+static uint8_t remote_back[KEYBIT_REMOTE_MAX];    /* last BACKWARDS sent */
 /* Full UIDs of Keybits seen directly, so one that moves further out can
  * still be named in full. */
 static uint8_t seen[SEEN_MAX][UID_LEN];
@@ -220,6 +221,21 @@ int KEYMAP_KeyLine(int i, char *out, size_t n)
 
 /* Direct Keybits: diff keybits[] against what we reported last time, by
  * UID, since indexes move every time main.c rescans the bus. */
+/* BACKWARDS uid=<uid> sides=<letters>: a Keybit sees a neighbour on
+ * backwards on those of its own sides (N, E, S, W), "?" when it's relayed
+ * and we only know that it has one, "-" once it's gone. */
+static void Send_Backwards(const char *uid, uint8_t mask, int known)
+{
+  char sides[5] = "-", *p = sides;
+  if (mask && !known) sides[0] = '?';
+  for (int b = 0; known && b < 4; b++)
+  {
+    if (mask & (1u << b)) *p++ = "NESW"[b];
+  }
+  if (known && mask) *p = 0;
+  PROTO_Send("BACKWARDS uid=%s sides=%s", uid, sides);
+}
+
 static void Direct_Keys(void)
 {
   char uid[UID_LEN * 2 + 1];
@@ -254,6 +270,10 @@ static void Direct_Keys(void)
     if ((was ? was->key_down : 0) != keybits[i].key_down)
     {
       PROTO_Send("PRESS uid=%s down=%d", uid, keybits[i].key_down);
+    }
+    if ((was ? was->backwards : 0) != keybits[i].backwards)
+    {
+      Send_Backwards(uid, keybits[i].backwards, 1);
     }
     if (was) state[i] = key_state[was - old];
     else memset(&state[i], 0, sizeof(state[i]));
@@ -290,7 +310,8 @@ static void Remote_Keys(void)
     keybit_remote_t *k = &keybit_remotes[r];
     keyact_key_t *s = &key_state[KEYBIT_MAX + r];
     uint8_t down = k->present && k->key_down;
-    if (!k->dirty && k->present == remote_shown[r] && down == remote_down[r]) continue;
+    uint8_t back = k->present && k->backwards;
+    if (!k->dirty && k->present == remote_shown[r] && down == remote_down[r] && back == remote_back[r]) continue;
     k->dirty = 0;
 
     Remote_Uid(uid, k->uid);
@@ -305,6 +326,11 @@ static void Remote_Keys(void)
     {
       remote_down[r] = down;
       PROTO_Send("PRESS uid=%s down=%d", uid, down);
+    }
+    if (back != remote_back[r])
+    {
+      remote_back[r] = back;
+      if (k->present) Send_Backwards(uid, back, 0);
     }
     if (!k->present && remote_shown[r])
     {

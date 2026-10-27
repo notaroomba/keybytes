@@ -16,6 +16,7 @@
 #define REG_EV_POP   0x7B
 #define EV_BATCH     8
 #define EV_PRESSED   0x01
+#define EV_BACKWARDS 0x04
 #define MAGIC      0x4B
 
 /* I2C3's pins (see stm32wbxx_hal_msp.c); IDR still reads them in AF mode. */
@@ -104,7 +105,7 @@ int keybit_bus_scan(I2C_HandleTypeDef *i2c, keybit_info_t *out, int max)
     if (a == KEYBIT_DEFAULT_ADDR || a == LINK_ADDR || a == CHARGER_ADDR) continue;
     if (!is_ready(i2c, a)) continue;
 
-    uint8_t head[9];
+    uint8_t head[10];
     if (!read_regs(i2c, a, REG_MAGIC, head, sizeof(head)) || head[0] != MAGIC) continue;
 
     keybit_info_t *k = &out[n];
@@ -116,6 +117,7 @@ int keybit_bus_scan(I2C_HandleTypeDef *i2c, keybit_info_t *out, int max)
     k->key_down = head[6] & 1;
     k->keybit_side = (char)head[7];
     k->at = keyword_side(k->keybit_side);
+    k->backwards = k->fw >= 6 ? head[9] & 0x0F : 0;  /* reg 0x09 is new in v6 */
     n++;
   }
   return n;
@@ -179,13 +181,15 @@ int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, const keybit_info_t *k, int n,
       keybit_remote_t *x = remote_slot(r, rn, uid);
       if (!x) continue;
       uint8_t down = flags & EV_PRESSED;
-      if (x->uid != uid || !x->present || x->key_down != down) {
+      uint8_t back = (flags & EV_BACKWARDS) != 0;
+      if (x->uid != uid || !x->present || x->key_down != down || x->backwards != back) {
         x->dirty = 1;
         changed = 1;
       }
       x->uid = uid;
       x->present = 1;
       x->key_down = down;
+      x->backwards = back;
       x->depth = flags >> 4;
       x->via = k[i].addr;
       x->last_seen = now;
@@ -196,6 +200,7 @@ int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, const keybit_info_t *k, int n,
     if (r[i].present && now - r[i].last_seen > KEYBIT_REMOTE_TIMEOUT_MS) {
       r[i].present = 0;
       r[i].key_down = 0;
+      r[i].backwards = 0;
       r[i].dirty = 1;
       changed = 1;
     }
