@@ -607,6 +607,7 @@ ch32_status_t ch32_write_flash(ch32_swio_t *s, uint32_t addr, const uint8_t *dat
 ch32_status_t ch32_verify(ch32_swio_t *s, uint32_t addr, const uint8_t *data, uint32_t len)
 {
   for (uint32_t i = 0; i < len; i += 4) {
+    IWDG->KR = 0xAAAA;  /* a full verify plus a flash can outlast the bootloader's ~8 s watchdog */
     uint32_t got = 0, want = 0xFFFFFFFFu;
     memcpy(&want, data + i, (len - i) < 4 ? (len - i) : 4);
     /* A garbled read looks like a mismatch, so read a word that differs again before believing it. */
@@ -685,6 +686,7 @@ ch32_status_t ch32_program(ch32_swio_t *s, const uint8_t *image, uint32_t len)
 
   for (uint32_t off = resume.next_blk * CH32_FLASH_BLOCK; off < len; off += CH32_FLASH_BLOCK) {
     uint32_t n = len - off < CH32_FLASH_BLOCK ? len - off : CH32_FLASH_BLOCK;
+    IWDG->KR = 0xAAAA;  /* the whole image takes longer than the bootloader's ~8 s watchdog */
     for (int t = 0; t < 8; t++) {
       r = ensure_chip(s);
       if (r == CH32_OK && !s->flash_unlocked) r = ch32_unlock_flash(s);
