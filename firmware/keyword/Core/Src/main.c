@@ -417,6 +417,7 @@ static void Keybit_Bus_Poll(void)
     bus_held = 1;
     PROTO_Send("ERR bus SDA held low, a Keybit on the Keyword may be turned the wrong way");
   }
+  if (keybit_bus_unstick(&hi2c3)) PROTO_Send("OK BUS recovered");
   if (keybit_bus_jammed()) return;
   if (HAL_GetTick() - last_keys >= KEYBIT_KEYS_MS) {
     last_keys = HAL_GetTick();
@@ -597,7 +598,7 @@ static void MX_I2C3_Init(void)
 
   /* USER CODE END I2C3_Init 1 */
   hi2c3.Instance = I2C3;
-  hi2c3.Init.Timing = 0x10B17DB5;
+  hi2c3.Init.Timing = 0xF0426363;  /* ~20 kHz: Keybits run their I2C target in software and miss bits at 100 kHz */
   hi2c3.Init.OwnAddress1 = 0;
   hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;

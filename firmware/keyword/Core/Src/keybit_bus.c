@@ -31,6 +31,38 @@ int keybit_bus_held(void)
          HAL_GPIO_ReadPin(BUS_PORT, BUS_SCL) == GPIO_PIN_SET;
 }
 
+int keybit_bus_unstick(I2C_HandleTypeDef *i2c)
+{
+  static uint32_t low_since;
+  uint32_t now = HAL_GetTick();
+  if (HAL_GPIO_ReadPin(BUS_PORT, BUS_SCL) == GPIO_PIN_SET || HAL_I2C_GetState(i2c) != HAL_I2C_STATE_READY) {
+    low_since = now;
+    return 0;
+  }
+  if (now - low_since < 5) return 0;
+
+  HAL_I2C_DeInit(i2c);
+  GPIO_InitTypeDef g = {0};
+  g.Pin = BUS_SCL | BUS_SDA;
+  g.Mode = GPIO_MODE_OUTPUT_OD;
+  g.Pull = GPIO_NOPULL;
+  g.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_WritePin(BUS_PORT, BUS_SCL | BUS_SDA, GPIO_PIN_SET);
+  HAL_GPIO_Init(BUS_PORT, &g);
+  for (int i = 0; i < 9; i++) {   /* 9 clocks finish any byte and its ACK */
+    HAL_GPIO_WritePin(BUS_PORT, BUS_SCL, GPIO_PIN_RESET);
+    HAL_Delay(1);
+    HAL_GPIO_WritePin(BUS_PORT, BUS_SCL, GPIO_PIN_SET);
+    HAL_Delay(1);
+  }
+  HAL_GPIO_WritePin(BUS_PORT, BUS_SDA, GPIO_PIN_RESET);   /* STOP: SDA rises while SCL is high */
+  HAL_Delay(1);
+  HAL_GPIO_WritePin(BUS_PORT, BUS_SDA, GPIO_PIN_SET);
+  HAL_I2C_Init(i2c);   /* MspInit puts the pins back on I2C3 */
+  low_since = HAL_GetTick();
+  return 1;
+}
+
 int keybit_bus_jammed(void)
 {
   static uint32_t last_try;

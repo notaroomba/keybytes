@@ -367,6 +367,25 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     Reply(port, "I2CSCAN sda=%d scl=%d acks:%s", HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET,
           HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_13) == GPIO_PIN_SET, n ? list : " none");
   }
+  else if (strcmp(cmd, "I2CSPEED") == 0)
+  {
+    /* I2CSPEED <khz>: retime the side bus. I2C3 runs off PCLK1 (64 MHz);
+     * with PRESC=15 one tick is 0.25 us, so SCL low and high max out at
+     * 256 ticks each and the slowest it goes is about 7.8 kHz. */
+    unsigned khz = (unsigned)atoi(args);
+    if (khz < 1 || khz > 400)
+      Reply(port, "ERR usage: I2CSPEED <khz 1-400>");
+    else {
+      uint32_t half = 2000u / khz;   /* ticks per half period */
+      if (half > 256) half = 256;
+      if (half < 2) half = 2;
+      uint32_t t = (15u << 28) | (4u << 20) | (2u << 16) | ((half - 1) << 8) | (half - 1);
+      __HAL_I2C_DISABLE(&hi2c3);
+      hi2c3.Instance->TIMINGR = t;
+      __HAL_I2C_ENABLE(&hi2c3);
+      Reply(port, "I2CSPEED timing=%08lx ~%lu Hz", (unsigned long)t, (unsigned long)(2000000u / half));
+    }
+  }
   else if (strcmp(cmd, "I2CRD") == 0)
   {
     /* I2CRD <addr hex> <reg hex> <n>: raw register read on the side bus. */

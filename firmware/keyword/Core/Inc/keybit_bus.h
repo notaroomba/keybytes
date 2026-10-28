@@ -46,6 +46,11 @@ typedef struct {
 int keybit_bus_held(void);
 int keybit_bus_jammed(void);
 
+/* SCL low with the bus idle for over 5 ms means something stopped
+ * mid-transfer and is waiting on a clock. Clock it free: I2C3 off, 9 SCL
+ * pulses and a STOP by hand, I2C3 back on. Returns 1 when it did that. */
+int keybit_bus_unstick(I2C_HandleTypeDef *i2c);
+
 /* Give every Keybit still on the default address its own address. Returns
  * how many were assigned. */
 int keybit_bus_assign(I2C_HandleTypeDef *i2c);
