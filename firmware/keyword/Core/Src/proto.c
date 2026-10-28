@@ -10,6 +10,8 @@
 #include "bootcfg.h"
 #include "proto.h"
 #include "main.h"
+
+extern I2C_HandleTypeDef hi2c3;   /* the side bus */
 #include "ch32v003_swio.h"
 
 /* Optional features the desktop app can use, only what's implemented.
@@ -352,6 +354,33 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     /* lines cap at PROTO_LINE_MAX, so long results go out in pieces */
     for (size_t o = 0, l = strlen(buf); o < l || o == 0; o += 100)
       Reply(port, "DOCKID%s %.100s", o ? "+" : "", buf + o);
+  }
+  else if (strcmp(cmd, "I2CSCAN") == 0)
+  {
+    /* Every 7-bit address that ACKs on the side bus, and the idle line levels. */
+    char list[100];
+    int n = 0;
+    list[0] = 0;
+    for (uint8_t ad = 0x08; ad <= 0x77; ad++)
+      if (HAL_I2C_IsDeviceReady(&hi2c3, (uint16_t)(ad << 1), 1, 10) == HAL_OK && n < (int)sizeof(list) - 4)
+        n += snprintf(list + n, sizeof(list) - n, " %02x", ad);
+    Reply(port, "I2CSCAN sda=%d scl=%d acks:%s", HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET,
+          HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_13) == GPIO_PIN_SET, n ? list : " none");
+  }
+  else if (strcmp(cmd, "I2CRD") == 0)
+  {
+    /* I2CRD <addr hex> <reg hex> <n>: raw register read on the side bus. */
+    unsigned ad = 0, reg = 0, cnt = 0;
+    uint8_t buf[16];
+    if (sscanf(args, "%x %x %u", &ad, &reg, &cnt) != 3 || cnt == 0 || cnt > sizeof(buf))
+      Reply(port, "ERR usage: I2CRD <addr hex> <reg hex> <n 1-16>");
+    else if (HAL_I2C_Mem_Read(&hi2c3, (uint16_t)(ad << 1), (uint16_t)reg, I2C_MEMADD_SIZE_8BIT, buf, (uint16_t)cnt, 10) != HAL_OK)
+      Reply(port, "I2CRD %02x %02x err=%08lx", ad, reg, (unsigned long)HAL_I2C_GetError(&hi2c3));
+    else {
+      char hex[3 * 16 + 1];
+      for (unsigned i = 0; i < cnt; i++) snprintf(hex + 3 * i, 4, " %02x", buf[i]);
+      Reply(port, "I2CRD %02x %02x:%s", ad, reg, hex);
+    }
   }
   else if (strcmp(cmd, "SIDES?") == 0)
   {
