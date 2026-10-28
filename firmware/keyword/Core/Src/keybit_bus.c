@@ -1,7 +1,7 @@
 #include "keybit_bus.h"
 #include <string.h>
 
-#define I2C_TIMEOUT_MS 10
+#define I2C_TIMEOUT_MS 50   /* at 20 kHz a full 8-event relay read alone takes ~19 ms */
 #define ADDR_FIRST 0x08
 #define ADDR_LAST  0x77
 #define CHARGER_ADDR 0x6A  /* BQ25895 shares I2C3 */

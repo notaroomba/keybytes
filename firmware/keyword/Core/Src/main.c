@@ -45,6 +45,7 @@
 #define KEYBIT_POLL_MS 250
 #define KEYBIT_SCAN_MS 250
 #define KEYBIT_KEYS_MS 5
+#define KEYBIT_MISSES_MAX 2   /* scans a Keybit may miss in a row before it counts as gone */
 
 /* USER CODE END PD */
 
@@ -436,7 +437,24 @@ static void Keybit_Bus_Poll(void)
 
   int fresh = keybit_bus_assign(&hi2c3);
   int before = keybit_count;
-  keybit_count = keybit_bus_scan(&hi2c3, keybits, KEYBIT_MAX);
+  /* A Keybit busy serving a link now and then misses a scan. Keep it
+   * through KEYBIT_MISSES_MAX scans in a row before calling it gone, or it
+   * flickers in and out. */
+  static uint8_t missed[KEYBIT_MAX];
+  keybit_info_t found[KEYBIT_MAX];
+  uint8_t found_missed[KEYBIT_MAX] = {0};
+  int n = keybit_bus_scan(&hi2c3, found, KEYBIT_MAX);
+  for (int i = 0; i < keybit_count && n < KEYBIT_MAX; i++) {
+    int here = 0;
+    for (int j = 0; j < n && !here; j++) here = memcmp(found[j].uid, keybits[i].uid, sizeof(found[j].uid)) == 0;
+    if (!here && missed[i] < KEYBIT_MISSES_MAX) {
+      found[n] = keybits[i];
+      found_missed[n++] = (uint8_t)(missed[i] + 1);
+    }
+  }
+  memcpy(keybits, found, n * sizeof(found[0]));
+  memcpy(missed, found_missed, sizeof(missed));
+  keybit_count = n;
   if (fresh > 0 || keybit_count > before) white_until = HAL_GetTick() + WHITE_BLINK_MS;
 }
 
