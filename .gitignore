@@ -2,4 +2,23 @@
 .claude/
 .DS_Store
 *.lck
-/firmware/build
+/firmware/keyword/build
+
+# OS and editors
+Thumbs.db
+.history/
+.idea/
+*.swp
+
+# Python
+__pycache__/
+.venv/
+
+# KiCad
+*-backups/
+_autosave-*
+fp-info-cache
+*.kicad_prl
+
+# STM32 for VSCode tool paths, different on every machine
+.stm32env

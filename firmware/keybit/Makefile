@@ -17,7 +17,7 @@ include $(CH32FUN)/ch32fun.mk
 
 # Rebuild the image the keyword embeds and flashes onto Keybits.
 image : $(TARGET).bin
-	python3 tools/bin2c.py $(TARGET).bin ../Core/Src/keybit_image.c main.c
+	python3 tools/bin2c.py $(TARGET).bin ../keyword/Core/Src/keybit_image.c main.c
 
 flash : cv_flash
 clean : cv_clean

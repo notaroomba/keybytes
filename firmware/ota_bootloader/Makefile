@@ -1,5 +1,5 @@
 # Keyword OTA bootloader (pages 0-6, 0x08000000-0x08006FFF).
-# Shares HAL, CMSIS, STM32_WPAN and utilities with the app in ../
+# Shares HAL, CMSIS, STM32_WPAN and utilities with the app in ../keyword/
 #
 #   make            build/ota_bootloader.{elf,bin,hex}
 #   make release    also builds the app and writes ../release/:
@@ -12,14 +12,16 @@
 
 TARGET = ota_bootloader
 BUILD = build
-FW = ..
+FW = ../keyword
+# Same toolchain as the app: STM32 for VSCode's ARM_GCC_PATH, unless given on the command line
+-include $(FW)/.stm32env
 PREFIX = arm-none-eabi-
 ifdef ARM_GCC_PATH
 PREFIX := $(ARM_GCC_PATH)/arm-none-eabi-
 endif
-CC = $(PREFIX)gcc
-OBJCOPY = $(PREFIX)objcopy
-SIZE = $(PREFIX)size
+CC = "$(PREFIX)gcc"
+OBJCOPY = "$(PREFIX)objcopy"
+SIZE = "$(PREFIX)size"
 
 WPAN = $(FW)/Middlewares/ST/STM32_WPAN
 HAL = $(FW)/Drivers/STM32WBxx_HAL_Driver
@@ -124,12 +126,12 @@ $(BUILD):
 
 # ---- release images ----
 # The app is built into its own untracked folder: the repo tracks old
-# objects in firmware/build/debug, and in a fresh checkout make would take
+# objects in firmware/keyword/build/debug, and in a fresh checkout make would take
 # those as up to date and link stale code.
 APP_BUILD = $(abspath $(BUILD))/app
 APP_BIN = $(APP_BUILD)/debug/keyword.bin
 APP_OFFSET = 0x7000
-REL = $(FW)/release
+REL = ../release
 
 app:
 	$(MAKE) -C $(FW) -f STM32Make.make ARM_GCC_PATH="$(ARM_GCC_PATH)" OPENOCD=openocd BUILD_DIRECTORY=$(APP_BUILD)

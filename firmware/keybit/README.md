@@ -2,7 +2,7 @@
 
 Firmware for the Keybit's CH32V003F4U6, built with
 [ch32v003fun](https://github.com/cnlohr/ch32v003fun). The keyword carries a
-copy (`../Core/Src/keybit_image.c`) and flashes it onto any Keybit placed on
+copy (`../keyword/Core/Src/keybit_image.c`) and flashes it onto any Keybit placed on
 its programming studs, so normally you never flash a Keybit by hand.
 
 ## Build
@@ -14,7 +14,7 @@ into `ch32v003fun/` at a pinned commit.
 ```sh
 cd firmware/keybit
 make          # main.bin
-make image    # regenerate ../Core/Src/keybit_image.c, then rebuild the keyword
+make image    # regenerate ../keyword/Core/Src/keybit_image.c, then rebuild the keyword
 make flash    # optional: flash directly with a WCH-LinkE
 ```
 
