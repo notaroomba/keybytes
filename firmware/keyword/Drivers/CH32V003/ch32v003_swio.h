@@ -14,11 +14,17 @@
 #include <stdint.h>
 #include "stm32wbxx_hal.h"
 
-/* Bit timing lives in ch32v003_swio.c. These two are live (DOCK? t= od=):
- * every pulse is scaled by ch32_t_short / 16, and ch32_open_drain releases
- * the line for highs instead of driving them (needs a 1k pull-up). */
-extern uint32_t ch32_t_short;
+/* Bit timing lives in ch32v003_swio.c. These are live (DOCK? a= b= h= s= od=):
+ * the "1" low, "0" low and high times in wire cycles at 64 MHz, and
+ * ch32_open_drain releases the line for highs instead of driving them
+ * (needs a 1k pull-up). */
+extern uint32_t ch32_t1, ch32_t0, ch32_hi;
+extern uint32_t ch32_t_sample;  /* read: cycles from release to sampling (DOCK? s=) */
 extern uint8_t ch32_open_drain;
+extern uint32_t ch32_last_acs;
+extern uint32_t ch32_retries;   /* steps ch32_program had to retry */
+extern int32_t ch32_fail_blk;   /* block ch32_program gave up on, -1 if none */
+extern uint32_t ch32_resume_from;  /* block ch32_program started at (resumed from an earlier try) */  /* last DMABSTRACTCS read while waiting on a command */
 /* Idle time after each frame. 2 us is sometimes too short. */
 #ifndef CH32_SWIO_FRAME_GAP_US
 #define CH32_SWIO_FRAME_GAP_US 8

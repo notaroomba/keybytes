@@ -268,17 +268,87 @@ static void Handle_Line(proto_port_t *port, char *cmd)
   }
   else if (strcmp(cmd, "DOCK?") == 0)
   {
-    /* optional: t=<cycles per short pulse, 64 MHz> od=<0|1> */
+    /* optional: a=/b=/h=<"1" low, "0" low, high, wire cycles at 64 MHz>
+     * s=<read sample delay, cycles at 64 MHz> od=<0|1> */
     const char *a;
-    if ((a = strstr(args, "t=")) && atoi(a + 2) > 0) ch32_t_short = (uint32_t)atoi(a + 2);
+    if ((a = strstr(args, "a=")) && atoi(a + 2) > 0) ch32_t1 = (uint32_t)atoi(a + 2);
+    if ((a = strstr(args, "b=")) && atoi(a + 2) > 0) ch32_t0 = (uint32_t)atoi(a + 2);
+    if ((a = strstr(args, "h=")) && atoi(a + 2) > 0) ch32_hi = (uint32_t)atoi(a + 2);
+    if ((a = strstr(args, "s=")) && atoi(a + 2) > 0) ch32_t_sample = (uint32_t)atoi(a + 2);
     if ((a = strstr(args, "od="))) ch32_open_drain = a[3] == '1';
+    keybit_dock_pause_until = HAL_GetTick() + 5000;
     uint32_t cfg, status;
     int r = Keybit_Dock_Probe(&cfg, &status);
     uint32_t t = DWT->CYCCNT;
     HAL_Delay(10);
     t = DWT->CYCCNT - t;   /* ~640000 at 64 MHz: confirms the SWIO pulse timing base */
-    Reply(port, "DOCK r=%d cfg=%08lx status=%08lx t=%lu od=%u hclk=%lu cyc10ms=%lu", r, (unsigned long)cfg, (unsigned long)status,
-          (unsigned long)ch32_t_short, ch32_open_drain, (unsigned long)HAL_RCC_GetHCLKFreq(), (unsigned long)t);
+    Reply(port, "DOCK r=%d cfg=%08lx status=%08lx a=%lu b=%lu h=%lu s=%lu od=%u hclk=%lu cyc10ms=%lu", r, (unsigned long)cfg,
+          (unsigned long)status, (unsigned long)ch32_t1, (unsigned long)ch32_t0, (unsigned long)ch32_hi, (unsigned long)ch32_t_sample, ch32_open_drain,
+          (unsigned long)HAL_RCC_GetHCLKFreq(), (unsigned long)t);
+  }
+  else if (strcmp(cmd, "DOCKSCAN") == 0)
+  {
+    /* Try write pulse widths ("1" low, "0" low, high) on whatever sits on
+     * the dock, open drain, s=14. Each one that passes detection gets 256
+     * register reads (rd), then a halt and 256 DMDATA0 write/read-back round
+     * trips (wr); score = rd + wr. Prints scores of 480 and up and keeps the
+     * best, a tie going to the one with more neighbours at 500 and up. Hold
+     * the Keybit still. */
+    static const uint8_t as[] = { 16, 17, 18, 19 };
+    static const uint8_t bs[] = { 44, 52, 60 };
+    static const uint8_t hs[] = { 34, 40, 46 };
+    enum { NA = sizeof(as), NB = sizeof(bs), NH = sizeof(hs) };
+    int sc[NA][NB][NH];
+    ch32_open_drain = 1;
+    ch32_t_sample = 14;
+    for (int i = 0; i < NA; i++)
+      for (int j = 0; j < NB; j++)
+        for (int k = 0; k < NH; k++)
+        {
+          keybit_dock_pause_until = HAL_GetTick() + 5000;
+          ch32_t1 = as[i];
+          ch32_t0 = bs[j];
+          ch32_hi = hs[k];
+          uint32_t cfg, status, bw, br;
+          int bad, hr;
+          sc[i][j][k] = -1;
+          if (Keybit_Dock_Probe(&cfg, &status) != 0) continue;
+          int rd = Keybit_Dock_Reads(256);
+          int wr = Keybit_Dock_Score(256, &bw, &br, &bad, &hr);
+          if (hr != 0) {
+            sc[i][j][k] = rd;
+            if (rd >= 240) Reply(port, "DOCKSCAN a=%u b=%u h=%u rd=%d/256 hr=%d", as[i], bs[j], hs[k], rd, hr);
+            continue;
+          }
+          sc[i][j][k] = rd + wr;
+          if (rd + wr >= 480) Reply(port, "DOCKSCAN a=%u b=%u h=%u rd=%d/256 wr=%d/256", as[i], bs[j], hs[k], rd, wr);
+        }
+    int bi = 0, bj = 0, bk = 0, best = -1, bn = -1;
+    for (int i = 0; i < NA; i++)
+      for (int j = 0; j < NB; j++)
+        for (int k = 0; k < NH; k++)
+        {
+          int n = (i > 0 && sc[i - 1][j][k] >= 500) + (i < NA - 1 && sc[i + 1][j][k] >= 500) +
+                  (j > 0 && sc[i][j - 1][k] >= 500) + (j < NB - 1 && sc[i][j + 1][k] >= 500) +
+                  (k > 0 && sc[i][j][k - 1] >= 500) + (k < NH - 1 && sc[i][j][k + 1] >= 500);
+          if (sc[i][j][k] > best || (sc[i][j][k] == best && n > bn)) { best = sc[i][j][k]; bn = n; bi = i; bj = j; bk = k; }
+        }
+    ch32_t1 = as[bi];
+    ch32_t0 = bs[bj];
+    ch32_hi = hs[bk];
+    keybit_dock_pause_until = HAL_GetTick() + 5000;
+    Reply(port, "DOCKSCAN best a=%u b=%u h=%u score=%d/512 nb=%d", as[bi], bs[bj], hs[bk], best, bn);
+  }
+  else if (strcmp(cmd, "DOCKID") == 0)
+  {
+    /* optional: h=<0|1> halt with reset (default 1) */
+    const char *a = strstr(args, "h=");
+    char buf[200];
+    keybit_dock_pause_until = HAL_GetTick() + 5000;
+    Keybit_Dock_Id(buf, sizeof(buf), a ? a[2] == '1' : 1);
+    /* lines cap at PROTO_LINE_MAX, so long results go out in pieces */
+    for (size_t o = 0, l = strlen(buf); o < l || o == 0; o += 100)
+      Reply(port, "DOCKID%s %.100s", o ? "+" : "", buf + o);
   }
   else if (strcmp(cmd, "SIDES?") == 0)
   {

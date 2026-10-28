@@ -54,6 +54,11 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 int Keybit_Dock_Probe(uint32_t *cfg, uint32_t *status);
+int Keybit_Dock_Reads(int n);
+int Keybit_Dock_Score(int n, uint32_t *bw, uint32_t *br, int *bad, int *hr);
+int Keybit_Dock_Regs(uint32_t *v, uint32_t delay_ms, int halt, int x, int *hr);
+extern uint32_t keybit_dock_pause_until;
+void Keybit_Dock_Id(char *out, size_t len, int reset);
 
 /* USER CODE END EFP */
 

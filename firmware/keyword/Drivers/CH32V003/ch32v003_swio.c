@@ -38,16 +38,24 @@
  * line (needed for any read). */
 #define DMCFG_OUTPUT_EN (0x5AA50000u | (1u << 10))
 
-enum { PROG_NONE, PROG_READ, PROG_WRITE };
+/* Which program sits in the progbuf; anything but NONE also means x10-x13
+ * are loaded (see load_prog_regs). */
+enum { PROG_NONE, PROG_READ, PROG_WRITE, PROG_WRITE_FLASH };
 
 #define PHY __attribute__((optimize("O2")))
+/* The project builds with -Og, which doesn't inline across a different
+ * optimize attribute: cyc() and wait_from() stayed real calls and added
+ * 10-20 cycles to every pulse, stretching a 300 ns "1" to about 530 ns
+ * and pushing the read sample past the end of the target's "0". Force
+ * them inline so the cycle counts below are what goes on the wire. */
+#define FAST static inline __attribute__((always_inline))
 
 /* ------------------------------------------------------------------------ */
 /* Timing                                                                   */
 
-static inline uint32_t cyc(void) { return DWT->CYCCNT; }
+FAST uint32_t cyc(void) { return DWT->CYCCNT; }
 
-static inline void wait_from(uint32_t start, uint32_t cycles)
+FAST void wait_from(uint32_t start, uint32_t cycles)
 {
   while ((cyc() - start) < cycles) { }
 }
@@ -76,55 +84,80 @@ static void refresh_moder(ch32_swio_t *s)
  * After its reset the target's SDI runs in "normal mode 2x" (slow), so every
  * bit needs a long high after it:
  *   1: ~300 ns low, ~850 ns high      0: ~850 ns low, ~850 ns high
- *   read: a short low, release, sample ~330 ns later, wait for high
- * Cycles are at 64 MHz. DOCK? t=<n> scales them all by n/16 and od=<0|1>
- * picks open-drain (needs a 1k pull-up, like the BluePill) or push-pull,
- * the default, which works with or without one. */
-#define T1_LOW   19
-#define T0_LOW   54
-#define T_HIGH   54
-#define TR_LOW   4
-#define TR_SAMPLE 21
-uint32_t ch32_t_short = 16;
-uint8_t ch32_open_drain;   /* 1 only with an external ~1k pull-up: the internal one is far too weak */
+ *   read: a short low, release, sample ~300 ns later, wait for high
+ * The T_ values are those wire times in cycles at 64 MHz. The code between
+ * the edges and the wait loops costs a fixed number of cycles on top (the
+ * LAG_ values, counted from the -Og build's disassembly), so phy_timing()
+ * takes that off; without it a "1" came out at ~530 ns, close to a "0".
+ * On the dock the three write times needed tuning apart, and the "1" low is
+ * touchy: about 16-19 cycles works, 20 is the edge, 22 and up fail. Reads
+ * are fine across the board. The defaults below came out of DOCKSCAN;
+ * DOCK? a=/b=/h= (ch32_t1, ch32_t0, ch32_hi), s= (sample point) and od=
+ * still change them live. Open-drain, with the dock's ~1k pull-up.
+ * Even tuned, about 1 write frame in 10 gets dropped, so the memory layer
+ * reads back every register write, checks DATA1 == addr + 4 after each
+ * command to catch a dropped one, and ch32_program retries per block and
+ * resumes by chip UID. */
+#define TR_LOW    10   /* ~150 ns; the target's SDI clock is about 8 MHz, so keep it over 125 ns */
+#define LAG_LOW   15
+#define LAG_HIGH  12
+#define LAG_RLOW  10
+uint32_t ch32_t1 = 19;
+uint32_t ch32_t0 = 52;
+uint32_t ch32_hi = 46;
+uint32_t ch32_t_sample = 14;  /* cycles from release to sampling, plus ~3; ~250 ns */
+uint32_t ch32_last_acs;     /* last DMABSTRACTCS seen by wait_done, for debugging */
+uint8_t ch32_open_drain = 1;   /* needs the external ~1k pull-up: the internal one is far too weak */
 
-static inline uint32_t scaled(uint32_t c) { return c * ch32_t_short / 16; }
+/* Pulse lengths in cycles for one frame, worked out before interrupts go
+ * off so no multiply or divide sits between edges. */
+typedef struct { uint32_t t1, t0, hi, rlo, rs; } phy_t;
 
-static inline PHY void line_high(ch32_swio_t *s)
+static uint32_t wire(uint32_t cycles, uint32_t lag)
+{
+  return cycles > lag ? cycles - lag : 1;
+}
+
+static phy_t phy_timing(void)
+{
+  return (phy_t){ wire(ch32_t1, LAG_LOW), wire(ch32_t0, LAG_LOW), wire(ch32_hi, LAG_HIGH),
+                  wire(TR_LOW, LAG_RLOW), ch32_t_sample };
+}
+
+FAST void line_high(ch32_swio_t *s)
 {
   if (ch32_open_drain) s->port->MODER = s->moder_in;
   else s->port->BSRR = s->pin;
 }
 
-static inline PHY void send_bit(ch32_swio_t *s, int one)
+FAST void send_bit(ch32_swio_t *s, const phy_t *ph, int one)
 {
   GPIO_TypeDef *p = s->port;
-  const uint32_t lo = scaled(one ? T1_LOW : T0_LOW), hi = scaled(T_HIGH);
-  uint32_t t = cyc();
+  const uint32_t lo = one ? ph->t1 : ph->t0;
   p->BRR = s->pin;
+  uint32_t t = cyc();
   p->MODER = s->moder_out;
   wait_from(t, lo);
-  t = cyc();
   line_high(s);
-  wait_from(t, hi);
+  t = cyc();
+  wait_from(t, ph->hi);
 }
 
 /* Low = 0, high = 1, -1 = target never let go. */
-static inline PHY int read_bit(ch32_swio_t *s, uint32_t timeout_cycles)
+FAST int read_bit(ch32_swio_t *s, const phy_t *ph, uint32_t timeout_cycles)
 {
   GPIO_TypeDef *p = s->port;
-  const uint32_t lo = scaled(TR_LOW), sample = scaled(TR_SAMPLE);
-  uint32_t t = cyc();
   p->BRR = s->pin;
+  uint32_t t = cyc();
   p->MODER = s->moder_out;
-  wait_from(t, lo);
-  t = cyc();
+  wait_from(t, ph->rlo);
   if (ch32_open_drain) p->MODER = s->moder_in;
   else {   /* push-pull: kick it high, then let the target pull against nothing */
     p->BSRR = s->pin;
     p->MODER = s->moder_in;
   }
-  wait_from(t, sample);
+  t = cyc();
+  wait_from(t, ph->rs);
   int bit = (p->IDR & s->pin) != 0;
 
   t = cyc();
@@ -165,16 +198,17 @@ void ch32_init(ch32_swio_t *s, GPIO_TypeDef *port, uint16_t pin)
 
 PHY void ch32_write_reg(ch32_swio_t *s, uint8_t reg, uint32_t value)
 {
+  const phy_t ph = phy_timing();
   uint32_t primask = __get_PRIMASK();
   __disable_irq();
   refresh_moder(s);
   s->port->BSRR = s->pin;
   s->port->MODER = s->moder_out;
 
-  send_bit(s, 1);
-  for (uint32_t m = 1u << 6; m; m >>= 1) send_bit(s, reg & m);
-  send_bit(s, 1);
-  for (uint32_t m = 1u << 31; m; m >>= 1) send_bit(s, value & m);
+  send_bit(s, &ph, 1);
+  for (uint32_t m = 1u << 6; m; m >>= 1) send_bit(s, &ph, reg & m);
+  send_bit(s, &ph, 1);
+  for (uint32_t m = 1u << 31; m; m >>= 1) send_bit(s, &ph, value & m);
 
   __set_PRIMASK(primask);
   delay_us(CH32_SWIO_FRAME_GAP_US);
@@ -182,6 +216,7 @@ PHY void ch32_write_reg(ch32_swio_t *s, uint8_t reg, uint32_t value)
 
 PHY ch32_status_t ch32_read_reg(ch32_swio_t *s, uint8_t reg, uint32_t *value)
 {
+  const phy_t ph = phy_timing();
   uint32_t timeout = CH32_SWIO_READ_TIMEOUT_US * (SystemCoreClock / 1000000u);
   uint32_t v = 0;
   ch32_status_t ret = CH32_OK;
@@ -192,11 +227,11 @@ PHY ch32_status_t ch32_read_reg(ch32_swio_t *s, uint8_t reg, uint32_t *value)
   s->port->BSRR = s->pin;
   s->port->MODER = s->moder_out;
 
-  send_bit(s, 1);
-  for (uint32_t m = 1u << 6; m; m >>= 1) send_bit(s, reg & m);
-  send_bit(s, 0);
+  send_bit(s, &ph, 1);
+  for (uint32_t m = 1u << 6; m; m >>= 1) send_bit(s, &ph, reg & m);
+  send_bit(s, &ph, 0);
   for (int i = 0; i < 32; i++) {
-    int b = read_bit(s, timeout);
+    int b = read_bit(s, &ph, timeout);
     if (b < 0) { ret = CH32_ERR_TIMEOUT; break; }
     v = (v << 1) | (uint32_t)b;
   }
@@ -255,8 +290,6 @@ ch32_status_t ch32_detect(ch32_swio_t *s)
 
 ch32_status_t ch32_halt(ch32_swio_t *s, int reset)
 {
-  ch32_write_reg(s, CH32_DMSHDWCFGR, DMCFG_OUTPUT_EN);
-  ch32_write_reg(s, CH32_DMCFGR, DMCFG_OUTPUT_EN);
   ch32_write_reg(s, CH32_DMCONTROL, 0x80000001);    /* haltreq + dmactive */
   if (reset) ch32_write_reg(s, CH32_DMCONTROL, 0x80000003);  /* + ndmreset */
   ch32_write_reg(s, CH32_DMCONTROL, 0x80000001);    /* release reset, stay halted */
@@ -265,7 +298,7 @@ ch32_status_t ch32_halt(ch32_swio_t *s, int reset)
   HAL_Delay(10);  /* let a flash op that was in progress finish */
 
   uint32_t st = 0;
-  if (ch32_read_reg(s, CH32_DMSTATUS, &st) != CH32_OK) return CH32_ERR_NO_TARGET;
+  if (ch32_read_reg(s, CH32_DMSTATUS, &st) != CH32_OK || st == 0xFFFFFFFFu) return CH32_ERR_NO_TARGET;
   if (!(st & (1u << 9))) return CH32_ERR_BUSY;  /* allhalted */
   ch32_write_reg(s, CH32_DMABSTRACTCS, 0x08000700);  /* clear old errors */
   return CH32_OK;
@@ -286,16 +319,45 @@ static ch32_status_t wait_done(ch32_swio_t *s)
 {
   uint32_t cs = 0;
   int timeout = 1000;
-  do {
-    if (ch32_read_reg(s, CH32_DMABSTRACTCS, &cs) != CH32_OK) return CH32_ERR_TIMEOUT;
-    if (timeout-- == 0) return CH32_ERR_BUSY;
-  } while (cs & (1u << 12));  /* busy */
+  for (;;) {
+    if (ch32_read_reg(s, CH32_DMABSTRACTCS, &cs) != CH32_OK) { ch32_last_acs = cs; return CH32_ERR_TIMEOUT; }
+    if (timeout-- == 0) { ch32_last_acs = cs; return CH32_ERR_BUSY; }
+    if (((cs >> 24) & 0x1F) != 8) continue;  /* progbufsize is always 8: a garbled read, ask again */
+    if (!(cs & (1u << 12))) break;           /* busy */
+  }
 
+  ch32_last_acs = cs;
   if ((cs >> 8) & 7) {  /* cmderr */
     ch32_write_reg(s, CH32_DMABSTRACTCS, 0x00000700);
     return CH32_ERR_ABSTRACT;
   }
   return CH32_OK;
+}
+
+/* About 1 write frame in 10 still gets dropped on the dock, so every
+ * register we can read back is written until it reads back right. */
+static ch32_status_t write_v(ch32_swio_t *s, uint8_t reg, uint32_t value)
+{
+  for (int i = 0; i < 10; i++) {
+    uint32_t got = 0;
+    ch32_write_reg(s, reg, value);
+    if (ch32_read_reg(s, reg, &got) == CH32_OK && got == value) return CH32_OK;
+  }
+  return CH32_ERR_TIMEOUT;
+}
+
+/* Run an abstract command. COMMAND can't be read back, so on a command
+ * error clear it and send it again. A dropped COMMAND just looks like a
+ * finished one; callers catch that by reading results back. */
+static ch32_status_t exec(ch32_swio_t *s, uint32_t cmd)
+{
+  ch32_status_t r = CH32_ERR_ABSTRACT;
+  for (int i = 0; i < 5 && r == CH32_ERR_ABSTRACT; i++) {
+    ch32_write_reg(s, CH32_DMCOMMAND, cmd);
+    r = wait_done(s);
+    if (r == CH32_ERR_ABSTRACT) ch32_write_reg(s, CH32_DMABSTRACTCS, 0x08000700);
+  }
+  return r;
 }
 
 /* Confirm it's a V003 and read its chip ID. The core must be halted. */
@@ -310,19 +372,18 @@ static ch32_status_t ensure_chip(ch32_swio_t *s)
   ch32_write_reg(s, CH32_DMCONTROL, 0x80000001);
   ch32_write_reg(s, CH32_DMCONTROL, 0x80000001);
   ch32_write_reg(s, CH32_DMABSTRACTCS, 0x08000700);
-  ch32_write_reg(s, CH32_DMABSTRACTAUTO, 0);
+  s->prog_state = PROG_NONE;
 
+  ch32_status_t r;
+  if ((r = write_v(s, CH32_DMABSTRACTAUTO, 0)) != CH32_OK) return r;
   /* c.lw x8, 0(x8); c.ebreak, with x8 = chip ID address */
-  ch32_write_reg(s, CH32_DMPROGBUF0, 0x90024000);
-  ch32_write_reg(s, CH32_DMDATA0, V003_CHIP_ID);
-  ch32_write_reg(s, CH32_DMCOMMAND, 0x00271008);  /* DATA0 -> x8, run progbuf */
-  ch32_status_t r = wait_done(s);
-  if (r != CH32_OK) return r;
-  ch32_write_reg(s, CH32_DMCOMMAND, 0x00221008);  /* x8 -> DATA0 */
+  if ((r = write_v(s, CH32_DMPROGBUF0, 0x90024000)) != CH32_OK) return r;
+  if ((r = write_v(s, CH32_DMDATA0, V003_CHIP_ID)) != CH32_OK) return r;
+  if ((r = exec(s, 0x00271008)) != CH32_OK) return r;  /* DATA0 -> x8, run progbuf */
+  if ((r = exec(s, 0x00221008)) != CH32_OK) return r;  /* x8 -> DATA0 */
   if (ch32_read_reg(s, CH32_DMDATA0, &s->chip_id) != CH32_OK) return CH32_ERR_NO_TARGET;
 
   s->chip_known = 1;
-  s->prog_state = PROG_NONE;
   return CH32_OK;
 }
 
@@ -335,103 +396,87 @@ ch32_status_t ch32_read_chip_id(ch32_swio_t *s, uint32_t *id)
 
 /* Load the registers the read/write programs use:
  *   x10 = &DATA0, x11 = &DATA1, x12 = &CH_FLASH_STATR, x13 = PAGE_PG|BUF_LOAD */
-static void load_prog_regs(ch32_swio_t *s)
+static ch32_status_t load_prog_regs(ch32_swio_t *s)
 {
-  ch32_write_reg(s, CH32_DMABSTRACTAUTO, 0);
-  ch32_write_reg(s, CH32_DMDATA0, V003_DATA0_ADDR);
-  ch32_write_reg(s, CH32_DMCOMMAND, 0x0023100A);
-  ch32_write_reg(s, CH32_DMDATA0, V003_DATA0_ADDR + 4);
-  ch32_write_reg(s, CH32_DMCOMMAND, 0x0023100B);
-  ch32_write_reg(s, CH32_DMDATA0, CH_FLASH_STATR);
-  ch32_write_reg(s, CH32_DMCOMMAND, 0x0023100C);
-  ch32_write_reg(s, CH32_DMDATA0, CTLR_PAGE_PG | CTLR_BUF_LOAD);
-  ch32_write_reg(s, CH32_DMCOMMAND, 0x0023100D);
+  const uint32_t v[4] = { V003_DATA0_ADDR, V003_DATA0_ADDR + 4, CH_FLASH_STATR, CTLR_PAGE_PG | CTLR_BUF_LOAD };
+  ch32_status_t r;
+  for (uint32_t i = 0; i < 4; i++) {
+    if ((r = write_v(s, CH32_DMDATA0, v[i])) != CH32_OK) return r;
+    if ((r = exec(s, 0x0023100A + i)) != CH32_OK) return r;  /* DATA0 -> x10 + i */
+  }
+  return CH32_OK;
+}
+
+/* Put the read, write or flash-write program in the progbuf, unless it's
+ * already there. */
+static ch32_status_t load_prog(ch32_swio_t *s, uint8_t want)
+{
+  static const uint32_t rd[] = {
+    0x40044180,  /* c.lw x8,0(x11)  address from DATA1;  c.lw x9,0(x8)  load it */
+    0xC1040411,  /* c.addi x8,4;  c.sw x9,0(x10)  value to DATA0 */
+    0x9002C180,  /* c.sw x8,0(x11)  next address to DATA1;  c.ebreak */
+  };
+  static const uint32_t wr[] = {
+    0x41844100,  /* c.lw x8,0(x10)  value;  c.lw x9,0(x11)  address */
+    0x0491C080,  /* c.sw x8,0(x9)  store;  c.addi x9,4 */
+    0x0001C184,  /* c.sw x9,0(x11)  next address to DATA1;  c.nop */
+    0x90029002,  /* c.ebreak */
+  };
+  static const uint32_t wf[] = {
+    0x41844100, 0x0491C080, 0x0001C184,
+    0x4200C254,  /* c.sw x13,4(x12)  CTLR = PAGE_PG|BUF_LOAD;  c.lw x8,0(x12)  STATR */
+    0xFC758805,  /* c.andi x8,1  BSY;  c.bnez x8,-4  wait */
+    0x90029002,  /* c.ebreak */
+  };
+  if (s->prog_state == want) return CH32_OK;
+
+  ch32_status_t r;
+  if (s->prog_state == PROG_NONE && (r = load_prog_regs(s)) != CH32_OK) return r;
+  const uint32_t *p = want == PROG_READ ? rd : want == PROG_WRITE ? wr : wf;
+  uint32_t n = want == PROG_READ ? 3 : want == PROG_WRITE ? 4 : 6;
+  for (uint32_t i = 0; i < n; i++)
+    if ((r = write_v(s, CH32_DMPROGBUF0 + i, p[i])) != CH32_OK) { s->prog_state = PROG_NONE; return r; }
+  s->prog_state = want;
+  return CH32_OK;
 }
 
 /* ------------------------------------------------------------------------ */
-/* Memory access. With autoexec on, every access to DATA0 reruns the
- * program buffer, so sequential words cost one frame each.                 */
+/* Memory access. One word per command, no autoexec: every DATA write is
+ * checked before the program runs.                                         */
+
+/* Run the loaded read or write program on addr (and data, for a write).
+ * Both programs leave addr + 4 in DATA1, so if that isn't there afterwards
+ * the COMMAND frame was dropped and it all goes again. */
+static ch32_status_t run_at(ch32_swio_t *s, uint32_t addr, int write, uint32_t data)
+{
+  ch32_status_t r;
+  for (int i = 0; i < 10; i++) {
+    if ((r = write_v(s, CH32_DMDATA1, addr)) != CH32_OK) return r;
+    if (write && (r = write_v(s, CH32_DMDATA0, data)) != CH32_OK) return r;
+    if ((r = exec(s, 0x00240000)) != CH32_OK) return r;  /* run progbuf; for flash, also waits out the BUF_LOAD */
+    uint32_t next = 0;
+    if (ch32_read_reg(s, CH32_DMDATA1, &next) == CH32_OK && next == addr + 4) return CH32_OK;
+  }
+  return CH32_ERR_TIMEOUT;
+}
 
 ch32_status_t ch32_read_word(ch32_swio_t *s, uint32_t addr, uint32_t *data)
 {
-  ch32_status_t r = ensure_chip(s);
-  if (r != CH32_OK) return r;
-
-  /* Polling flash registers must not move the address along. */
-  uint8_t autoinc = !(addr == CH_FLASH_CTLR || addr == CH_FLASH_STATR);
-
-  if (s->prog_state != PROG_READ || addr != s->next_addr || autoinc != s->autoincrement) {
-    if (s->prog_state != PROG_READ || autoinc != s->autoincrement) {
-      if (s->prog_state != PROG_WRITE) load_prog_regs(s);
-      ch32_write_reg(s, CH32_DMABSTRACTAUTO, 0);
-      /* c.lw x8,0(x11)  address from DATA1;  c.lw x9,0(x8)  load it */
-      ch32_write_reg(s, CH32_DMPROGBUF0, 0x40044180);
-      /* c.addi x8,4 (or c.nop);  c.sw x9,0(x10)  value to DATA0 */
-      ch32_write_reg(s, CH32_DMPROGBUF1, autoinc ? 0xC1040411 : 0xC1040001);
-      /* c.sw x8,0(x11)  next address to DATA1;  c.ebreak */
-      ch32_write_reg(s, CH32_DMPROGBUF2, 0x9002C180);
-      ch32_write_reg(s, CH32_DMABSTRACTAUTO, 1);
-      s->autoincrement = autoinc;
-    }
-    ch32_write_reg(s, CH32_DMDATA1, addr);
-    ch32_write_reg(s, CH32_DMCOMMAND, 0x00240000);  /* run progbuf */
-    s->prog_state = PROG_READ;
-    s->next_addr = addr;
-  }
-  if (s->autoincrement) s->next_addr += 4;
-
-  r = wait_done(s);
-  if (r != CH32_OK) return r;
+  ch32_status_t r;
+  if ((r = ensure_chip(s)) != CH32_OK) return r;
+  if ((r = load_prog(s, PROG_READ)) != CH32_OK) return r;
+  if ((r = run_at(s, addr, 0, 0)) != CH32_OK) return r;
   return ch32_read_reg(s, CH32_DMDATA0, data) == CH32_OK ? CH32_OK : CH32_ERR_TIMEOUT;
 }
 
 ch32_status_t ch32_write_word(ch32_swio_t *s, uint32_t addr, uint32_t data)
 {
-  ch32_status_t r = ensure_chip(s);
-  if (r != CH32_OK) return r;
-
   uint8_t is_flash = (addr & 0xFF000000u) == 0x08000000u ||
                      (addr & 0x1FFF0000u) == 0x1FFF0000u;
-
-  if (s->prog_state != PROG_WRITE || is_flash != s->write_is_flash) {
-    int started = 0;
-    if (s->prog_state != PROG_WRITE) {
-      ch32_write_reg(s, CH32_DMABSTRACTAUTO, 0);
-      started = 1;
-      if (s->prog_state != PROG_READ) load_prog_regs(s);
-      /* c.lw x8,0(x10)  value;  c.lw x9,0(x11)  address */
-      ch32_write_reg(s, CH32_DMPROGBUF0, 0x41844100);
-      /* c.sw x8,0(x9)  store;  c.addi x9,4 */
-      ch32_write_reg(s, CH32_DMPROGBUF1, 0x0491C080);
-      /* c.sw x9,0(x11)  next address to DATA1;  c.nop */
-      ch32_write_reg(s, CH32_DMPROGBUF2, 0x0001C184);
-    }
-    if (is_flash) {
-      /* c.sw x13,4(x12)  CTLR = PAGE_PG|BUF_LOAD;  c.lw x8,0(x12)  STATR */
-      ch32_write_reg(s, CH32_DMPROGBUF3, 0x4200C254);
-      /* c.andi x8,1  BSY;  c.bnez x8,-4  wait */
-      ch32_write_reg(s, CH32_DMPROGBUF4, 0xFC758805);
-      ch32_write_reg(s, CH32_DMPROGBUF5, 0x90029002);  /* c.ebreak */
-    } else {
-      ch32_write_reg(s, CH32_DMPROGBUF3, 0x90029002);
-    }
-
-    ch32_write_reg(s, CH32_DMDATA1, addr);
-    ch32_write_reg(s, CH32_DMDATA0, data);
-    if (started) {
-      ch32_write_reg(s, CH32_DMCOMMAND, 0x00240000);
-      ch32_write_reg(s, CH32_DMABSTRACTAUTO, 1);
-    }
-    s->write_is_flash = is_flash;
-    s->prog_state = PROG_WRITE;
-    s->next_addr = addr;
-  } else {
-    if (addr != s->next_addr) ch32_write_reg(s, CH32_DMDATA1, addr);
-    ch32_write_reg(s, CH32_DMDATA0, data);  /* autoexec runs the store */
-  }
-  s->next_addr += 4;
-
-  return is_flash ? wait_done(s) : CH32_OK;
+  ch32_status_t r;
+  if ((r = ensure_chip(s)) != CH32_OK) return r;
+  if ((r = load_prog(s, is_flash ? PROG_WRITE_FLASH : PROG_WRITE)) != CH32_OK) return r;
+  return run_at(s, addr, 1, data);
 }
 
 /* ------------------------------------------------------------------------ */
@@ -548,13 +593,75 @@ ch32_status_t ch32_verify(ch32_swio_t *s, uint32_t addr, const uint8_t *data, ui
   return CH32_OK;
 }
 
+uint32_t ch32_retries;
+int32_t ch32_fail_blk = -1;
+uint32_t ch32_resume_from;
+
+/* Where the last unfinished ch32_program got to, and on which chip (UID),
+ * so the next attempt on the same chip carries on instead of starting over. */
+static struct { uint32_t uid[3]; uint32_t next_blk; uint8_t valid; } resume;
+
+/* After a failed step: clear the command error, drop what we cached about
+ * the target and halt it again, so the step can be retried. */
+static void recover(ch32_swio_t *s)
+{
+  ch32_write_reg(s, CH32_DMABSTRACTCS, 0x08000700);
+  forget_state(s);
+  ch32_halt(s, 0);
+  ch32_retries++;
+}
+
+/* Flashes the image block by block. A frame now and then still comes back
+ * garbled, and a flash takes thousands of them, so each step gets a few
+ * tries: the unlock up to 5, each 64-byte block (written, then read back) up to 8. */
 ch32_status_t ch32_program(ch32_swio_t *s, const uint8_t *image, uint32_t len)
 {
   ch32_status_t r;
-  if ((r = ch32_detect(s)) != CH32_OK) return r;
-  if ((r = ch32_halt(s, 1)) != CH32_OK) return r;
-  if ((r = ch32_write_flash(s, CH32_FLASH_BASE, image, len)) != CH32_OK) return r;
-  if ((r = ch32_verify(s, CH32_FLASH_BASE, image, len)) != CH32_OK) return r;
+  ch32_retries = 0;
+  ch32_fail_blk = -1;
+  ch32_resume_from = 0;
+  /* The dock poll has usually just halted it; a fresh detect would reset
+   * the line again, so only do it if it isn't halted (read twice). */
+  uint32_t st1 = 0, st2 = 0;
+  int halted = ch32_read_reg(s, CH32_DMSTATUS, &st1) == CH32_OK && ch32_read_reg(s, CH32_DMSTATUS, &st2) == CH32_OK &&
+               st1 != 0xFFFFFFFFu && st2 != 0xFFFFFFFFu && (st1 & st2 & (1u << 9));
+  if (!halted) {
+    if ((r = ch32_detect(s)) != CH32_OK) return r;
+    if ((r = ch32_halt(s, 1)) != CH32_OK) return r;
+  }
+  for (int t = 0; t < 5; t++) {
+    if ((r = ensure_chip(s)) == CH32_OK && (r = ch32_unlock_flash(s)) == CH32_OK) break;
+    recover(s);
+  }
+  if (r != CH32_OK) return r;
+
+  uint32_t uid[3];
+  int have_uid = 1;
+  for (int i = 0; i < 3; i++)
+    if (ch32_read_word(s, 0x1FFFF7E8u + 4u * i, &uid[i]) != CH32_OK) have_uid = 0;
+  if (!have_uid || !resume.valid || memcmp(uid, resume.uid, sizeof(uid)) != 0) resume.next_blk = 0;
+  resume.valid = have_uid;
+  if (have_uid) memcpy(resume.uid, uid, sizeof(uid));
+  ch32_resume_from = resume.next_blk;
+
+  for (uint32_t off = resume.next_blk * CH32_FLASH_BLOCK; off < len; off += CH32_FLASH_BLOCK) {
+    uint32_t n = len - off < CH32_FLASH_BLOCK ? len - off : CH32_FLASH_BLOCK;
+    for (int t = 0; t < 8; t++) {
+      r = ensure_chip(s);
+      if (r == CH32_OK && !s->flash_unlocked) r = ch32_unlock_flash(s);
+      if (r == CH32_OK) r = write_block(s, CH32_FLASH_BASE + off, image + off, n);
+      if (r == CH32_OK) r = ch32_verify(s, CH32_FLASH_BASE + off, image + off, n);
+      if (r == CH32_OK) break;
+      recover(s);
+    }
+    if (r != CH32_OK) {
+      ch32_fail_blk = (int32_t)(off / CH32_FLASH_BLOCK);
+      return r;
+    }
+    resume.next_blk = off / CH32_FLASH_BLOCK + 1;
+  }
+  resume.valid = 0;
+  ch32_write_word(s, CH_FLASH_CTLR, 0);
   ch32_reboot(s);
   return CH32_OK;
 }

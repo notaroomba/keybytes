@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 #include "app_entry.h"
 #include "usb_device.h"
 #include "ch32v003_swio.h"
@@ -59,6 +60,7 @@ PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
 static ch32_swio_t keybit_swio;
+uint32_t keybit_dock_pause_until;   /* HAL tick; the dock poll stays off the line until then */
 /* Keybits touching the keyword's sides: the list is rebuilt every
  * KEYBIT_SCAN_MS, key_down refreshed every KEYBIT_KEYS_MS. keybit_changed
  * collects bits of entries whose key_down changed; whoever consumes key
@@ -130,6 +132,7 @@ static void Keybit_Dock_Poll(void)
   static uint8_t misses, done;
 
   if (HAL_GetTick() - last_poll < KEYBIT_POLL_MS) return;
+  if ((int32_t)(keybit_dock_pause_until - HAL_GetTick()) > 0) return;
   last_poll = HAL_GetTick();
 
   if (ch32_detect(&keybit_swio) != CH32_OK) {
@@ -151,6 +154,9 @@ static void Keybit_Dock_Poll(void)
   HAL_Delay(50);     /* let it finish powering up off CN7 */
   ch32_status_t h = ch32_halt(&keybit_swio, 1);
   ch32_status_t v = h == CH32_OK ? ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len) : h;
+  /* Only a real mismatch means it needs flashing; a garbled read just gets checked again. */
+  for (int i = 0; i < 3 && h == CH32_OK && v != CH32_OK && v != CH32_ERR_VERIFY; i++)
+    v = ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len);
   if (v == CH32_OK) {
     ch32_reboot(&keybit_swio);  /* already up to date */
     done = 1;
@@ -161,7 +167,9 @@ static void Keybit_Dock_Poll(void)
   ch32_status_t p = ch32_program(&keybit_swio, keybit_image, keybit_image_len);
   done = p == CH32_OK;
   dock_failed = !done;
-  PROTO_Send("DOCK flash halt=%d verify=%d program=%d", h, v, p);
+  PROTO_Send("DOCK flash halt=%d verify=%d program=%d acs=%08lx retries=%lu blk=%ld from=%lu", h, v, p,
+             (unsigned long)ch32_last_acs, (unsigned long)ch32_retries, (long)ch32_fail_blk,
+             (unsigned long)ch32_resume_from);
 }
 
 /* DOCK? over serial: the raw answers from whatever is on the dock, to debug detection. */
@@ -172,6 +180,107 @@ int Keybit_Dock_Probe(uint32_t *cfg, uint32_t *status)
   ch32_read_reg(&keybit_swio, CH32_DMCFGR, cfg);
   ch32_read_reg(&keybit_swio, CH32_DMSTATUS, status);
   return r;
+}
+
+/* DOCKSCAN: after a successful probe, read DMCFGR n more times and count
+ * how many come back exactly as the first good read, to rank timings by
+ * how reliably they read rather than by one lucky answer. */
+/* n reads alternating DMCFGR and DMHARTINFO against the values a V003
+ * gives; returns how many came back right. */
+int Keybit_Dock_Reads(int n)
+{
+  int good = 0;
+  for (int i = 0; i < n; i++) {
+    uint32_t v = 0;
+    uint8_t reg = (i & 1) ? CH32_DMHARTINFO : CH32_DMCFGR;
+    uint32_t want = (i & 1) ? 0x002120F4u : 0x5AA50401u;
+    if (ch32_read_reg(&keybit_swio, reg, &v) == CH32_OK && v == want) good++;
+  }
+  return good;
+}
+
+/* Halts the core, then n write/read-back round trips through DMDATA0 (four
+ * fixed patterns, then an LCG), then lets it run again. Returns how many DATA0 ones matched, or -1 if the halt
+ * failed (its result in *hr). The first DATA0 mismatch goes in *bw / *br,
+ * and *bad says whether there was one. */
+int Keybit_Dock_Score(int n, uint32_t *bw, uint32_t *br, int *bad, int *hr)
+{
+  static const uint32_t fixed[4] = { 0x00000000u, 0xFFFFFFFFu, 0xAAAAAAAAu, 0x55555555u };
+  uint32_t x = 0x12345678u;
+  int good = 0;
+  *bad = 0;
+  *hr = ch32_halt(&keybit_swio, 0);
+  if (*hr != CH32_OK) return -1;
+  ch32_write_reg(&keybit_swio, CH32_DMABSTRACTAUTO, 0);
+  for (int i = 0; i < n; i++) {
+    uint32_t w = i < 4 ? fixed[i] : (x = x * 1664525u + 1013904223u), r = 0;
+    ch32_write_reg(&keybit_swio, CH32_DMDATA0, w);
+    if (ch32_read_reg(&keybit_swio, CH32_DMDATA0, &r) == CH32_OK && r == w) good++;
+    else if (!*bad) { *bad = 1; *bw = w; *br = r; }
+  }
+  ch32_reboot(&keybit_swio);
+  return good;
+}
+
+/* Detect whatever is on the dock, optionally request a halt (DMCONTROL
+ * written twice) and wait delay_ms, then dump the debug module registers
+ * (HARTINFO four times) into v[0..7]; 0xEEEEEEEE for a failed read.
+ * x=1 or 2 runs ch32_halt (2 with reset) instead of the halt writes and
+ * puts its result in *hr. */
+int Keybit_Dock_Regs(uint32_t *v, uint32_t delay_ms, int halt, int x, int *hr)
+{
+  static const uint8_t regs[8] = { CH32_DMSTATUS, CH32_DMHARTINFO, CH32_DMHARTINFO, CH32_DMHARTINFO,
+                                   CH32_DMHARTINFO, CH32_DMABSTRACTCS, CH32_DMCFGR, CH32_DMCONTROL };
+  int r = ch32_detect(&keybit_swio);
+  *hr = 0;
+  if (r == CH32_OK && x) *hr = ch32_halt(&keybit_swio, x == 2);
+  else if (r == CH32_OK && halt) {
+    ch32_write_reg(&keybit_swio, CH32_DMCONTROL, 0x80000001u);
+    ch32_write_reg(&keybit_swio, CH32_DMCONTROL, 0x80000001u);
+  }
+  if (delay_ms) HAL_Delay(delay_ms);
+  for (int i = 0; i < 8; i++)
+    if (ch32_read_reg(&keybit_swio, regs[i], &v[i]) != CH32_OK) v[i] = 0xEEEEEEEEu;
+  return r;
+}
+
+/* DOCKID: walk detect, halt, chip ID, a few flash and FLASH register reads
+ * and the unlock, printing each step's result into out. Stops at the first
+ * failure, adding the last DMABSTRACTCS. */
+void Keybit_Dock_Id(char *out, size_t len, int reset)
+{
+  static const struct { const char *name; uint32_t addr; } words[] = {
+    { "w0", 0x08000000u }, { "w4", 0x08000004u }, { "ctlr", 0x40022010u }, { "statr", 0x4002200Cu },
+  };
+  size_t n = 0;
+  uint32_t v = 0;
+#define STEP(fmt, ...) n += (size_t)snprintf(out + n, n < len ? len - n : 0, fmt, __VA_ARGS__)
+#define FAIL(r) do { if (r != CH32_OK) { STEP(" acs=%08lx", (unsigned long)ch32_last_acs); return; } } while (0)
+  out[0] = 0;
+  int r = ch32_detect(&keybit_swio);
+  STEP("detect=%d", r);
+  FAIL(r);
+  r = ch32_halt(&keybit_swio, reset);
+  STEP(" halt=%d", r);
+  FAIL(r);
+  r = ch32_read_chip_id(&keybit_swio, &v);
+  STEP(" id=%d:%08lx", r, (unsigned long)v);
+  FAIL(r);
+  for (unsigned i = 0; i < sizeof(words) / sizeof(words[0]); i++) {
+    v = 0;
+    r = ch32_read_word(&keybit_swio, words[i].addr, &v);
+    STEP(" %s=%d:%08lx", words[i].name, r, (unsigned long)v);
+    FAIL(r);
+  }
+  r = ch32_unlock_flash(&keybit_swio);
+  STEP(" unlock=%d", r);
+  FAIL(r);
+  v = 0;
+  r = ch32_read_word(&keybit_swio, 0x40022010u, &v);
+  STEP(" ctlr2=%d:%08lx", r, (unsigned long)v);
+  FAIL(r);
+#undef STEP
+#undef FAIL
 }
 
 /* Hand addresses to new Keybits, then refresh the list of who is there. */
