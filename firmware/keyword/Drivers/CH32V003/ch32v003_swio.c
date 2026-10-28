@@ -615,11 +615,17 @@ ch32_status_t ch32_verify(ch32_swio_t *s, uint32_t addr, const uint8_t *data, ui
       if (r != CH32_OK) return r;
       if (got == want) break;
     }
-    if (got != want) return CH32_ERR_VERIFY;
+    if (got != want) {
+      ch32_bad_addr = addr + i;
+      ch32_bad_want = want;
+      ch32_bad_got = got;
+      return CH32_ERR_VERIFY;
+    }
   }
   return CH32_OK;
 }
 
+uint32_t ch32_bad_addr, ch32_bad_want, ch32_bad_got;
 uint32_t ch32_retries;
 int32_t ch32_fail_blk = -1;
 uint32_t ch32_resume_from;

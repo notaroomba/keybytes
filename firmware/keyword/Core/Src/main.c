@@ -154,19 +154,43 @@ static ch32_status_t Keybit_Dock_Uid(uint32_t uid[3])
 }
 
 /* One flash attempt on the docked board: done if it verifies or programs,
- * failed once 5 attempts in a row get no further than before. */
+ * failed once 5 attempts in a row get nowhere. */
 static int32_t best_blk;   /* furthest block the current board's attempts got to */
-static uint8_t stalls;     /* attempts in a row that got no further */
+static uint8_t stalls;     /* attempts in a row that got no further than where they started */
 
-static void Keybit_Dock_Start(void)
+/* Boards flashed or found up to date since boot; the image is fixed per
+ * build, so one of these coming back doesn't need checking again. */
+static uint32_t done_uids[8][3];
+static uint8_t done_count, done_next;
+
+static void Keybit_Dock_Done(const uint32_t uid[3])
 {
+  dock_state = DOCK_DONE;
+  stalls = 0;
+  green_until = HAL_GetTick() + 6 * GREEN_BLINK_MS;
+  for (int i = 0; i < done_count; i++)
+    if (memcmp(done_uids[i], uid, 12) == 0) return;
+  memcpy(done_uids[done_next], uid, 12);
+  done_next = (done_next + 1) % 8;
+  if (done_count < 8) done_count++;
+}
+
+static void Keybit_Dock_Start(const uint32_t uid[3])
+{
+  for (int i = 0; i < done_count; i++)
+    if (memcmp(done_uids[i], uid, 12) == 0) {
+      ch32_reboot(&keybit_swio);  /* it was halted for the UID read */
+      Keybit_Dock_Done(uid);
+      PROTO_Send("DOCK up to date (seen)");
+      return;
+    }
   dock_state = DOCK_WORKING;
   best_blk = -1;
   stalls = 0;
   LED_Update();    /* blue while flashing */
 }
 
-static void Keybit_Dock_Attempt(void)
+static void Keybit_Dock_Attempt(const uint32_t uid[3])
 {
   if (dock_state != DOCK_WORKING) return;
 
@@ -178,11 +202,15 @@ static void Keybit_Dock_Attempt(void)
   /* Only a real mismatch means it needs flashing; a garbled read just gets checked again. */
   for (int i = 0; i < 3 && h == CH32_OK && v != CH32_OK && v != CH32_ERR_VERIFY; i++)
     v = ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len);
+  /* A mismatch has to show up twice before it's worth a reflash. */
+  if (v == CH32_ERR_VERIFY) {
+    PROTO_Send("DOCK mismatch at %08lx want %08lx got %08lx", (unsigned long)ch32_bad_addr,
+               (unsigned long)ch32_bad_want, (unsigned long)ch32_bad_got);
+    v = ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len);
+  }
   if (v == CH32_OK) {
     ch32_reboot(&keybit_swio);
-    dock_state = DOCK_DONE;
-    stalls = 0;
-    green_until = HAL_GetTick() + 6 * GREEN_BLINK_MS;
+    Keybit_Dock_Done(uid);
     PROTO_Send("DOCK up to date");
     return;
   }
@@ -191,13 +219,12 @@ static void Keybit_Dock_Attempt(void)
              (unsigned long)ch32_last_acs, (unsigned long)ch32_retries, (long)ch32_fail_blk,
              (unsigned long)ch32_resume_from);
   if (p == CH32_OK) {
-    dock_state = DOCK_DONE;
-    stalls = 0;
-    green_until = HAL_GetTick() + 6 * GREEN_BLINK_MS;
+    Keybit_Dock_Done(uid);
     return;
   }
-  if (ch32_fail_blk > best_blk) {
-    best_blk = ch32_fail_blk;
+  /* Progress means this attempt got past the block it resumed from. */
+  if (ch32_fail_blk > (int32_t)ch32_resume_from) {
+    if (ch32_fail_blk > best_blk) best_blk = ch32_fail_blk;
     stalls = 0;
   } else if (++stalls >= 5) {
     dock_state = DOCK_FAILED;
@@ -229,7 +256,7 @@ static void Keybit_Dock_Poll(void)
     HAL_Delay(50);   /* let it finish powering up off CN7 */
     if (Keybit_Dock_Uid(uid) != CH32_OK) return;
     misses = 0;
-    Keybit_Dock_Start();
+    Keybit_Dock_Start(uid);
   } else if (misses) {
     /* It answered again after a gap: the same board carries on where it was,
      * a different one starts over. */
@@ -238,12 +265,12 @@ static void Keybit_Dock_Poll(void)
     if (Keybit_Dock_Uid(now_uid) != CH32_OK) return;
     if (memcmp(now_uid, uid, sizeof(uid)) != 0) {
       memcpy(uid, now_uid, sizeof(uid));
-      Keybit_Dock_Start();
+      Keybit_Dock_Start(uid);
     } else if (dock_state != DOCK_WORKING) {
       ch32_reboot(&keybit_swio);  /* back to running its firmware */
     }
   }
-  Keybit_Dock_Attempt();
+  Keybit_Dock_Attempt(uid);
 }
 
 /* DOCK? over serial: the raw answers from whatever is on the dock, to debug detection. */

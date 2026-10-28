@@ -23,6 +23,7 @@ extern uint32_t ch32_t_kick;    /* push-pull read: cycles driven high before rel
 extern uint32_t ch32_t_sample;  /* read: cycles from release to sampling (DOCK? s=) */
 extern uint8_t ch32_open_drain;
 extern uint32_t ch32_last_acs;
+extern uint32_t ch32_bad_addr, ch32_bad_want, ch32_bad_got;  /* first mismatch ch32_verify found */
 extern uint32_t ch32_retries;   /* steps ch32_program had to retry */
 extern int32_t ch32_fail_blk;   /* block ch32_program gave up on, -1 if none */
 extern uint32_t ch32_resume_from;  /* block ch32_program started at (resumed from an earlier try) */  /* last DMABSTRACTCS read while waiting on a command */
