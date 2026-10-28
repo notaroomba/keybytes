@@ -40,6 +40,7 @@
 /* USER CODE BEGIN PD */
 /* U14 (XL-1608RGBC) is common anode to +3.3V, so a pin driven LOW lights its colour. */
 #define LED_STEP_MS 500
+#define GREEN_BLINK_MS 150   /* 3 green blinks, this long on and off, once a Keybit is flashed */
 #define KEYBIT_POLL_MS 250
 #define KEYBIT_SCAN_MS 250
 #define KEYBIT_KEYS_MS 5
@@ -104,6 +105,7 @@ static void LED_Set(uint8_t r, uint8_t g, uint8_t b)
  *   white  idle */
 static uint8_t dock_present, dock_failed, bus_held;
 static uint32_t white_until;
+static uint32_t green_until;   /* green blink after a Keybit is flashed or found up to date */
 
 #define WHITE_BLINK_MS 1200
 #define BUS_HELD_MS 100
@@ -112,6 +114,7 @@ static void LED_Update(void)
 {
   uint32_t now = HAL_GetTick();
   if (dock_failed) LED_Set(1, 0, 0);
+  else if ((int32_t)(green_until - now) > 0) LED_Set(0, ((green_until - now) / GREEN_BLINK_MS) & 1, 0);
   else if (bus_held) LED_Set(((now / 250) & 1) == 0, 0, 0);
   else if ((int32_t)(white_until - now) > 0) {
     uint8_t on = ((now / 100) & 1) == 0;
@@ -161,12 +164,14 @@ static void Keybit_Dock_Poll(void)
     ch32_reboot(&keybit_swio);  /* already up to date */
     done = 1;
     dock_failed = 0;
+    green_until = HAL_GetTick() + 6 * GREEN_BLINK_MS;
     PROTO_Send("DOCK up to date");
     return;
   }
   ch32_status_t p = ch32_program(&keybit_swio, keybit_image, keybit_image_len);
   done = p == CH32_OK;
   dock_failed = !done;
+  if (done) green_until = HAL_GetTick() + 6 * GREEN_BLINK_MS;
   PROTO_Send("DOCK flash halt=%d verify=%d program=%d acs=%08lx retries=%lu blk=%ld from=%lu", h, v, p,
              (unsigned long)ch32_last_acs, (unsigned long)ch32_retries, (long)ch32_fail_blk,
              (unsigned long)ch32_resume_from);

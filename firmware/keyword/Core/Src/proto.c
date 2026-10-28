@@ -289,7 +289,8 @@ static void Handle_Line(proto_port_t *port, char *cmd)
   else if (strcmp(cmd, "DOCKSCAN") == 0)
   {
     /* Try write pulse widths ("1" low, "0" low, high) on whatever sits on
-     * the dock, open drain, s=14. Each one that passes detection gets 256
+     * the dock, s=14, open drain or not (od=<0|1>, default the current
+     * mode). Each one that passes detection gets 256
      * register reads (rd), then a halt and 256 DMDATA0 write/read-back round
      * trips (wr); score = rd + wr. Prints scores of 480 and up and keeps the
      * best, a tie going to the one with more neighbours at 500 and up. Hold
@@ -299,7 +300,8 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     static const uint8_t hs[] = { 34, 40, 46 };
     enum { NA = sizeof(as), NB = sizeof(bs), NH = sizeof(hs) };
     int sc[NA][NB][NH];
-    ch32_open_drain = 1;
+    const char *a = strstr(args, "od=");
+    if (a) ch32_open_drain = a[3] == '1';
     ch32_t_sample = 14;
     for (int i = 0; i < NA; i++)
       for (int j = 0; j < NB; j++)
