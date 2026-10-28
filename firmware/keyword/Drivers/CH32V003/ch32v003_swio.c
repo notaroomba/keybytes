@@ -635,6 +635,15 @@ uint32_t ch32_resume_from;
  * so the next attempt on the same chip carries on instead of starting over. */
 static struct { uint32_t uid[3]; uint32_t next_blk; uint8_t valid; } resume;
 
+int ch32_resume_pending(const uint32_t uid[3])
+{
+  return resume.valid && resume.next_blk > 0 && memcmp(uid, resume.uid, sizeof(resume.uid)) == 0;
+}
+
+/* Blocks per ch32_program call: few enough that the caller gets its main
+ * loop (the side bus, USB) back every couple of hundred ms. */
+#define BLOCKS_PER_CALL 2
+
 /* After a failed step: clear the command error, drop what we cached about
  * the target and halt it again, so the step can be retried. */
 static void recover(ch32_swio_t *s)
@@ -684,7 +693,9 @@ ch32_status_t ch32_program(ch32_swio_t *s, const uint8_t *image, uint32_t len)
   if (have_uid) memcpy(resume.uid, uid, sizeof(uid));
   ch32_resume_from = resume.next_blk;
 
+  uint32_t done = 0;
   for (uint32_t off = resume.next_blk * CH32_FLASH_BLOCK; off < len; off += CH32_FLASH_BLOCK) {
+    if (done++ == BLOCKS_PER_CALL) return CH32_MORE;
     uint32_t n = len - off < CH32_FLASH_BLOCK ? len - off : CH32_FLASH_BLOCK;
     IWDG->KR = 0xAAAA;  /* the whole image takes longer than the bootloader's ~8 s watchdog */
     for (int t = 0; t < 8; t++) {

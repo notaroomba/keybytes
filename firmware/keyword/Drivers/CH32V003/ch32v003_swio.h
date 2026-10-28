@@ -26,7 +26,9 @@ extern uint32_t ch32_last_acs;
 extern uint32_t ch32_bad_addr, ch32_bad_want, ch32_bad_got;  /* first mismatch ch32_verify found */
 extern uint32_t ch32_retries;   /* steps ch32_program had to retry */
 extern int32_t ch32_fail_blk;   /* block ch32_program gave up on, -1 if none */
-extern uint32_t ch32_resume_from;  /* block ch32_program started at (resumed from an earlier try) */  /* last DMABSTRACTCS read while waiting on a command */
+extern uint32_t ch32_resume_from;
+/* 1 if ch32_program has unfinished work for the chip with this UID. */
+int ch32_resume_pending(const uint32_t uid[3]);  /* block ch32_program started at (resumed from an earlier try) */  /* last DMABSTRACTCS read while waiting on a command */
 /* Idle time after each frame. 2 us is sometimes too short. */
 #ifndef CH32_SWIO_FRAME_GAP_US
 #define CH32_SWIO_FRAME_GAP_US 8
@@ -70,6 +72,7 @@ typedef enum {
   CH32_ERR_FLASH     = -7,  /* flash stayed busy or write-protected */
   CH32_ERR_VERIFY    = -8,  /* read-back did not match */
   CH32_ERR_ARG       = -9,  /* bad address or length */
+  CH32_MORE          = -10, /* ch32_program: did a few blocks, call again to carry on */
 } ch32_status_t;
 
 typedef struct {

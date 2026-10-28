@@ -211,12 +211,15 @@ static void Keybit_Dock_Attempt(const uint32_t uid[3])
     if (blank && ++blank_polls < 4) return;
   }
   blank_polls = 0;
-  ch32_status_t v = h == CH32_OK ? ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len) : h;
+  /* Mid-flash there's nothing to check yet: carry straight on. */
+  int resuming = h == CH32_OK && ch32_resume_pending(uid);
+  ch32_status_t v = resuming ? CH32_ERR_VERIFY
+                  : h == CH32_OK ? ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len) : h;
   /* Only a real mismatch means it needs flashing; a garbled read just gets checked again. */
   for (int i = 0; i < 3 && h == CH32_OK && v != CH32_OK && v != CH32_ERR_VERIFY; i++)
     v = ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len);
   /* A mismatch has to show up twice before it's worth a reflash. */
-  if (v == CH32_ERR_VERIFY) {
+  if (v == CH32_ERR_VERIFY && !resuming) {
     PROTO_Send("DOCK mismatch at %08lx want %08lx got %08lx", (unsigned long)ch32_bad_addr,
                (unsigned long)ch32_bad_want, (unsigned long)ch32_bad_got);
     v = ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len);
@@ -228,6 +231,10 @@ static void Keybit_Dock_Attempt(const uint32_t uid[3])
     return;
   }
   ch32_status_t p = ch32_program(&keybit_swio, keybit_image, keybit_image_len);
+  if (p == CH32_MORE) {   /* a couple of blocks done; the rest next poll */
+    stalls = 0;
+    return;
+  }
   PROTO_Send("DOCK flash halt=%d verify=%d program=%d acs=%08lx retries=%lu blk=%ld from=%lu", h, v, p,
              (unsigned long)ch32_last_acs, (unsigned long)ch32_retries, (long)ch32_fail_blk,
              (unsigned long)ch32_resume_from);
