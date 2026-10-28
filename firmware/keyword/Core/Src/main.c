@@ -148,7 +148,8 @@ static ch32_status_t Keybit_Dock_Uid(uint32_t uid[3])
       ok = ch32_read_word(&keybit_swio, 0x1FFFF7E8u + 4u * i, &uid[i]) == CH32_OK &&
            ch32_read_word(&keybit_swio, 0x1FFFF7E8u + 4u * i, &again) == CH32_OK && uid[i] == again;
     }
-    if (ok) return CH32_OK;
+    /* All 1s or all 0s is a line nobody is driving, not a UID. */
+    if (ok && !(uid[0] == uid[1] && uid[1] == uid[2] && (uid[0] == 0 || uid[0] == 0xFFFFFFFFu))) return CH32_OK;
   }
   return CH32_ERR_VERIFY;
 }
@@ -192,12 +193,24 @@ static void Keybit_Dock_Start(const uint32_t uid[3])
 
 static void Keybit_Dock_Attempt(const uint32_t uid[3])
 {
+  static uint8_t blank_polls;
   if (dock_state != DOCK_WORKING) return;
 
   /* No reset: with the Keybit firmware running, a reset-halt loses the line.
    * If the halt fails anyway, detect again and give it one more go. */
   ch32_status_t h = ch32_halt(&keybit_swio, 0);
   if (h != CH32_OK && ch32_detect(&keybit_swio) == CH32_OK) h = ch32_halt(&keybit_swio, 0);
+  /* The first words all reading blank is more likely a board that isn't
+   * seated yet than an erased one, so give it about a second before
+   * believing it (an attempt that died after erasing block 0 does leave it blank). */
+  if (h == CH32_OK) {
+    uint32_t w = 0;
+    int blank = 1;
+    for (int i = 0; i < 4 && blank; i++)
+      blank = ch32_read_word(&keybit_swio, CH32_FLASH_BASE + 4u * i, &w) == CH32_OK && w == 0xFFFFFFFFu;
+    if (blank && ++blank_polls < 4) return;
+  }
+  blank_polls = 0;
   ch32_status_t v = h == CH32_OK ? ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len) : h;
   /* Only a real mismatch means it needs flashing; a garbled read just gets checked again. */
   for (int i = 0; i < 3 && h == CH32_OK && v != CH32_OK && v != CH32_ERR_VERIFY; i++)
@@ -236,13 +249,14 @@ static void Keybit_Dock_Attempt(const uint32_t uid[3])
 static void Keybit_Dock_Poll(void)
 {
   static uint32_t last_poll, uid[3];
-  static uint8_t misses;
+  static uint8_t misses, settle;
 
   if (HAL_GetTick() - last_poll < KEYBIT_POLL_MS) return;
   if ((int32_t)(keybit_dock_pause_until - HAL_GetTick()) > 0) return;
   last_poll = HAL_GetTick();
 
   if (ch32_detect(&keybit_swio) != CH32_OK) {
+    settle = 0;
     /* Only call it gone after about a second of misses: detect still drops one now and then. */
     if (dock_state != DOCK_EMPTY && ++misses >= 4) {
       dock_state = DOCK_EMPTY;
@@ -253,7 +267,8 @@ static void Keybit_Dock_Poll(void)
   }
 
   if (dock_state == DOCK_EMPTY) {
-    HAL_Delay(50);   /* let it finish powering up off CN7 */
+    /* Wait for three answers in a row (~500 ms) so a board still being seated isn't read half-on. */
+    if (++settle < 3) return;
     if (Keybit_Dock_Uid(uid) != CH32_OK) return;
     misses = 0;
     Keybit_Dock_Start(uid);
