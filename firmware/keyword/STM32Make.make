@@ -75,12 +75,21 @@ endif
 ######################################
 # C sources
 C_SOURCES =  \
+Core/Src/app_entry.c \
+Core/Src/batt.c \
+Core/Src/bootcfg.c \
+Core/Src/fus.c \
+Core/Src/hw_timerserver.c \
+Core/Src/keyact.c \
 Core/Src/keybit_bus.c \
 Core/Src/keybit_image.c \
+Core/Src/keymap.c \
+Core/Src/keytable.c \
 Core/Src/main.c \
-Core/Src/fus.c \
 Core/Src/ota.c \
+Core/Src/proto.c \
 Core/Src/stackimg.c \
+Core/Src/stm32_lpm_if.c \
 Core/Src/stm32wbxx_hal_msp.c \
 Core/Src/stm32wbxx_it.c \
 Core/Src/syscalls.c \
@@ -105,19 +114,14 @@ Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_pwr_ex.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_qspi.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rcc.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rcc_ex.c \
-Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_rcc.c \
-Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_usb.c \
-Core/Src/app_entry.c \
-Core/Src/batt.c \
-Core/Src/bootcfg.c \
-Core/Src/hw_timerserver.c \
-Core/Src/keyact.c \
-Core/Src/keymap.c \
-Core/Src/keytable.c \
-Core/Src/proto.c \
-Core/Src/stm32_lpm_if.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc_ex.c \
+Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_rcc.c \
+Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_usb.c \
+Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
+Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
+Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
+Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
 Middlewares/ST/STM32_WPAN/ble/core/auto/ble_gap_aci.c \
 Middlewares/ST/STM32_WPAN/ble/core/auto/ble_gatt_aci.c \
 Middlewares/ST/STM32_WPAN/ble/core/auto/ble_hal_aci.c \
@@ -141,16 +145,12 @@ STM32_WPAN/App/app_ble.c \
 STM32_WPAN/App/hids_app.c \
 STM32_WPAN/App/nus.c \
 STM32_WPAN/Target/hw_ipcc.c \
-Utilities/lpm/tiny_lpm/stm32_lpm.c \
-Utilities/sequencer/stm32_seq.c \
 USB_Device/App/usb_device.c \
 USB_Device/App/usbd_cdc_if.c \
 USB_Device/App/usbd_desc.c \
 USB_Device/Target/usbd_conf.c \
-Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
-Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
-Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
-Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c
+Utilities/lpm/tiny_lpm/stm32_lpm.c \
+Utilities/sequencer/stm32_seq.c
 
 
 CXX_SOURCES = \
@@ -229,8 +229,8 @@ AS_DEFS =
 # C defines
 C_DEFS =  \
 -DSTM32WB55xx \
--DUSE_HAL_DRIVER \
 -DUSER_VECT_TAB_ADDRESS \
+-DUSE_HAL_DRIVER \
 -DVECT_TAB_OFFSET=0x7000
 
 
@@ -246,12 +246,13 @@ AS_INCLUDES = \
 # C includes
 C_INCLUDES =  \
 -ICore/Inc \
--IShared \
 -IDrivers/CH32V003 \
 -IDrivers/CMSIS/Device/ST/STM32WBxx/Include \
 -IDrivers/CMSIS/Include \
 -IDrivers/STM32WBxx_HAL_Driver/Inc \
 -IDrivers/STM32WBxx_HAL_Driver/Inc/Legacy \
+-IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
+-IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
 -IMiddlewares/ST/STM32_WPAN \
 -IMiddlewares/ST/STM32_WPAN/ble \
 -IMiddlewares/ST/STM32_WPAN/ble/core \
@@ -264,12 +265,11 @@ C_INCLUDES =  \
 -IMiddlewares/ST/STM32_WPAN/interface/patterns/ble_thread/tl \
 -IMiddlewares/ST/STM32_WPAN/utilities \
 -ISTM32_WPAN/App \
--IUtilities/lpm/tiny_lpm \
--IUtilities/sequencer \
+-IShared \
 -IUSB_Device/App \
 -IUSB_Device/Target \
--IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
--IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
+-IUtilities/lpm/tiny_lpm \
+-IUtilities/sequencer
 
 
 

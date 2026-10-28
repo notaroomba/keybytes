@@ -14,15 +14,11 @@
 #include <stdint.h>
 #include "stm32wbxx_hal.h"
 
-/* Pulse timing in CPU cycles. Defaults are for a 64 MHz HCLK: a short low
- * is about 125 ns (a 1), a long low is about 500 ns (a 0). Check on a scope
- * if transfers fail; the window that works is fairly narrow. */
-#ifndef CH32_SWIO_T_SHORT
-#define CH32_SWIO_T_SHORT 8
-#endif
-#ifndef CH32_SWIO_T_LONG
-#define CH32_SWIO_T_LONG (CH32_SWIO_T_SHORT * 4)
-#endif
+/* Bit timing lives in ch32v003_swio.c. These two are live (DOCK? t= od=):
+ * every pulse is scaled by ch32_t_short / 16, and ch32_open_drain releases
+ * the line for highs instead of driving them (needs a 1k pull-up). */
+extern uint32_t ch32_t_short;
+extern uint8_t ch32_open_drain;
 /* Idle time after each frame. 2 us is sometimes too short. */
 #ifndef CH32_SWIO_FRAME_GAP_US
 #define CH32_SWIO_FRAME_GAP_US 8

@@ -53,6 +53,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+int Keybit_Dock_Probe(uint32_t *cfg, uint32_t *status);
 
 /* USER CODE END EFP */
 

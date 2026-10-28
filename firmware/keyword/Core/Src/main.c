@@ -99,7 +99,7 @@ static void LED_Set(uint8_t r, uint8_t g, uint8_t b)
  *   red    blinking: SDA held low, a Keybit is on backwards (bus paused)
  *   white  blinking: a Keybit just connected on a side
  *   blue   Keybit on the dock (flashed or up to date)
- *   green  idle */
+ *   white  idle */
 static uint8_t dock_present, dock_failed, bus_held;
 static uint32_t white_until;
 
@@ -116,16 +116,18 @@ static void LED_Update(void)
     LED_Set(on, on, on);
   }
   else if (dock_present) LED_Set(0, 0, 1);
-  else LED_Set(0, 1, 0);
+  else LED_Set(1, 1, 1);
 }
 
 /* Keybit programming dock: CN7/CN8/CN9 on the keyword's back are 3V3, SWIO
  * and GND, lined up with a Keybit's TP1/TP2/TP4. Poll for a Keybit there
- * and flash keybit_image onto it once each time one is placed. */
+ * and flash keybit_image onto it. Until one has been flashed (or found up
+ * to date) it keeps retrying every poll, even after a failed attempt, and
+ * reports every attempt that got any answer over serial as DOCK lines. */
 static void Keybit_Dock_Poll(void)
 {
   static uint32_t last_poll;
-  static uint8_t misses;
+  static uint8_t misses, done;
 
   if (HAL_GetTick() - last_poll < KEYBIT_POLL_MS) return;
   last_poll = HAL_GetTick();
@@ -136,21 +138,40 @@ static void Keybit_Dock_Poll(void)
     if (dock_present && ++misses >= 3) {
       dock_present = 0;
       dock_failed = 0;
+      done = 0;
+      PROTO_Send("DOCK gone");
     }
     return;
   }
   misses = 0;
-  if (dock_present) return;
+  if (done) return;
   dock_present = 1;
   LED_Update();      /* blue while flashing */
 
   HAL_Delay(50);     /* let it finish powering up off CN7 */
-  ch32_status_t r = ch32_halt(&keybit_swio, 1);
-  if (r == CH32_OK && ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len) == CH32_OK) {
+  ch32_status_t h = ch32_halt(&keybit_swio, 1);
+  ch32_status_t v = h == CH32_OK ? ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len) : h;
+  if (v == CH32_OK) {
     ch32_reboot(&keybit_swio);  /* already up to date */
+    done = 1;
+    dock_failed = 0;
+    PROTO_Send("DOCK up to date");
     return;
   }
-  dock_failed = ch32_program(&keybit_swio, keybit_image, keybit_image_len) != CH32_OK;
+  ch32_status_t p = ch32_program(&keybit_swio, keybit_image, keybit_image_len);
+  done = p == CH32_OK;
+  dock_failed = !done;
+  PROTO_Send("DOCK flash halt=%d verify=%d program=%d", h, v, p);
+}
+
+/* DOCK? over serial: the raw answers from whatever is on the dock, to debug detection. */
+int Keybit_Dock_Probe(uint32_t *cfg, uint32_t *status)
+{
+  *cfg = *status = 0;
+  int r = ch32_detect(&keybit_swio);
+  ch32_read_reg(&keybit_swio, CH32_DMCFGR, cfg);
+  ch32_read_reg(&keybit_swio, CH32_DMSTATUS, status);
+  return r;
 }
 
 /* Hand addresses to new Keybits, then refresh the list of who is there. */
@@ -227,7 +248,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   ch32_init(&keybit_swio, BB_SWIO_GPIO_Port, BB_SWIO_Pin);
-  LED_Set(0, 1, 0); // greeen
+  LED_Set(1, 1, 1); // white
 
   /* USER CODE END 2 */
 

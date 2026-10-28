@@ -58,59 +58,83 @@ static void delay_us(uint32_t us)
   wait_from(start, us * (SystemCoreClock / 1000000u));
 }
 
+/* The PHY writes all of MODER at once (one store, for timing), so retake
+ * the rest of the port's modes before each frame instead of trusting the
+ * ones from init: other GPIOB pins (the I2C bus) can change later. */
+static void refresh_moder(ch32_swio_t *s)
+{
+  uint32_t n = __builtin_ctz(s->pin);
+  s->moder_in = s->port->MODER & ~(3u << (2 * n));
+  s->moder_out = s->moder_in | (1u << (2 * n));
+}
+
 /* ------------------------------------------------------------------------ */
 /* PHY                                                                      */
 
-/* A bit is a low pulse; its length is the value. Every bit ends driven
- * high so the line doesn't depend on the slow pull-ups. */
+/* Timings copied from aslavd/BluePillCH32V003Ardulink (VSL_WCH_SDI.c), an
+ * Ardulink-compatible STM32F103 programmer that works with minichlink.
+ * After its reset the target's SDI runs in "normal mode 2x" (slow), so every
+ * bit needs a long high after it:
+ *   1: ~300 ns low, ~850 ns high      0: ~850 ns low, ~850 ns high
+ *   read: a short low, release, sample ~330 ns later, wait for high
+ * Cycles are at 64 MHz. DOCK? t=<n> scales them all by n/16 and od=<0|1>
+ * picks open-drain (needs a 1k pull-up, like the BluePill) or push-pull,
+ * the default, which works with or without one. */
+#define T1_LOW   19
+#define T0_LOW   54
+#define T_HIGH   54
+#define TR_LOW   4
+#define TR_SAMPLE 21
+uint32_t ch32_t_short = 16;
+uint8_t ch32_open_drain;   /* 1 only with an external ~1k pull-up: the internal one is far too weak */
+
+static inline uint32_t scaled(uint32_t c) { return c * ch32_t_short / 16; }
+
+static inline PHY void line_high(ch32_swio_t *s)
+{
+  if (ch32_open_drain) s->port->MODER = s->moder_in;
+  else s->port->BSRR = s->pin;
+}
+
 static inline PHY void send_bit(ch32_swio_t *s, int one)
 {
   GPIO_TypeDef *p = s->port;
+  const uint32_t lo = scaled(one ? T1_LOW : T0_LOW), hi = scaled(T_HIGH);
   uint32_t t = cyc();
   p->BRR = s->pin;
-  wait_from(t, one ? CH32_SWIO_T_SHORT : CH32_SWIO_T_LONG);
+  p->MODER = s->moder_out;
+  wait_from(t, lo);
   t = cyc();
-  p->BSRR = s->pin;
-  wait_from(t, CH32_SWIO_T_SHORT);
+  line_high(s);
+  wait_from(t, hi);
 }
 
-/* Pulse low briefly, let go, and see whether the target keeps it low.
- * Low = 0, high = 1, -1 = target never let go. After releasing we give the
- * line a quick push high ("glitch") so a 1 doesn't depend on the pull-up's
- * slow rise; the target easily overpowers that if it is sending a 0. */
+/* Low = 0, high = 1, -1 = target never let go. */
 static inline PHY int read_bit(ch32_swio_t *s, uint32_t timeout_cycles)
 {
   GPIO_TypeDef *p = s->port;
-  const uint32_t half = CH32_SWIO_T_SHORT / 2;
+  const uint32_t lo = scaled(TR_LOW), sample = scaled(TR_SAMPLE);
   uint32_t t = cyc();
   p->BRR = s->pin;
-  wait_from(t, CH32_SWIO_T_SHORT);
-  p->MODER = s->moder_in;
-  p->BSRR = s->pin;
-  t = cyc();
-  wait_from(t, half);
   p->MODER = s->moder_out;
-  p->MODER = s->moder_in;
-  wait_from(t, CH32_SWIO_T_SHORT);
-  int bit = (p->IDR & s->pin) != 0;
-
-  if (!bit) {
-    t = cyc();
-    wait_from(t, CH32_SWIO_T_SHORT * 2);
-    p->MODER = s->moder_out;
+  wait_from(t, lo);
+  t = cyc();
+  if (ch32_open_drain) p->MODER = s->moder_in;
+  else {   /* push-pull: kick it high, then let the target pull against nothing */
+    p->BSRR = s->pin;
     p->MODER = s->moder_in;
   }
+  wait_from(t, sample);
+  int bit = (p->IDR & s->pin) != 0;
 
   t = cyc();
   while (!(p->IDR & s->pin)) {
     if ((cyc() - t) > timeout_cycles) {
+      p->BSRR = s->pin;
       p->MODER = s->moder_out;
       return -1;
     }
   }
-  p->MODER = s->moder_out;
-  t = cyc();
-  wait_from(t, half);
   return bit;
 }
 
@@ -136,15 +160,14 @@ void ch32_init(ch32_swio_t *s, GPIO_TypeDef *port, uint16_t pin)
   g.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(port, &g);
 
-  uint32_t n = __builtin_ctz(pin);
-  s->moder_in = port->MODER & ~(3u << (2 * n));
-  s->moder_out = s->moder_in | (1u << (2 * n));
+  refresh_moder(s);
 }
 
 PHY void ch32_write_reg(ch32_swio_t *s, uint8_t reg, uint32_t value)
 {
   uint32_t primask = __get_PRIMASK();
   __disable_irq();
+  refresh_moder(s);
   s->port->BSRR = s->pin;
   s->port->MODER = s->moder_out;
 
@@ -165,6 +188,7 @@ PHY ch32_status_t ch32_read_reg(ch32_swio_t *s, uint8_t reg, uint32_t *value)
 
   uint32_t primask = __get_PRIMASK();
   __disable_irq();
+  refresh_moder(s);
   s->port->BSRR = s->pin;
   s->port->MODER = s->moder_out;
 
@@ -197,18 +221,35 @@ static void forget_state(ch32_swio_t *s)
 
 ch32_status_t ch32_detect(ch32_swio_t *s)
 {
-  /* Turn on the target's output, then read the config register back. With
-   * nothing on the line every bit reads 1, so the 0x5AA5 key can't appear. */
+  /* Same handshake as minichlink's DefaultSetupInterface (cnlohr/ch32fun),
+   * minus the halt: enable the target's output twice, set dmactive three
+   * times (early writes can get lost while the debug module starts), then
+   * DMSTATUS must read something other than all 0s or all 1s.
+   * First the BluePill programmer's reset: high 5 ms, low 20 ms, which
+   * puts the target's SDI back in its slow default mode. */
+  refresh_moder(s);
+  s->port->BSRR = s->pin;
+  s->port->MODER = s->moder_out;
+  delay_us(5000);
+  s->port->BRR = s->pin;
+  delay_us(20000);
+  s->port->BSRR = s->pin;
+  delay_us(CH32_SWIO_FRAME_GAP_US);
+
   for (int i = 0; i < 2; i++) {
     ch32_write_reg(s, CH32_DMSHDWCFGR, DMCFG_OUTPUT_EN);
     ch32_write_reg(s, CH32_DMCFGR, DMCFG_OUTPUT_EN);
   }
-  ch32_write_reg(s, CH32_DMCONTROL, 0x00000001);  /* dmactive */
-  ch32_write_reg(s, CH32_DMCONTROL, 0x00000001);
+  for (int i = 0; i < 3; i++) ch32_write_reg(s, CH32_DMCONTROL, 0x00000001);  /* dmactive */
 
-  uint32_t v = 0;
-  if (ch32_read_reg(s, CH32_DMCFGR, &v) != CH32_OK) return CH32_ERR_NO_TARGET;
-  if ((v & 0xFFFF0000u) != 0x5AA50000u) return CH32_ERR_NO_TARGET;
+  /* minichlink only rejects an all-0/all-1 DMSTATUS, but a line that floats
+   * low (open-drain with no pull-up) reads as random 0s and gets past that,
+   * so also require the 0x5AA5 key back from DMCFGR. */
+  uint32_t st = 0, cfg = 0;
+  if (ch32_read_reg(s, CH32_DMSTATUS, &st) != CH32_OK) return CH32_ERR_NO_TARGET;
+  if (st == 0 || st == 0xFFFFFFFFu) return CH32_ERR_NO_TARGET;
+  if (ch32_read_reg(s, CH32_DMCFGR, &cfg) != CH32_OK) return CH32_ERR_NO_TARGET;
+  if ((cfg & 0xFFFF0000u) != 0x5AA50000u) return CH32_ERR_NO_TARGET;
   return CH32_OK;
 }
 

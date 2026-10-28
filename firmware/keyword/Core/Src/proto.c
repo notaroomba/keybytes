@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "keymap.h"
 #include "batt.h"
 #include "keybit_image.h"
@@ -8,6 +9,8 @@
 #include "fus.h"
 #include "bootcfg.h"
 #include "proto.h"
+#include "main.h"
+#include "ch32v003_swio.h"
 
 /* Optional features the desktop app can use, only what's implemented.
  * ota only while the CPU2 BLE stack runs, since the OTA bootloader needs it. */
@@ -262,6 +265,20 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     const batt_t *b = BATT_Get();
     if (!b->valid) Reply(port, "ERR no battery reading yet");
     else Reply(port, "BATT pct=%u chg=%u usb=%u", b->pct, b->chg, b->usb);
+  }
+  else if (strcmp(cmd, "DOCK?") == 0)
+  {
+    /* optional: t=<cycles per short pulse, 64 MHz> od=<0|1> */
+    const char *a;
+    if ((a = strstr(args, "t=")) && atoi(a + 2) > 0) ch32_t_short = (uint32_t)atoi(a + 2);
+    if ((a = strstr(args, "od="))) ch32_open_drain = a[3] == '1';
+    uint32_t cfg, status;
+    int r = Keybit_Dock_Probe(&cfg, &status);
+    uint32_t t = DWT->CYCCNT;
+    HAL_Delay(10);
+    t = DWT->CYCCNT - t;   /* ~640000 at 64 MHz: confirms the SWIO pulse timing base */
+    Reply(port, "DOCK r=%d cfg=%08lx status=%08lx t=%lu od=%u hclk=%lu cyc10ms=%lu", r, (unsigned long)cfg, (unsigned long)status,
+          (unsigned long)ch32_t_short, ch32_open_drain, (unsigned long)HAL_RCC_GetHCLKFreq(), (unsigned long)t);
   }
   else if (strcmp(cmd, "SIDES?") == 0)
   {
