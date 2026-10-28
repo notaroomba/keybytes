@@ -105,13 +105,14 @@ static void refresh_moder(ch32_swio_t *s)
 uint32_t ch32_t1 = 19;
 uint32_t ch32_t0 = 52;
 uint32_t ch32_hi = 46;
+uint32_t ch32_t_kick = 2;     /* push-pull read: cycles driven high after the low, before letting go */
 uint32_t ch32_t_sample = 14;  /* cycles from release to sampling, plus ~3; ~250 ns */
 uint32_t ch32_last_acs;     /* last DMABSTRACTCS seen by wait_done, for debugging */
 uint8_t ch32_open_drain = 1;   /* needs the external ~1k pull-up: the internal one is far too weak */
 
 /* Pulse lengths in cycles for one frame, worked out before interrupts go
  * off so no multiply or divide sits between edges. */
-typedef struct { uint32_t t1, t0, hi, rlo, rs; } phy_t;
+typedef struct { uint32_t t1, t0, hi, rlo, rs, kick; } phy_t;
 
 static uint32_t wire(uint32_t cycles, uint32_t lag)
 {
@@ -121,7 +122,7 @@ static uint32_t wire(uint32_t cycles, uint32_t lag)
 static phy_t phy_timing(void)
 {
   return (phy_t){ wire(ch32_t1, LAG_LOW), wire(ch32_t0, LAG_LOW), wire(ch32_hi, LAG_HIGH),
-                  wire(TR_LOW, LAG_RLOW), ch32_t_sample };
+                  wire(TR_LOW, LAG_RLOW), ch32_t_sample, ch32_t_kick };
 }
 
 FAST void line_high(ch32_swio_t *s)
@@ -152,8 +153,12 @@ FAST int read_bit(ch32_swio_t *s, const phy_t *ph, uint32_t timeout_cycles)
   p->MODER = s->moder_out;
   wait_from(t, ph->rlo);
   if (ch32_open_drain) p->MODER = s->moder_in;
-  else {   /* push-pull: kick it high, then let the target pull against nothing */
-    p->BSRR = s->pin;
+  else {   /* push-pull: kick it high briefly, then leave it to the internal pull-up and the target */
+    if (ph->kick) {   /* 0: no kick, let go straight away */
+      p->BSRR = s->pin;
+      t = cyc();
+      wait_from(t, ph->kick);
+    }
     p->MODER = s->moder_in;
   }
   t = cyc();
@@ -280,12 +285,16 @@ ch32_status_t ch32_detect(ch32_swio_t *s)
   /* minichlink only rejects an all-0/all-1 DMSTATUS, but a line that floats
    * low (open-drain with no pull-up) reads as random 0s and gets past that,
    * so also require the 0x5AA5 key back from DMCFGR. */
-  uint32_t st = 0, cfg = 0;
-  if (ch32_read_reg(s, CH32_DMSTATUS, &st) != CH32_OK) return CH32_ERR_NO_TARGET;
-  if (st == 0 || st == 0xFFFFFFFFu) return CH32_ERR_NO_TARGET;
-  if (ch32_read_reg(s, CH32_DMCFGR, &cfg) != CH32_OK) return CH32_ERR_NO_TARGET;
-  if ((cfg & 0xFFFF0000u) != 0x5AA50000u) return CH32_ERR_NO_TARGET;
-  return CH32_OK;
+  /* The first reads after the handshake sometimes come back wrong while
+   * the reads right after are fine, so give it a few tries. */
+  for (int i = 0; i < 3; i++) {
+    uint32_t st = 0, cfg = 0;
+    if (ch32_read_reg(s, CH32_DMSTATUS, &st) == CH32_OK && st != 0 && st != 0xFFFFFFFFu &&
+        ch32_read_reg(s, CH32_DMCFGR, &cfg) == CH32_OK && (cfg & 0xFFFF0000u) == 0x5AA50000u)
+      return CH32_OK;
+    delay_us(100);
+  }
+  return CH32_ERR_NO_TARGET;
 }
 
 ch32_status_t ch32_halt(ch32_swio_t *s, int reset)
@@ -297,8 +306,11 @@ ch32_status_t ch32_halt(ch32_swio_t *s, int reset)
   forget_state(s);
   HAL_Delay(10);  /* let a flash op that was in progress finish */
 
-  uint32_t st = 0;
-  if (ch32_read_reg(s, CH32_DMSTATUS, &st) != CH32_OK || st == 0xFFFFFFFFu) return CH32_ERR_NO_TARGET;
+  /* One garbled read shouldn't fail the halt, so give it a few. */
+  uint32_t st = 0xFFFFFFFFu;
+  for (int i = 0; i < 3 && (st == 0xFFFFFFFFu || !(st & (1u << 9))); i++)
+    if (ch32_read_reg(s, CH32_DMSTATUS, &st) != CH32_OK) st = 0xFFFFFFFFu;
+  if (st == 0xFFFFFFFFu) return CH32_ERR_NO_TARGET;
   if (!(st & (1u << 9))) return CH32_ERR_BUSY;  /* allhalted */
   ch32_write_reg(s, CH32_DMABSTRACTCS, 0x08000700);  /* clear old errors */
   return CH32_OK;
@@ -366,7 +378,8 @@ static ch32_status_t ensure_chip(ch32_swio_t *s)
   if (s->chip_known) return CH32_OK;
 
   uint32_t hart = 0;
-  if (ch32_read_reg(s, CH32_DMHARTINFO, &hart) != CH32_OK) return CH32_ERR_NO_TARGET;
+  for (int i = 0; i < 3 && (0xE0000000u | (hart & 0x7FF)) != V003_DATA0_ADDR; i++)
+    if (ch32_read_reg(s, CH32_DMHARTINFO, &hart) != CH32_OK) hart = 0;
   if ((0xE0000000u | (hart & 0x7FF)) != V003_DATA0_ADDR) return CH32_ERR_NOT_V003;
 
   ch32_write_reg(s, CH32_DMCONTROL, 0x80000001);
@@ -586,8 +599,12 @@ ch32_status_t ch32_verify(ch32_swio_t *s, uint32_t addr, const uint8_t *data, ui
   for (uint32_t i = 0; i < len; i += 4) {
     uint32_t got = 0, want = 0xFFFFFFFFu;
     memcpy(&want, data + i, (len - i) < 4 ? (len - i) : 4);
-    ch32_status_t r = ch32_read_word(s, addr + i, &got);
-    if (r != CH32_OK) return r;
+    /* A garbled read looks like a mismatch, so read a word that differs again before believing it. */
+    for (int t = 0; t < 3; t++) {
+      ch32_status_t r = ch32_read_word(s, addr + i, &got);
+      if (r != CH32_OK) return r;
+      if (got == want) break;
+    }
     if (got != want) return CH32_ERR_VERIFY;
   }
   return CH32_OK;
@@ -627,7 +644,8 @@ ch32_status_t ch32_program(ch32_swio_t *s, const uint8_t *image, uint32_t len)
                st1 != 0xFFFFFFFFu && st2 != 0xFFFFFFFFu && (st1 & st2 & (1u << 9));
   if (!halted) {
     if ((r = ch32_detect(s)) != CH32_OK) return r;
-    if ((r = ch32_halt(s, 1)) != CH32_OK) return r;
+    if ((r = ch32_halt(s, 0)) != CH32_OK && (r = ch32_detect(s)) == CH32_OK) r = ch32_halt(s, 0);
+    if (r != CH32_OK) return r;
   }
   for (int t = 0; t < 5; t++) {
     if ((r = ensure_chip(s)) == CH32_OK && (r = ch32_unlock_flash(s)) == CH32_OK) break;

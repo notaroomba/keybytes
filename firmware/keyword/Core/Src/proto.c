@@ -274,6 +274,7 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     if ((a = strstr(args, "a=")) && atoi(a + 2) > 0) ch32_t1 = (uint32_t)atoi(a + 2);
     if ((a = strstr(args, "b=")) && atoi(a + 2) > 0) ch32_t0 = (uint32_t)atoi(a + 2);
     if ((a = strstr(args, "h=")) && atoi(a + 2) > 0) ch32_hi = (uint32_t)atoi(a + 2);
+    if ((a = strstr(args, "k="))) ch32_t_kick = (uint32_t)atoi(a + 2);
     if ((a = strstr(args, "s=")) && atoi(a + 2) > 0) ch32_t_sample = (uint32_t)atoi(a + 2);
     if ((a = strstr(args, "od="))) ch32_open_drain = a[3] == '1';
     keybit_dock_pause_until = HAL_GetTick() + 5000;
@@ -282,8 +283,8 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     uint32_t t = DWT->CYCCNT;
     HAL_Delay(10);
     t = DWT->CYCCNT - t;   /* ~640000 at 64 MHz: confirms the SWIO pulse timing base */
-    Reply(port, "DOCK r=%d cfg=%08lx status=%08lx a=%lu b=%lu h=%lu s=%lu od=%u hclk=%lu cyc10ms=%lu", r, (unsigned long)cfg,
-          (unsigned long)status, (unsigned long)ch32_t1, (unsigned long)ch32_t0, (unsigned long)ch32_hi, (unsigned long)ch32_t_sample, ch32_open_drain,
+    Reply(port, "DOCK r=%d cfg=%08lx status=%08lx a=%lu b=%lu h=%lu k=%lu s=%lu od=%u hclk=%lu cyc10ms=%lu", r, (unsigned long)cfg,
+          (unsigned long)status, (unsigned long)ch32_t1, (unsigned long)ch32_t0, (unsigned long)ch32_hi, (unsigned long)ch32_t_kick, (unsigned long)ch32_t_sample, ch32_open_drain,
           (unsigned long)HAL_RCC_GetHCLKFreq(), (unsigned long)t);
   }
   else if (strcmp(cmd, "DOCKSCAN") == 0)

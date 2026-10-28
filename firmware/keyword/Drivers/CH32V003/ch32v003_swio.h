@@ -19,6 +19,7 @@
  * ch32_open_drain releases the line for highs instead of driving them
  * (needs a 1k pull-up). */
 extern uint32_t ch32_t1, ch32_t0, ch32_hi;
+extern uint32_t ch32_t_kick;    /* push-pull read: cycles driven high before release (DOCK? k=) */
 extern uint32_t ch32_t_sample;  /* read: cycles from release to sampling (DOCK? s=) */
 extern uint8_t ch32_open_drain;
 extern uint32_t ch32_last_acs;

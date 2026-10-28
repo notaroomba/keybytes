@@ -140,8 +140,10 @@ static void Keybit_Dock_Poll(void)
 
   if (ch32_detect(&keybit_swio) != CH32_OK) {
     /* A few misses in a row before calling it gone, so a wobble while
-     * seating it doesn't trigger a second flash. */
-    if (dock_present && ++misses >= 3) {
+     * seating it doesn't trigger a second flash. Detect still misses about
+     * 1 time in 3, so once it's done, wait longer before calling it gone:
+     * otherwise a done board gets re-verified (and blinks green) every few seconds. */
+    if (dock_present && ++misses >= (done ? 8 : 3)) {
       dock_present = 0;
       dock_failed = 0;
       done = 0;
@@ -155,7 +157,10 @@ static void Keybit_Dock_Poll(void)
   LED_Update();      /* blue while flashing */
 
   HAL_Delay(50);     /* let it finish powering up off CN7 */
-  ch32_status_t h = ch32_halt(&keybit_swio, 1);
+  /* No reset: with the Keybit firmware running, a reset-halt loses the line.
+   * If the halt fails anyway, detect again and give it one more go. */
+  ch32_status_t h = ch32_halt(&keybit_swio, 0);
+  if (h != CH32_OK && ch32_detect(&keybit_swio) == CH32_OK) h = ch32_halt(&keybit_swio, 0);
   ch32_status_t v = h == CH32_OK ? ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len) : h;
   /* Only a real mismatch means it needs flashing; a garbled read just gets checked again. */
   for (int i = 0; i < 3 && h == CH32_OK && v != CH32_OK && v != CH32_ERR_VERIFY; i++)
