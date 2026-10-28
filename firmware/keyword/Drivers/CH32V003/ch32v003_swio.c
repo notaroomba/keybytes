@@ -93,7 +93,9 @@ static void refresh_moder(ch32_swio_t *s)
  * touchy: about 16-19 cycles works, 20 is the edge, 22 and up fail. Reads
  * are fine across the board. The defaults below came out of DOCKSCAN;
  * DOCK? a=/b=/h= (ch32_t1, ch32_t0, ch32_hi), s= (sample point) and od=
- * still change them live. Open-drain, with the dock's ~1k pull-up.
+ * still change them live. Push-pull by default: drive the bits, then for a
+ * read just let go onto the internal pull-up (no kick, that fights the
+ * target) and sample late, ~500 ns, so no external pull-up is needed.
  * Even tuned, about 1 write frame in 10 gets dropped, so the memory layer
  * reads back every register write, checks DATA1 == addr + 4 after each
  * command to catch a dropped one, and ch32_program retries per block and
@@ -105,10 +107,10 @@ static void refresh_moder(ch32_swio_t *s)
 uint32_t ch32_t1 = 19;
 uint32_t ch32_t0 = 52;
 uint32_t ch32_hi = 46;
-uint32_t ch32_t_kick = 2;     /* push-pull read: cycles driven high after the low, before letting go */
-uint32_t ch32_t_sample = 14;  /* cycles from release to sampling, plus ~3; ~250 ns */
+uint32_t ch32_t_kick = 0;     /* push-pull read: cycles driven high after the low, before letting go; any kick breaks reads */
+uint32_t ch32_t_sample = 30;  /* cycles from release to sampling, plus ~3; ~500 ns, late enough for the internal pull-up */
 uint32_t ch32_last_acs;     /* last DMABSTRACTCS seen by wait_done, for debugging */
-uint8_t ch32_open_drain = 1;   /* needs the external ~1k pull-up: the internal one is far too weak */
+uint8_t ch32_open_drain = 0;   /* 1 needs the external ~1k pull-up; push-pull works with or without it */
 
 /* Pulse lengths in cycles for one frame, worked out before interrupts go
  * off so no multiply or divide sits between edges. */
@@ -306,10 +308,18 @@ ch32_status_t ch32_halt(ch32_swio_t *s, int reset)
   forget_state(s);
   HAL_Delay(10);  /* let a flash op that was in progress finish */
 
-  /* One garbled read shouldn't fail the halt, so give it a few. */
+  /* A haltreq or a DMSTATUS read can get lost, so ask again a couple of times. */
   uint32_t st = 0xFFFFFFFFu;
-  for (int i = 0; i < 3 && (st == 0xFFFFFFFFu || !(st & (1u << 9))); i++)
-    if (ch32_read_reg(s, CH32_DMSTATUS, &st) != CH32_OK) st = 0xFFFFFFFFu;
+  for (int t = 0; t < 3; t++) {
+    if (t) {
+      ch32_write_reg(s, CH32_DMCONTROL, 0x80000001);
+      ch32_write_reg(s, CH32_DMCONTROL, 0x80000001);
+      HAL_Delay(1);
+    }
+    for (int i = 0; i < 3 && (st == 0xFFFFFFFFu || !(st & (1u << 9))); i++)
+      if (ch32_read_reg(s, CH32_DMSTATUS, &st) != CH32_OK) st = 0xFFFFFFFFu;
+    if (st != 0xFFFFFFFFu && (st & (1u << 9))) break;
+  }
   if (st == 0xFFFFFFFFu) return CH32_ERR_NO_TARGET;
   if (!(st & (1u << 9))) return CH32_ERR_BUSY;  /* allhalted */
   ch32_write_reg(s, CH32_DMABSTRACTCS, 0x08000700);  /* clear old errors */
@@ -653,10 +663,15 @@ ch32_status_t ch32_program(ch32_swio_t *s, const uint8_t *image, uint32_t len)
   }
   if (r != CH32_OK) return r;
 
-  uint32_t uid[3];
-  int have_uid = 1;
-  for (int i = 0; i < 3; i++)
-    if (ch32_read_word(s, 0x1FFFF7E8u + 4u * i, &uid[i]) != CH32_OK) have_uid = 0;
+  /* Only trust the UID when two reads agree, or a garbled one restarts at block 0. */
+  uint32_t uid[3], again[3];
+  int have_uid = 0;
+  for (int t = 0; t < 3 && !have_uid; t++) {
+    have_uid = 1;
+    for (int i = 0; i < 3; i++)
+      if (ch32_read_word(s, 0x1FFFF7E8u + 4u * i, &uid[i]) != CH32_OK ||
+          ch32_read_word(s, 0x1FFFF7E8u + 4u * i, &again[i]) != CH32_OK || uid[i] != again[i]) have_uid = 0;
+  }
   if (!have_uid || !resume.valid || memcmp(uid, resume.uid, sizeof(uid)) != 0) resume.next_blk = 0;
   resume.valid = have_uid;
   if (have_uid) memcpy(resume.uid, uid, sizeof(uid));

@@ -289,29 +289,29 @@ static void Handle_Line(proto_port_t *port, char *cmd)
   }
   else if (strcmp(cmd, "DOCKSCAN") == 0)
   {
-    /* Try write pulse widths ("1" low, "0" low, high) on whatever sits on
-     * the dock, s=14, open drain or not (od=<0|1>, default the current
-     * mode). Each one that passes detection gets 256
-     * register reads (rd), then a halt and 256 DMDATA0 write/read-back round
-     * trips (wr); score = rd + wr. Prints scores of 480 and up and keeps the
-     * best, a tie going to the one with more neighbours at 500 and up. Hold
-     * the Keybit still. */
-    static const uint8_t as[] = { 16, 17, 18, 19 };
+    /* Try write pulse widths ("1" low, "0" low) and read sample points on
+     * whatever sits on the dock, high time fixed, open drain or not
+     * (od=<0|1>, default the current mode). Each one that passes detection
+     * gets 256 register reads (rd), then a halt and 256 DMDATA0 write/read-back
+     * round trips (wr); score = rd + wr. Prints scores of 480 and up and keeps
+     * the best, a tie going to the one with more neighbours at 500 and up.
+     * Hold the Keybit still. */
+    static const uint8_t as[] = { 17, 18, 19 };
     static const uint8_t bs[] = { 44, 52, 60 };
-    static const uint8_t hs[] = { 34, 40, 46 };
-    enum { NA = sizeof(as), NB = sizeof(bs), NH = sizeof(hs) };
-    int sc[NA][NB][NH];
+    static const uint8_t ss[] = { 16, 20, 24, 28, 32, 36, 40, 44 };
+    enum { NA = sizeof(as), NB = sizeof(bs), NS = sizeof(ss) };
+    int sc[NA][NB][NS];
     const char *a = strstr(args, "od=");
     if (a) ch32_open_drain = a[3] == '1';
-    ch32_t_sample = 14;
+    ch32_hi = 46;
     for (int i = 0; i < NA; i++)
       for (int j = 0; j < NB; j++)
-        for (int k = 0; k < NH; k++)
+        for (int k = 0; k < NS; k++)
         {
           keybit_dock_pause_until = HAL_GetTick() + 5000;
           ch32_t1 = as[i];
           ch32_t0 = bs[j];
-          ch32_hi = hs[k];
+          ch32_t_sample = ss[k];
           uint32_t cfg, status, bw, br;
           int bad, hr;
           sc[i][j][k] = -1;
@@ -320,27 +320,27 @@ static void Handle_Line(proto_port_t *port, char *cmd)
           int wr = Keybit_Dock_Score(256, &bw, &br, &bad, &hr);
           if (hr != 0) {
             sc[i][j][k] = rd;
-            if (rd >= 240) Reply(port, "DOCKSCAN a=%u b=%u h=%u rd=%d/256 hr=%d", as[i], bs[j], hs[k], rd, hr);
+            if (rd >= 240) Reply(port, "DOCKSCAN a=%u b=%u s=%u rd=%d/256 hr=%d", as[i], bs[j], ss[k], rd, hr);
             continue;
           }
           sc[i][j][k] = rd + wr;
-          if (rd + wr >= 480) Reply(port, "DOCKSCAN a=%u b=%u h=%u rd=%d/256 wr=%d/256", as[i], bs[j], hs[k], rd, wr);
+          if (rd + wr >= 480) Reply(port, "DOCKSCAN a=%u b=%u s=%u rd=%d/256 wr=%d/256", as[i], bs[j], ss[k], rd, wr);
         }
     int bi = 0, bj = 0, bk = 0, best = -1, bn = -1;
     for (int i = 0; i < NA; i++)
       for (int j = 0; j < NB; j++)
-        for (int k = 0; k < NH; k++)
+        for (int k = 0; k < NS; k++)
         {
           int n = (i > 0 && sc[i - 1][j][k] >= 500) + (i < NA - 1 && sc[i + 1][j][k] >= 500) +
                   (j > 0 && sc[i][j - 1][k] >= 500) + (j < NB - 1 && sc[i][j + 1][k] >= 500) +
-                  (k > 0 && sc[i][j][k - 1] >= 500) + (k < NH - 1 && sc[i][j][k + 1] >= 500);
+                  (k > 0 && sc[i][j][k - 1] >= 500) + (k < NS - 1 && sc[i][j][k + 1] >= 500);
           if (sc[i][j][k] > best || (sc[i][j][k] == best && n > bn)) { best = sc[i][j][k]; bn = n; bi = i; bj = j; bk = k; }
         }
     ch32_t1 = as[bi];
     ch32_t0 = bs[bj];
-    ch32_hi = hs[bk];
+    ch32_t_sample = ss[bk];
     keybit_dock_pause_until = HAL_GetTick() + 5000;
-    Reply(port, "DOCKSCAN best a=%u b=%u h=%u score=%d/512 nb=%d", as[bi], bs[bj], hs[bk], best, bn);
+    Reply(port, "DOCKSCAN best a=%u b=%u s=%u score=%d/512 nb=%d", as[bi], bs[bj], ss[bk], best, bn);
   }
   else if (strcmp(cmd, "DOCKID") == 0)
   {

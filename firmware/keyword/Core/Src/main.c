@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <string.h>
 #include "app_entry.h"
 #include "usb_device.h"
 #include "ch32v003_swio.h"
@@ -103,7 +104,10 @@ static void LED_Set(uint8_t r, uint8_t g, uint8_t b)
  *   white  blinking: a Keybit just connected on a side
  *   blue   Keybit on the dock (flashed or up to date)
  *   white  idle */
-static uint8_t dock_present, dock_failed, bus_held;
+/* Dock: EMPTY until something answers, WORKING while flashing (blue), then
+ * DONE (green) or FAILED (red, gave up) until that board is taken off. */
+enum { DOCK_EMPTY, DOCK_WORKING, DOCK_DONE, DOCK_FAILED };
+static uint8_t dock_state, bus_held;
 static uint32_t white_until;
 static uint32_t green_until;   /* green blink after a Keybit is flashed or found up to date */
 
@@ -113,14 +117,15 @@ static uint32_t green_until;   /* green blink after a Keybit is flashed or found
 static void LED_Update(void)
 {
   uint32_t now = HAL_GetTick();
-  if (dock_failed) LED_Set(1, 0, 0);
+  if (dock_state == DOCK_FAILED) LED_Set(1, 0, 0);
   else if ((int32_t)(green_until - now) > 0) LED_Set(0, ((green_until - now) / GREEN_BLINK_MS) & 1, 0);
   else if (bus_held) LED_Set(((now / 250) & 1) == 0, 0, 0);
   else if ((int32_t)(white_until - now) > 0) {
     uint8_t on = ((now / 100) & 1) == 0;
     LED_Set(on, on, on);
   }
-  else if (dock_present) LED_Set(0, 0, 1);
+  else if (dock_state == DOCK_DONE) LED_Set(0, 1, 0);
+  else if (dock_state == DOCK_WORKING) LED_Set(0, 0, 1);
   else LED_Set(1, 1, 1);
 }
 
@@ -129,34 +134,42 @@ static void LED_Update(void)
  * and flash keybit_image onto it. Until one has been flashed (or found up
  * to date) it keeps retrying every poll, even after a failed attempt, and
  * reports every attempt that got any answer over serial as DOCK lines. */
-static void Keybit_Dock_Poll(void)
+/* Halt whatever is on the dock and read its 96-bit UID, trusting it only
+ * when two reads agree. */
+static ch32_status_t Keybit_Dock_Uid(uint32_t uid[3])
 {
-  static uint32_t last_poll;
-  static uint8_t misses, done;
-
-  if (HAL_GetTick() - last_poll < KEYBIT_POLL_MS) return;
-  if ((int32_t)(keybit_dock_pause_until - HAL_GetTick()) > 0) return;
-  last_poll = HAL_GetTick();
-
-  if (ch32_detect(&keybit_swio) != CH32_OK) {
-    /* A few misses in a row before calling it gone, so a wobble while
-     * seating it doesn't trigger a second flash. Detect still misses about
-     * 1 time in 3, so once it's done, wait longer before calling it gone:
-     * otherwise a done board gets re-verified (and blinks green) every few seconds. */
-    if (dock_present && ++misses >= (done ? 8 : 3)) {
-      dock_present = 0;
-      dock_failed = 0;
-      done = 0;
-      PROTO_Send("DOCK gone");
+  ch32_status_t r = ch32_halt(&keybit_swio, 0);
+  if (r != CH32_OK && ch32_detect(&keybit_swio) == CH32_OK) r = ch32_halt(&keybit_swio, 0);
+  if (r != CH32_OK) return r;
+  for (int t = 0; t < 3; t++) {
+    int ok = 1;
+    for (int i = 0; i < 3 && ok; i++) {
+      uint32_t again = 0;
+      ok = ch32_read_word(&keybit_swio, 0x1FFFF7E8u + 4u * i, &uid[i]) == CH32_OK &&
+           ch32_read_word(&keybit_swio, 0x1FFFF7E8u + 4u * i, &again) == CH32_OK && uid[i] == again;
     }
-    return;
+    if (ok) return CH32_OK;
   }
-  misses = 0;
-  if (done) return;
-  dock_present = 1;
-  LED_Update();      /* blue while flashing */
+  return CH32_ERR_VERIFY;
+}
 
-  HAL_Delay(50);     /* let it finish powering up off CN7 */
+/* One flash attempt on the docked board: done if it verifies or programs,
+ * failed once 5 attempts in a row get no further than before. */
+static int32_t best_blk;   /* furthest block the current board's attempts got to */
+static uint8_t stalls;     /* attempts in a row that got no further */
+
+static void Keybit_Dock_Start(void)
+{
+  dock_state = DOCK_WORKING;
+  best_blk = -1;
+  stalls = 0;
+  LED_Update();    /* blue while flashing */
+}
+
+static void Keybit_Dock_Attempt(void)
+{
+  if (dock_state != DOCK_WORKING) return;
+
   /* No reset: with the Keybit firmware running, a reset-halt loses the line.
    * If the halt fails anyway, detect again and give it one more go. */
   ch32_status_t h = ch32_halt(&keybit_swio, 0);
@@ -166,20 +179,71 @@ static void Keybit_Dock_Poll(void)
   for (int i = 0; i < 3 && h == CH32_OK && v != CH32_OK && v != CH32_ERR_VERIFY; i++)
     v = ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len);
   if (v == CH32_OK) {
-    ch32_reboot(&keybit_swio);  /* already up to date */
-    done = 1;
-    dock_failed = 0;
+    ch32_reboot(&keybit_swio);
+    dock_state = DOCK_DONE;
+    stalls = 0;
     green_until = HAL_GetTick() + 6 * GREEN_BLINK_MS;
     PROTO_Send("DOCK up to date");
     return;
   }
   ch32_status_t p = ch32_program(&keybit_swio, keybit_image, keybit_image_len);
-  done = p == CH32_OK;
-  dock_failed = !done;
-  if (done) green_until = HAL_GetTick() + 6 * GREEN_BLINK_MS;
   PROTO_Send("DOCK flash halt=%d verify=%d program=%d acs=%08lx retries=%lu blk=%ld from=%lu", h, v, p,
              (unsigned long)ch32_last_acs, (unsigned long)ch32_retries, (long)ch32_fail_blk,
              (unsigned long)ch32_resume_from);
+  if (p == CH32_OK) {
+    dock_state = DOCK_DONE;
+    stalls = 0;
+    green_until = HAL_GetTick() + 6 * GREEN_BLINK_MS;
+    return;
+  }
+  if (ch32_fail_blk > best_blk) {
+    best_blk = ch32_fail_blk;
+    stalls = 0;
+  } else if (++stalls >= 5) {
+    dock_state = DOCK_FAILED;
+    stalls = 0;
+    PROTO_Send("DOCK failed at block %ld", (long)best_blk);
+  }
+}
+
+static void Keybit_Dock_Poll(void)
+{
+  static uint32_t last_poll, uid[3];
+  static uint8_t misses;
+
+  if (HAL_GetTick() - last_poll < KEYBIT_POLL_MS) return;
+  if ((int32_t)(keybit_dock_pause_until - HAL_GetTick()) > 0) return;
+  last_poll = HAL_GetTick();
+
+  if (ch32_detect(&keybit_swio) != CH32_OK) {
+    /* Only call it gone after about a second of misses: detect still drops one now and then. */
+    if (dock_state != DOCK_EMPTY && ++misses >= 4) {
+      dock_state = DOCK_EMPTY;
+      misses = 0;
+      PROTO_Send("DOCK gone");
+    }
+    return;
+  }
+
+  if (dock_state == DOCK_EMPTY) {
+    HAL_Delay(50);   /* let it finish powering up off CN7 */
+    if (Keybit_Dock_Uid(uid) != CH32_OK) return;
+    misses = 0;
+    Keybit_Dock_Start();
+  } else if (misses) {
+    /* It answered again after a gap: the same board carries on where it was,
+     * a different one starts over. */
+    uint32_t now_uid[3];
+    misses = 0;
+    if (Keybit_Dock_Uid(now_uid) != CH32_OK) return;
+    if (memcmp(now_uid, uid, sizeof(uid)) != 0) {
+      memcpy(uid, now_uid, sizeof(uid));
+      Keybit_Dock_Start();
+    } else if (dock_state != DOCK_WORKING) {
+      ch32_reboot(&keybit_swio);  /* back to running its firmware */
+    }
+  }
+  Keybit_Dock_Attempt();
 }
 
 /* DOCK? over serial: the raw answers from whatever is on the dock, to debug detection. */
