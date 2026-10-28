@@ -64,7 +64,7 @@
 #include "link.h"
 #include <string.h>
 
-#define FW_VERSION          6
+#define FW_VERSION          7
 #define KEYBIT_DEFAULT_ADDR 0x30
 #define LINK_ADDR           0x31  /* reserved: the keyword never assigns it */
 #define BTN_PIN             PD6   /* MX switch to GND */
@@ -76,7 +76,6 @@
 #define PROBE_MS            100   /* look for a new neighbour on an empty side */
 #define PEER_RECHECK_MS     2000
 #define LINK_FRESH_MS       1000  /* a side counts as a link this long after a frame */
-#define KEYWORD_FRESH_MS    2000  /* the keyword scans every 250 ms */
 #define LINK_REQ_US         50    /* CK held low this long on an unknown side = link request */
 #define HEARTBEAT_MS        1000
 #define BACKWARDS_MS        200   /* DT low, CK high this long = neighbour on backwards */
@@ -112,8 +111,7 @@ typedef struct {
   /* Learned when we poll the neighbour. */
   uint8_t child_depth;   /* DEPTH_NONE if unknown */
   uint32_t child_seen;
-  uint8_t keyword;       /* the keyword's shared bus, seen at keyword_seen */
-  uint32_t keyword_seen;
+  uint8_t keyword;       /* the keyword's shared bus */
   uint8_t link;          /* a link frame ran here at link_seen */
   uint32_t link_seen;
   uint8_t ck_low;        /* CK low on an unknown side since ck_low_at */
@@ -152,11 +150,14 @@ static inline int elapsed(uint32_t since, uint32_t span) { return ticks() - sinc
 
 static int side_index(soft_i2c_bus_t *bus) { return (int)(bus - buses); }
 
+/* Once a side has carried the keyword's I2C it stays the keyword's side
+ * until we lose power (moving a Keybit always does). If it expired, a gap
+ * in the keyword's polling would make us probe that side: CK low there is
+ * SCL low on the keyword's bus, the keyword can't poll through it, so the
+ * side never freshens again and the bus stays jammed. */
 static int is_keyword(int s)
 {
-  side_t *sd = &sides[s];
-  if (sd->keyword && elapsed(sd->keyword_seen, MS(KEYWORD_FRESH_MS))) sd->keyword = 0;
-  return sd->keyword;
+  return sides[s].keyword;
 }
 
 static int is_link(int s)
@@ -260,7 +261,6 @@ static int match_addr(uint8_t addr, soft_i2c_bus_t *bus)
   int s = side_index(bus);
   /* I2C only happens on the keyword's bus. */
   sides[s].keyword = 1;
-  sides[s].keyword_seen = ticks();
   sides[s].link = 0;
   int mine = my_addr ? addr == my_addr : addr == KEYBIT_DEFAULT_ADDR;
   if (mine) polled_by(s, 0);

@@ -1,9 +1,10 @@
 #include "ch32fun.h"
 #include "soft_i2c.h"
 
-/* Give up on a transaction if a line sits still this long (a few ms at
- * 48 MHz), e.g. when the neighbour is pulled away mid-transfer. */
-#define TIMEOUT_LOOPS 100000
+/* Give up on a transaction if a line sits still this long, e.g. when the
+ * neighbour is pulled away mid-transfer. Timed on SysTick, not loop
+ * counts, so it stays ~2 ms however slow the reads are. */
+#define TIMEOUT (2 * DELAY_MS_TIME)
 
 enum { EV_BYTE, EV_START, EV_STOP, EV_TIMEOUT };
 
@@ -26,9 +27,10 @@ void soft_i2c_init(soft_i2c_bus_t *bus)
 
 static int wait_scl(soft_i2c_bus_t *b, int level)
 {
-  for (int i = 0; i < TIMEOUT_LOOPS; i++)
-    if (SCL(b) == level) return 1;
-  return 0;
+  uint32_t t0 = SysTick->CNT;
+  while (SCL(b) != level)
+    if (SysTick->CNT - t0 >= TIMEOUT) return 0;
+  return 1;
 }
 
 /* Clock in 8 bits. While SCL is high SDA must hold still; if it moves, the
@@ -39,11 +41,11 @@ static int recv_byte(soft_i2c_bus_t *b, uint8_t *out)
   for (int bit = 0; bit < 8; bit++) {
     if (!wait_scl(b, 0) || !wait_scl(b, 1)) return EV_TIMEOUT;
     int d = SDA(b);
-    int i = 0;
+    uint32_t t0 = SysTick->CNT;
     while (SCL(b)) {
       int now = SDA(b);
       if (now != d) return now ? EV_STOP : EV_START;
-      if (++i > TIMEOUT_LOOPS) return EV_TIMEOUT;
+      if (SysTick->CNT - t0 >= TIMEOUT) return EV_TIMEOUT;
     }
     v = (uint8_t)((v << 1) | d);
   }
@@ -144,6 +146,9 @@ int soft_i2c_poll(soft_i2c_bus_t *b, const soft_i2c_target_t *t)
   if (!start) return 0;
 
   serve(b, t);
+  /* However it ended, let go of both lines so we can never hold the bus. */
+  SDA_REL(b);
+  SCL_REL(b);
   b->prev_sda = SDA(b);
   b->prev_scl = SCL(b);
   return 1;
