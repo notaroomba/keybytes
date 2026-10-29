@@ -64,7 +64,7 @@
 #include "link.h"
 #include <string.h>
 
-#define FW_VERSION          7
+#define FW_VERSION          8
 #define KEYBIT_DEFAULT_ADDR 0x30
 #define LINK_ADDR           0x31  /* reserved: the keyword never assigns it */
 #define BTN_PIN             PD6   /* MX switch to GND */
@@ -259,11 +259,16 @@ static void polled_by(int s, uint8_t depth)
 static int match_addr(uint8_t addr, soft_i2c_bus_t *bus)
 {
   int s = side_index(bus);
-  /* I2C only happens on the keyword's bus. */
-  sides[s].keyword = 1;
-  sides[s].link = 0;
   int mine = my_addr ? addr == my_addr : addr == KEYBIT_DEFAULT_ADDR;
-  if (mine) polled_by(s, 0);
+  /* Only the keyword addresses us, so being addressed is what marks its
+   * bus. Any byte at all used to, and contact bounce or a link frame from
+   * a neighbour being pushed on can clock one in: that side then counted
+   * as the keyword's for good and never formed a link. */
+  if (mine) {
+    sides[s].keyword = 1;
+    sides[s].link = 0;
+    polled_by(s, 0);
+  }
   return mine;
 }
 
