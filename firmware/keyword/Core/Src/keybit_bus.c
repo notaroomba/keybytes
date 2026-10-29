@@ -21,7 +21,7 @@
 #define EV_HEARTBEAT 0x02
 #define EV_BACKWARDS 0x04
 #define EV_WHERE     0x08   /* v12: this event's place fields are news */
-#define REG_STREAM   0xE0   /* v12: key state, event count, then 5-byte events */
+#define REG_STREAM   0x7F   /* v12: status stream; 0x80 | n drops events before n first */
 #define STREAM_EV    5
 #define MAGIC      0x4B
 
@@ -182,10 +182,20 @@ static int write_regs(I2C_HandleTypeDef *i2c, uint8_t addr, uint8_t reg, const u
                                  (uint8_t *)buf, len, I2C_TIMEOUT_MS)) == HAL_OK;
 }
 
+/* A Keybit busy with a link frame can miss a probe, so an address only
+ * counts as free if it doesn't answer, isn't on the list, and wasn't
+ * handed out in the last GIVEN_MS (the scan may not have found it yet).
+ * Handing one out twice made the pair fight it out and one start over. */
+#define GIVEN_MS 5000
+static uint8_t listed[128];      /* addresses on the list, by address */
+static uint32_t given_at[128];   /* HAL tick + 1 it was handed out, 0 = never */
+
 static uint8_t free_address(I2C_HandleTypeDef *i2c)
 {
+  uint32_t now = HAL_GetTick();
   for (uint8_t a = ADDR_FIRST; a <= ADDR_LAST; a++) {
-    if (a == KEYBIT_DEFAULT_ADDR || a == LINK_ADDR || a == CHARGER_ADDR) continue;
+    if (a == KEYBIT_DEFAULT_ADDR || a == LINK_ADDR || a == CHARGER_ADDR || listed[a]) continue;
+    if (given_at[a] && now - (given_at[a] - 1) < GIVEN_MS) continue;
     if (!is_ready(i2c, a)) return a;
   }
   return 0;
@@ -205,6 +215,7 @@ int keybit_bus_assign(I2C_HandleTypeDef *i2c)
     msg[12] = addr;
     if (!write_regs(i2c, KEYBIT_DEFAULT_ADDR, REG_ASSIGN, msg, sizeof(msg)))
       break;
+    given_at[addr] = HAL_GetTick() + 1;
     HAL_Delay(15);  /* it saves the address to flash, about 6 ms */
     assigned++;
   }
@@ -370,19 +381,30 @@ done:
   return changed;
 }
 
-/* v12: key state, event count and the first events in one read. Events
- * are 5 bytes, or 11 with their place (EV_WHERE). The Keybit drops the
- * events a read covered whole once the read has gone through. Returns 1
- * if anything changed; *ok is set if the first read worked. */
+static uint8_t crc8(uint8_t crc, uint8_t v)
+{
+  crc ^= v;
+  for (int i = 0; i < 8; i++) crc = (uint8_t)(crc & 0x80 ? (crc << 1) ^ 0x07 : crc << 1);
+  return crc;
+}
+
+/* v12: key state, event count and the first events in one read. Each event
+ * is 5 bytes, or 11 with its place (EV_WHERE), then a CRC-8. Reading from
+ * 0x80 | n tells the Keybit we have everything before event n, so it drops
+ * those; asking twice drops nothing more, and an event that came through
+ * damaged is just sent again. Returns 1 if anything changed; *ok is set if
+ * the first read worked. */
 static int stream_one(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n, int i,
                       keybit_remote_t *r, int *rn, int *remote, int *ok)
 {
   int changed = 0;
-  uint16_t len = 2 + STREAM_EV;   /* most often: nothing, or one key event */
+  uint16_t len = 3 + STREAM_EV + 1;   /* most often: nothing, or one key event */
   for (int round = 0, tries = 0; round < 3; round++) {
-    uint8_t b[2 + EV_BATCH * EV_SIZE11];
-    if (!read_regs(i2c, k[i].addr, REG_STREAM, b, len)) {
-      /* busy with a link frame for a moment: one more try */
+    uint8_t b[3 + EV_BATCH * (EV_SIZE11 + 1)];
+    uint8_t reg = k[i].num_ok ? (uint8_t)(0x80 | k[i].next_num) : REG_STREAM;
+    int good = read_regs(i2c, k[i].addr, reg, b, len) && (b[1] >> 4) == (~b[0] & 0x0F);
+    if (!good) {
+      /* busy with a link frame for a moment, or noise: one more try */
       if (round == 0 && !tries++) { round--; continue; }
       break;
     }
@@ -393,17 +415,23 @@ static int stream_one(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n, int i,
       if (down) { k[i].saw_down = 1; k[i].pend = 0; }
       if (down != k[i].key_down) { k[i].key_down = down; changed = 1; }
     }
-    int count = b[1] > EV_BATCH ? EV_BATCH : b[1], e = 0, pos = 2;
-    while (e < count && pos + STREAM_EV <= len) {
+    int count = b[1] & 0x0F, e = 0, pos = 3, damaged = 0;
+    if (count > EV_BATCH) count = EV_BATCH;
+    while (e < count && pos + STREAM_EV < len) {
       int size = b[pos + 4] & EV_WHERE ? EV_SIZE11 : STREAM_EV;
-      if (pos + size > len) break;   /* not all of it: it stays queued */
+      if (pos + size + 1 > len) break;   /* not all of it in this read */
+      uint8_t crc = 0;
+      for (int j = 0; j < size; j++) crc = crc8(crc, b[pos + j]);
+      if (crc != b[pos + size]) { damaged = 1; break; }
       changed |= take_event(k, n, i, &b[pos], size, r, rn, remote);
-      pos += size;
+      pos += size + 1;
       e++;
     }
-    if (e >= count) break;
-    /* the rest: room for the first to carry its place, 5 bytes for the others */
-    len = (uint16_t)(2 + EV_SIZE11 + (count - e - 1) * STREAM_EV);
+    k[i].next_num = (uint8_t)((b[2] + e) & 0x7F);
+    k[i].num_ok = 1;
+    if (e >= count || damaged) break;
+    /* the rest: room for the first to carry its place, 6 bytes for the others */
+    len = (uint16_t)(3 + EV_SIZE11 + 1 + (count - e - 1) * (STREAM_EV + 1));
   }
   k[i].saw_down = k[i].key_down;
   return changed;
@@ -480,14 +508,20 @@ static void scan_one(I2C_HandleTypeDef *i2c, uint8_t a, const keybit_info_t *k, 
   for (int i = 0; i < n; i++) if (k[i].addr == a) known = &k[i];
   if (!known && !is_ready(i2c, a)) return;
 
+  /* It answered, so a failed read is most likely it being busy with a
+   * link frame for a moment: try again rather than wait a whole scan. */
   uint8_t head[10];
-  if (!read_regs(i2c, a, REG_MAGIC, head, sizeof(head)) || head[0] != MAGIC) return;
+  int got = 0;
+  for (int t = 0; t < 3 && !got; t++) got = read_regs(i2c, a, REG_MAGIC, head, sizeof(head)) && head[0] == MAGIC;
+  if (!got) return;
   keybit_info_t *f = &bs.found[bs.nfound];
   if (known && uid32(known->uid) == uid32(&head[2])) {
     *f = *known;   /* keeps its tap tracking */
   } else {
     memset(f, 0, sizeof(*f));
-    if (!read_regs(i2c, a, REG_UID, f->uid, sizeof(f->uid))) return;
+    got = 0;
+    for (int t = 0; t < 3 && !got; t++) got = read_regs(i2c, a, REG_UID, f->uid, sizeof(f->uid));
+    if (!got) return;
   }
   f->addr = a;
   f->last_ok = HAL_GetTick();
@@ -517,14 +551,33 @@ static int scan_commit(keybit_info_t *k, int *n)
       missed[m++] = (uint8_t)(bs.missed[i] < 255 ? bs.missed[i] + 1 : 255);
     }
   }
+  /* A Keybit already on the list keeps its live entry (key state, taps,
+   * event number): the copy taken when the scan passed its address can be
+   * most of a scan old, and putting it back brought back a key that had
+   * been let go since. Only what a scan reads is refreshed. */
   for (int j = 0; j < bs.nfound; j++) {
     int known = 0;
-    for (int i = 0; i < *n && !known; i++) known = memcmp(bs.found[j].uid, k[i].uid, sizeof(k[i].uid)) == 0;
+    for (int i = 0; i < *n && !known; i++)
+      if (memcmp(bs.found[j].uid, k[i].uid, sizeof(k[i].uid)) == 0) {
+        known = 1;
+        keybit_info_t *f = &bs.found[j];
+        uint8_t fw = f->fw, backwards = f->backwards, addr = f->addr;
+        char side = f->keybit_side, at = f->at;
+        *f = k[i];
+        if (f->addr != addr) f->num_ok = 0;   /* it lost its address and got another */
+        f->addr = addr;
+        f->fw = fw;
+        f->backwards = backwards;
+        f->keybit_side = side;
+        f->at = at;
+      }
     joined |= !known;
   }
   memcpy(k, bs.found, m * sizeof(k[0]));
   memcpy(bs.missed, missed, sizeof(missed));
   *n = m;
+  memset(listed, 0, sizeof(listed));
+  for (int i = 0; i < m; i++) listed[k[i].addr & 0x7F] = 1;
   return joined;
 }
 

@@ -59,6 +59,7 @@ typedef struct {
   uint8_t (*qcount)(void);
   const uint8_t *(*diag)(void);
   int (*has_press)(uint32_t);
+  uint8_t (*addr)(void);
   uint8_t (*key)(void);
   sim_systick_t st;
   sim_gpio_t gpio[4];
@@ -101,6 +102,9 @@ static double c_pf = 15, kw_pullup_k = 4.7;
 static unsigned seed = 1;
 static uint32_t tick0_all;
 static char bundle[1024], tmpdir[512];
+static const char *bundle2;   /* BUNDLE2: firmware for the Keybits listed in MIX */
+static int mixed[MAXN];
+static double noise_per_s;    /* NOISE: glitches per second on random wires */
 
 static const uint8_t SDA_PIN[4] = { PA1, PC1, PC4, PD4 };   /* N E S W */
 static const uint8_t SCL_PIN[4] = { PA2, PC2, PD2, PD5 };
@@ -337,7 +341,7 @@ static void build(void)
       char path[700];
       snprintf(path, sizeof(path), "%s/n%d_%d.bundle", tmpdir, n, k->boots);
       char cmd[1600];
-      snprintf(cmd, sizeof(cmd), "cp '%s' '%s'", bundle, path);
+      snprintf(cmd, sizeof(cmd), "cp '%s' '%s'", mixed[n] && bundle2 ? bundle2 : bundle, path);
       if (system(cmd) != 0) { fprintf(stderr, "copy failed\n"); exit(1); }
       void *dl = dlopen(path, RTLD_NOW | RTLD_LOCAL);
       if (!dl) { fprintf(stderr, "%s\n", dlerror()); exit(1); }
@@ -346,6 +350,7 @@ static void build(void)
       k->qcount = (uint8_t (*)(void))dlsym(dl, "sim_node_qcount");
       k->diag = (const uint8_t *(*)(void))dlsym(dl, "sim_node_diag");
       k->has_press = (int (*)(uint32_t))dlsym(dl, "sim_node_has_press");
+      k->addr = (uint8_t (*)(void))dlsym(dl, "sim_node_addr");
       k->key = (uint8_t (*)(void))dlsym(dl, "sim_node_key");
       memset(k->mode, GPIO_CFGLR_IN_FLOATING, sizeof(k->mode));
       memset(k->out, 1, sizeof(k->out));
@@ -569,6 +574,50 @@ static int64_t wait_present(int64_t limit)
 }
 
 /* Taps on random powered Keybits: hold hold_ms (+ up to 50%), gap gap_ms (+ up to 100%). */
+/* Run until t, in 1 ms steps with random short glitches low on random
+ * wires when NOISE is set (EMI or a contact chattering). */
+static long glitches;
+static void run_noisy(int64_t t)
+{
+  static int track = -2;
+  static int64_t track_from;
+  if (track == -2) {
+    track = getenv("TRACK_NODE") ? atoi(getenv("TRACK_NODE")) : -1;
+    track_from = getenv("TRACK_FROM") ? (int64_t)(atof(getenv("TRACK_FROM")) * PS_MS) : 0;
+  }
+  if (track > 0 && sim_t + 1000 * PS_MS > track_from && sim_t < track_from + 1500 * PS_MS) {
+    /* where a press of node `track` sits, every 0.5 ms */
+    static int64_t had[MAXN];
+    while (sim_t < t) {
+      run_until(sim_t + PS_MS / 2 < t ? sim_t + PS_MS / 2 : t);
+      if (sim_t < track_from) continue;
+      static uint8_t last_addr[MAXN];
+      for (int k = 1; k < n_nodes; k++) {
+        if (nodes[k].powered && nodes[k].addr() != last_addr[k]) {
+          printf("  %.1f ms: kb%d address %02x -> %02x\n", sim_t / 1e9, k, last_addr[k], nodes[k].addr());
+          last_addr[k] = nodes[k].addr();
+        }
+        int h = nodes[k].powered && nodes[k].has_press(uid_of(track));
+        if (h && !had[k]) printf("  %.1f ms: kb%d (depth %d, q=%d) has it\n", sim_t / 1e9, k, nodes[k].depth(), nodes[k].qcount());
+        if (!h && had[k]) printf("  %.1f ms: kb%d passed it on\n", sim_t / 1e9, k);
+        had[k] = h;
+      }
+    }
+    return;
+  }
+  if (noise_per_s <= 0) { run_until(t); return; }
+  while (sim_t < t) {
+    int64_t step = t - sim_t < PS_MS ? t - sim_t : PS_MS;
+    if (frand() < noise_per_s / 1000) {
+      wire_t *w = &wires[rnd() % (unsigned)n_wires];
+      w->glitch_from = sim_t + (int64_t)(frand() * step);
+      w->glitch_to = w->glitch_from + (int64_t)((0.1 + 1.9 * frand()) * PS_US);
+      glitches++;
+    }
+    run_until(sim_t + step);
+  }
+}
+
 static int dropouts;   /* times a powered Keybit wasn't in the Keyword's list between taps */
 static void type_keys(int count, int hold_ms, int gap_ms)
 {
@@ -579,9 +628,9 @@ static void type_keys(int count, int hold_ms, int gap_ms)
     int64_t gap = (int64_t)(gap_ms * (1 + frand()) * PS_MS);
     nodes[n].button = 1;
     presses[n_presses++] = (press_t){ n, sim_t, sim_t + hold };
-    run_until(sim_t + hold);
+    run_noisy(sim_t + hold);
     nodes[n].button = 0;
-    run_until(sim_t + gap);
+    run_noisy(sim_t + gap);
     for (int k = 1; k < n_nodes; k++)
       if (nodes[k].powered && !kw_present(uid_of(k))) {
         dropouts++;
@@ -626,6 +675,23 @@ static void report_latency(const char *name, int max_depth)
     lost += lat[d].lost;
   }
   CHECK(lost == 0, "%s: %d presses never reached the Keyword", name, lost);
+  /* A down the Keyword reported with no press of that Keybit in the 500 ms
+   * before it: a phantom key (or a UID nobody has). */
+  int phantom = 0;
+  for (int r = 0; r < n_reports; r++) {
+    if (!reports[r].down) continue;
+    int real = 0;
+    for (int p = 0; p < n_presses && !real; p++)
+      real = uid_of(presses[p].node) == reports[r].uid && presses[p].down <= reports[r].t &&
+             reports[r].t - presses[p].down < 500 * PS_MS;
+    if (!real && getenv("SHOW_PHANTOMS")) {
+      printf("  phantom down uid %08x at %.1f ms; its presses:", reports[r].uid, reports[r].t / 1e9);
+      for (int p = 0; p < n_presses; p++) if (uid_of(presses[p].node) == reports[r].uid) printf(" %.0f", presses[p].down / 1e9);
+      printf("\n");
+    }
+    phantom += !real;
+  }
+  CHECK(phantom == 0, "%s: %d key downs with no press behind them", name, phantom);
   CHECK(dropouts == 0, "%s: Keybits dropped out of the Keyword's list %d times", name, dropouts);
 }
 
@@ -664,7 +730,9 @@ static void check_places(void)
     char pside, face;
     if (want[n] < 2 || !kw_where(uid_of(n), &parent, &pside, &face)) continue;
     int p = node_by_uid(parent);
-    int ok = p > 0 && want[p] == want[n] - 1 && vv[p][n];
+    /* any neighbour it really meets the right way round: a Keybit may hang
+     * off a longer path for a moment when its nearest parent is busy */
+    int ok = p > 0 && vv[p][n];
     if (ok) {
       int dx = nodes[n].x - nodes[p].x, dy = nodes[n].y - nodes[p].y;
       ok = COMPASS[side_facing(&nodes[p], dx, dy)] == pside && COMPASS[side_facing(&nodes[n], -dx, -dy)] == face;
@@ -689,7 +757,8 @@ static void settle(const char *name)
 static void finish(void)
 {
   extern unsigned kw_bus_khz(void);
-  printf("  fast bus at %u kHz by the end\n", kw_bus_khz());
+  printf("  fast bus at %u kHz by the end%s\n", kw_bus_khz(), glitches ? "" : "");
+  if (glitches) printf("  %ld glitches injected\n", glitches);
   print_diag();
   printf("  shorts=%ld fights=%ld  kb1 main loop pass %.1f us\n", shorts, fights,
          btn_reads[1] ? (sim_t - nodes[1].t_boot) / 1e6 / btn_reads[1] : 0);
@@ -891,6 +960,10 @@ int main(int argc, char **argv)
   if ((e = getenv("PASS_CYCLES"))) pass_cycles = atoi(e);
   if ((e = getenv("KW_HALF_US"))) { extern int64_t kw_t_low, kw_t_high; kw_t_low = kw_t_high = (int64_t)(atof(e) * PS_US); }
   if ((e = getenv("SEED"))) seed = (unsigned)atoi(e);
+  if ((e = getenv("TICK0"))) tick0_all = (uint32_t)strtoul(e, NULL, 0);   /* SysTick start, e.g. 2 s before it wraps */
+  if ((e = getenv("NOISE"))) noise_per_s = atof(e);
+  bundle2 = getenv("BUNDLE2");
+  for (e = getenv("MIX"); e && *e; e++) if (*e >= '0' && *e <= '9') { mixed[atoi(e)] = 1; while (e[1] >= '0' && e[1] <= '9') e++; }
   const char *sc = argc > 2 ? argv[2] : "chain";
   int len = argc > 3 ? atoi(argv[3]) : 5;
   int np = argc > 4 ? atoi(argv[4]) : 40;

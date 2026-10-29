@@ -139,6 +139,8 @@ HAL_StatusTypeDef HAL_I2C_IsDeviceReady(I2C_HandleTypeDef *h, uint16_t addr, uin
   int a = put_byte((uint8_t)addr);
   if (a < 0) return fail();
   stop();
+  if (getenv("KW_TRACE_ADDR") && strtol(getenv("KW_TRACE_ADDR"), NULL, 16) == addr >> 1)
+    printf("%9.3f ms probe %02x: %s\n", sim_now() / 1e9, addr >> 1, a ? "ack" : "nack");
   return a ? HAL_OK : HAL_ERROR;
 }
 

@@ -26,6 +26,8 @@ typedef struct {
    * its press event arrived unseen, tap 1 = report a down next, 2 = then up. */
   uint8_t saw_down, pend, tap;
   uint32_t last_ok;  /* HAL_GetTick() of its last good read, any kind */
+  uint8_t next_num;  /* v12: number of the first event we haven't taken yet */
+  uint8_t num_ok;    /* next_num is known */
 } keybit_info_t;
 
 /* A Keybit further out, known only through events relayed by its

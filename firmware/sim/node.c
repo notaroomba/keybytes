@@ -19,3 +19,4 @@ int sim_node_has_press(uint32_t u)
   return 0;
 }
 uint8_t sim_node_key(void) { return key_down; }
+uint8_t sim_node_addr(void) { return my_addr; }
