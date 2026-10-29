@@ -36,7 +36,7 @@ https://github.com/user-attachments/assets/19bec26d-6e01-4ee0-906e-7e69bace2f9c
 
 Typing over USB:
 
-[![Typing over USB](assets/demo2-preview.jpg)](assets/demo2.mp4)
+https://github.com/user-attachments/assets/6c5b825a-2b80-462a-9d0b-0568db00fd02
 
 ## Key Features
 
