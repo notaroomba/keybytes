@@ -38,7 +38,7 @@ static int wait_pin(uint8_t pin, int level, uint32_t us, link_idle_fn idle)
   return 1;
 }
 
-static uint8_t crc8(uint8_t crc, uint8_t v)
+uint8_t link_crc8(uint8_t crc, uint8_t v)
 {
   crc ^= v;
   for (int i = 0; i < 8; i++) crc = (uint8_t)(crc & 0x80 ? (crc << 1) ^ 0x07 : crc << 1);
@@ -110,11 +110,11 @@ int link_poll(const link_pins_t *p, int doorbell, uint8_t my_depth, const uint8_
 
   child->depth = p_get(p, 1);
   child->n = p_get(p, 0);
-  uint8_t crc = crc8(crc8(0, child->depth), child->n);
+  uint8_t crc = link_crc8(link_crc8(0, child->depth), child->n);
   int good = child->n <= LINK_EVENTS;
   for (int i = 0; good && i < child->n * LINK_EV_SIZE; i++) {
     child->ev[i] = p_get(p, 0);
-    crc = crc8(crc, child->ev[i]);
+    crc = link_crc8(crc, child->ev[i]);
   }
   good = good && p_get(p, 0) == crc;
 
@@ -188,7 +188,7 @@ int link_serve(const link_pins_t *p, int ringing, const link_reply_t *reply,
   out[1] = reply->n;
   for (int i = 2; i < len; i++) out[i] = reply->ev[i - 2];
   uint8_t crc = 0;
-  for (int i = 0; i < len; i++) crc = crc8(crc, out[i]);
+  for (int i = 0; i < len; i++) crc = link_crc8(crc, out[i]);
   out[len++] = crc;
 
   /* Ack: let go of the doorbell, or pull DT low; then wait for CK high. */

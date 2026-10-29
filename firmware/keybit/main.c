@@ -53,20 +53,23 @@
  *   0x30-0x4F  link diagnostics, 8 counters per side (see diag below)
  *   0x51       our depth, 0xFF if we can't reach the keyword yet
  *   0x52       events ready to read, at most 8
- *   0x80-0xD7  up to 8 events, 11 bytes each: UID bits 0..31, flags, the
- *              UID bits 0..31 of the Keybit it hangs off (0 for the
- *              keyword), that Keybit's side it's on ('K' for the keyword),
- *              and its own side facing it
  *   0x53-0x7A  the same events, 5 bytes each (UID, flags), for older keywords
  *              (bit 0 pressed, bit 1 heartbeat, bit 2 a neighbour is on
  *              backwards, bit 3 its place is new or due again, bits 4-7
  *              origin depth)
  *   0x7B       (write) n: drop the first n events, they were received
- *   0xE0       status stream, read from here only: key state (bit 0) and
- *              backwards (bit 1), the event count, then the events: 5 bytes
- *              (UID, flags as at 0x53), or all 11 as at 0x80 when flags bit
- *              3 says the place is in it. A read that ends normally drops
- *              the events it covered whole.
+ *   0x7F       status stream, read from here only: key state (bit 0) and
+ *              backwards (bit 1); the event count (bits 0-3) with the
+ *              status byte's low nibble inverted (bits 4-7) as a check; the
+ *              7-bit number of the first event; then the events, each 5
+ *              bytes (UID, flags as at 0x53) or 11 when flags bit 3 says its
+ *              place is in it (then also the UID bits 0..31 of the Keybit
+ *              it hangs off, 0 for the keyword, that Keybit's side it's on,
+ *              'K' for the keyword, and its own side facing it), and a
+ *              CRC-8 of those bytes.
+ *   0x80 | n   the same stream, after dropping the events before number n
+ *              (the keyword took them). Asking again for the same n drops
+ *              nothing more, so a read that fails halfway is just retried.
  *
  * PD1 stays SWIO so the keyword can always reflash us. Don't remap it.
  */
@@ -106,7 +109,7 @@
 #define EV_HEARTBEAT 0x02
 #define EV_BACKWARDS 0x04
 #define EV_WHERE     0x08   /* parent, side and face in this event are news */
-#define REG_STREAM   0xE0
+#define REG_STREAM   0x7F   /* and 0x80 | n */
 #define STREAM_EV    5      /* uid32, flags; LINK_EV_SIZE with EV_WHERE */
 
 typedef struct {
@@ -173,6 +176,7 @@ static int16_t save_addr = -1;    /* address to write to flash, -1 = none */
 
 static event_t queue[QUEUE_LEN];
 static uint8_t q_head, q_count;
+static uint8_t q_num[QUEUE_LEN], q_next;   /* each event's 7-bit number, for the stream */
 
 /* ------------------------------------------------------------------------ */
 /* Time: SysTick runs freely; compare ticks with unsigned subtraction.      */
@@ -219,7 +223,19 @@ static void queue_push(const event_t *e)
 {
   if (q_count == QUEUE_LEN) queue_pop(1);
   *queue_at(q_count) = *e;
+  q_num[(q_head + q_count) % QUEUE_LEN] = q_next++ & 0x7F;
   q_count++;
+}
+
+static uint8_t head_num(void) { return q_count ? q_num[q_head] : q_next & 0x7F; }
+
+/* The keyword has every event before number n: drop them. A number not
+ * just past one we hold (a repeat, or from before we rebooted) drops
+ * nothing. */
+static void drop_before(uint8_t n)
+{
+  int k = (n - head_num()) & 0x7F;
+  if (k <= q_count && k <= BATCH) queue_pop(k);
 }
 
 /* The side our depth comes from, so we can say where we hang off. */
@@ -334,27 +350,38 @@ static void listen(void)
 
 static int stream_size(const event_t *e) { return e->flags & EV_WHERE ? LINK_EV_SIZE : STREAM_EV; }
 
+/* Byte idx of the status stream. */
+static uint8_t stream_byte(uint8_t idx)
+{
+  uint8_t status = (uint8_t)(key_down | (backwards ? 2 : 0));
+  if (idx == 0) return status;
+  if (idx == 1) return (uint8_t)((q_count < BATCH ? q_count : BATCH) | (~status & 0x0F) << 4);
+  if (idx == 2) return head_num();
+  int pos = 3;
+  for (int i = 0; i < q_count && i < BATCH; i++) {
+    const uint8_t *e = (const uint8_t *)queue_at(i);
+    int size = stream_size(queue_at(i));
+    if (idx < pos + size) return e[idx - pos];
+    if (idx == pos + size) {
+      uint8_t crc = 0;
+      for (int b = 0; b < size; b++) crc = link_crc8(crc, e[b]);
+      return crc;
+    }
+    pos += size + 1;
+  }
+  return 0xFF;
+}
+
 static uint8_t read_reg(uint8_t reg, uint8_t idx, soft_i2c_bus_t *bus)
 {
-  if ((uint8_t)(reg - idx) == REG_STREAM) {
-    if (idx == 0) return (uint8_t)(key_down | (backwards ? 2 : 0));
-    if (idx == 1) return q_count < BATCH ? q_count : BATCH;
-    int pos = 2;
-    for (int i = 0; i < q_count && i < BATCH; i++) {
-      const event_t *e = queue_at(i);
-      if (idx < pos + stream_size(e)) return ((const uint8_t *)e)[idx - pos];
-      pos += stream_size(e);
-    }
-    return 0xFF;
+  uint8_t first = (uint8_t)(reg - idx);
+  if (first == REG_STREAM || (first & 0x80)) {
+    if (idx == 0 && first != REG_STREAM) drop_before(first & 0x7F);
+    return stream_byte(idx);
   }
   if (reg >= 0x02 && reg <= 0x05) return uid[reg - 0x02];
   if (reg >= 0x10 && reg <= 0x1B) return uid[reg - 0x10];
   if (reg >= 0x30 && reg < 0x30 + sizeof(diag)) return diag[(reg - 0x30) / D_N][(reg - 0x30) % D_N];
-  if (reg >= 0x80 && reg < 0x80 + BATCH * LINK_EV_SIZE) {   /* v11 events, LINK_EV_SIZE bytes each */
-    int i = (reg - 0x80) / LINK_EV_SIZE, b = (reg - 0x80) % LINK_EV_SIZE;
-    if (i >= q_count) return 0xFF;
-    return ((const uint8_t *)queue_at(i))[b];
-  }
   if (reg >= 0x53 && reg < 0x53 + BATCH * 5) {
     int i = (reg - 0x53) / 5, b = (reg - 0x53) % 5;
     if (i >= q_count) return 0xFF;
@@ -374,15 +401,6 @@ static uint8_t read_reg(uint8_t reg, uint8_t idx, soft_i2c_bus_t *bus)
   }
 }
 
-/* A status stream read went through: drop the events it covered whole. */
-static void read_done(uint8_t first, uint8_t n)
-{
-  if (first != REG_STREAM) return;
-  int pos = 2, k = 0;
-  while (k < q_count && k < BATCH && pos + stream_size(queue_at(k)) <= n) pos += stream_size(queue_at(k++));
-  queue_pop(k);
-}
-
 static void write_reg(uint8_t reg, uint8_t value, soft_i2c_bus_t *bus)
 {
   if (reg == 0x7B) { queue_pop(value); return; }
@@ -398,10 +416,15 @@ static void write_reg(uint8_t reg, uint8_t value, soft_i2c_bus_t *bus)
 }
 
 /* Another Keybit answered on our address with a lower UID: we're the
- * duplicate, so go back to the default address and get a new one. */
-static void lost_arbitration(uint8_t addr)
+ * duplicate, so go back to the default address and get a new one. Only a
+ * UID read tells that (the keyword's scans read it): losing a bit anywhere
+ * else is more likely another Keybit that took part of a transfer for a
+ * START and answered garbage, and giving our address up for that cut off
+ * everything chained behind us until the next scan. */
+static void lost_arbitration(uint8_t addr, uint8_t reg)
 {
-  if (my_addr && addr == my_addr) {
+  int uid_reg = (reg >= 0x02 && reg <= 0x05) || (reg >= 0x10 && reg <= 0x1B);
+  if (my_addr && addr == my_addr && uid_reg) {
     my_addr = 0;
     save_addr = 0;
   }
@@ -412,7 +435,6 @@ static const soft_i2c_target_t target = {
   .read = read_reg,
   .write = write_reg,
   .lost = lost_arbitration,
-  .read_done = read_done,
 };
 
 /* ------------------------------------------------------------------------ */
@@ -575,7 +597,10 @@ static void relay(int listening)
      * or pushes current into its SCL clamp diode if it's only fed from us. */
     int held = !funDigitalRead(buses[s].sda) && funDigitalRead(buses[s].scl);
     if (held && !is_link(s)) continue;
-    int rang = held;
+    /* With no room for a batch, a ringing child can wait for the keyword
+     * to drain us. Answering it anyway kept us in frames that took nothing
+     * while the keyword's reads went unanswered, so we never drained. */
+    int rang = held && QUEUE_LEN - q_count >= BATCH;
     if (!rang) {
       /* A peer at the same depth or shallower isn't our child; look again
        * now and then in case that changed. */

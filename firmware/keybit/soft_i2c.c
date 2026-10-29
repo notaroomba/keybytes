@@ -127,12 +127,10 @@ static int serve(soft_i2c_bus_t *b, const soft_i2c_target_t *t)
 
     if (a & 1) {  /* controller reads */
       int r;
-      uint8_t first = reg_ptr, n = 0;
-      while ((r = send_byte(b, t->read(reg_ptr++, n, b))) == 1) n++;
-      n++;
-      if (r == 0 && t->read_done) t->read_done(first, n);
+      uint8_t n = 0;
+      while ((r = send_byte(b, t->read(reg_ptr++, n++, b))) == 1) { }
       if (r == -1) {
-        if (t->lost) t->lost(addr);
+        if (t->lost) t->lost(addr, (uint8_t)(reg_ptr - 1));
         wait_bus_free(b);
         return addressed;
       }

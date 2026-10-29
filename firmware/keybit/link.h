@@ -63,6 +63,9 @@ enum { LINK_OK = 1, LINK_SKIPPED = 0, LINK_NO_ACK = -1, LINK_ABORTED = -2, LINK_
 int link_poll(const link_pins_t *p, int doorbell, uint8_t my_depth, const uint8_t me[LINK_ME_SIZE],
               link_reply_t *child, uint8_t room, uint8_t *kept, link_idle_fn idle);
 
+/* CRC-8 (poly 0x07), as the frames use. */
+uint8_t link_crc8(uint8_t crc, uint8_t v);
+
 /* Child: CK is low on this side and the caller decided it's a request.
  * Answers with *reply. On success sets *parent_depth, parent (its uid32
  * and the side of it we're on) and *kept, and returns 1. */
