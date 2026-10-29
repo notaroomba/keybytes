@@ -501,19 +501,19 @@ static struct {
 /* Look at one address for the running scan. A Keybit we already know only
  * needs its head read: the UID bits 0-31 in it tell it's still the same one,
  * and two Keybits sharing the address still arbitrate on them. */
-static void scan_one(I2C_HandleTypeDef *i2c, uint8_t a, const keybit_info_t *k, int n)
+static int scan_one(I2C_HandleTypeDef *i2c, uint8_t a, keybit_info_t *k, int *n)
 {
-  if (a == KEYBIT_DEFAULT_ADDR || a == LINK_ADDR || a == CHARGER_ADDR || bs.nfound >= KEYBIT_MAX) return;
+  if (a == KEYBIT_DEFAULT_ADDR || a == LINK_ADDR || a == CHARGER_ADDR || bs.nfound >= KEYBIT_MAX) return 0;
   const keybit_info_t *known = NULL;
-  for (int i = 0; i < n; i++) if (k[i].addr == a) known = &k[i];
-  if (!known && !is_ready(i2c, a)) return;
+  for (int i = 0; i < *n; i++) if (k[i].addr == a) known = &k[i];
+  if (!known && !is_ready(i2c, a)) return 0;
 
   /* It answered, so a failed read is most likely it being busy with a
    * link frame for a moment: try again rather than wait a whole scan. */
   uint8_t head[10];
   int got = 0;
   for (int t = 0; t < 3 && !got; t++) got = read_regs(i2c, a, REG_MAGIC, head, sizeof(head)) && head[0] == MAGIC;
-  if (!got) return;
+  if (!got) return 0;
   keybit_info_t *f = &bs.found[bs.nfound];
   if (known && uid32(known->uid) == uid32(&head[2])) {
     *f = *known;   /* keeps its tap tracking */
@@ -521,7 +521,7 @@ static void scan_one(I2C_HandleTypeDef *i2c, uint8_t a, const keybit_info_t *k, 
     memset(f, 0, sizeof(*f));
     got = 0;
     for (int t = 0; t < 3 && !got; t++) got = read_regs(i2c, a, REG_UID, f->uid, sizeof(f->uid));
-    if (!got) return;
+    if (!got) return 0;
   }
   f->addr = a;
   f->last_ok = HAL_GetTick();
@@ -531,6 +531,19 @@ static void scan_one(I2C_HandleTypeDef *i2c, uint8_t a, const keybit_info_t *k, 
   f->backwards = f->fw >= 6 ? head[9] & 0x0F : 0;  /* reg 0x09 is new in v6 */
   if (!known) f->key_down = head[6] & 1;
   bs.nfound++;
+
+  /* One new to the list, or back on another address, is polled from now
+   * on rather than from the end of the scan, most of a second away. */
+  int i = 0;
+  while (i < *n && memcmp(k[i].uid, f->uid, sizeof(f->uid)) != 0) i++;
+  if (i < *n) {
+    if (k[i].addr != a) { k[i].addr = a; k[i].num_ok = 0; listed[a] = 1; }
+    return 0;
+  }
+  if (*n >= KEYBIT_MAX) return 0;
+  k[(*n)++] = *f;
+  listed[a] = 1;
+  return 1;
 }
 
 /* The scan is done: the found list becomes the list, keeping a Keybit that
@@ -640,7 +653,7 @@ int keybit_bus_service(I2C_HandleTypeDef *i2c, keybit_info_t *k, int *n, keybit_
   }
   if (now - bs.probe_at < SCAN_GAP_MS) return flags;
   bs.probe_at = now;
-  scan_one(i2c, bs.cursor, k, *n);
+  if (scan_one(i2c, bs.cursor, k, n)) flags |= KEYBIT_JOINED | KEYBIT_CHANGED;
   if (++bs.cursor > ADDR_LAST) {
     bs.cursor = 0;
     if (scan_commit(k, n)) flags |= KEYBIT_JOINED;

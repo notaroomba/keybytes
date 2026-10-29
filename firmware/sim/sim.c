@@ -543,6 +543,8 @@ static void measure(lat_t *by_depth, int max_depth, const int *depth_of)
     static int dump_init;
     if (!dump_init) { dump_init = 1; const char *f = getenv("LAT_DUMP"); if (f) dump = fopen(f, "a"); }
     if (dump) fprintf(dump, "%d %.3f\n", d, got < 0 ? -1.0 : (got - p->down) / 1e9);
+    if (getenv("SHOW_SLOW") && (got < 0 || got - p->down > atoi(getenv("SHOW_SLOW")) * PS_MS))
+      printf("  slow: kb%d (depth %d) pressed at %.1f ms, reported %.1f ms later\n", p->node, d, p->down / 1e9, got < 0 ? -1.0 : (got - p->down) / 1e9);
     if (got < 0) by_depth[d].lost++;
     else if (nb[d] < LOG_MAX / 8) buf[d][nb[d]++] = got - p->down;
   }
