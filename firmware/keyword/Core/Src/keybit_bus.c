@@ -106,9 +106,10 @@ static HAL_StatusTypeDef ended(HAL_StatusTypeDef st)
 }
 
 /* v12 Keybits look at the bus between every step of their main loop, so
- * they keep up with a faster clock than older ones. The side bus runs fast
- * only while every touching Keybit is v12, and always slow for scans and
- * address handouts, where a Keybit of any version may answer. */
+ * they keep up with a faster clock than older ones, but only v13 holds SCL
+ * while it works out the next byte of a read. The side bus runs fast only
+ * while every touching Keybit is v13, and always slow for scans and address
+ * handouts, where a Keybit of any version may answer. */
 #define SLOW_KHZ 20
 #ifndef FAST_KHZ
 #define FAST_KHZ 100
@@ -120,7 +121,7 @@ static HAL_StatusTypeDef ended(HAL_StatusTypeDef st)
 #define SDADEL 8
 #endif
 
-/* If v12 reads keep failing at a speed, step down (100, 50, 20 kHz) and
+/* If v13 reads keep failing at a speed, step down (100, 50, 20 kHz) and
  * try the next one up again after a while. */
 #define FALLBACK_WINDOW 32       /* stream reads */
 #define FALLBACK_FAILS  8        /* more failed than this in a window: slower */
@@ -393,12 +394,19 @@ static int stream_one(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n, int i,
     while (e < count && pos + STREAM_EV < len) {
       int size = b[pos + 4] & EV_WHERE ? EV_SIZE11 : STREAM_EV;
       if (pos + size + 1 > len) break;   /* not all of it in this read */
-      uint8_t crc = 0;
+      uint8_t crc = 0, got = b[pos + size];
       for (int j = 0; j < size; j++) crc = crc8(crc, b[pos + j]);
-      if (crc != b[pos + size]) { damaged = 1; break; }
+      /* v12 works an event's CRC out after we have started clocking it, and
+       * an 11-byte one takes longer than SCL's low phase: it comes a bit
+       * late (a released 1, then CRC bits 7..1) and that Keybit then takes
+       * our next bit for a NACK, so nothing after it in this read is real.
+       * Take the event and read the rest next time. v13 holds SCL instead. */
+      int late = k[i].fw < 13 && got == (uint8_t)(0x80 | crc >> 1);
+      if (crc != got && !late) { damaged = 1; break; }
       changed |= take_event(k, n, i, &b[pos], size, r, rn, remote);
       pos += size + 1;
       e++;
+      if (late) { damaged = 1; break; }
     }
     k[i].next_num = (uint8_t)((b[2] + e) & 0x7F);
     k[i].num_ok = 1;
@@ -561,10 +569,10 @@ static int scan_commit(keybit_info_t *k, int *n)
 
 int keybit_bus_service(I2C_HandleTypeDef *i2c, keybit_info_t *k, int *n, keybit_remote_t *r, int *rn)
 {
-  int flags = 0, used = 0, all12 = *n > 0, any12 = 0;
+  int flags = 0, used = 0, all13 = *n > 0, any12 = 0;
   uint32_t now = HAL_GetTick();
-  for (int i = 0; i < *n; i++) { all12 &= k[i].fw >= 12; any12 |= k[i].fw >= 12; }
-  unsigned khz = all12 ? fast_khz() : SLOW_KHZ;
+  for (int i = 0; i < *n; i++) { all13 &= k[i].fw >= 13; any12 |= k[i].fw >= 12; }
+  unsigned khz = all13 ? fast_khz() : SLOW_KHZ;
   bus_khz(i2c, khz);
 
   int had = 0, has = 0;
@@ -576,7 +584,7 @@ int keybit_bus_service(I2C_HandleTypeDef *i2c, keybit_info_t *k, int *n, keybit_
       if (k[i].fw < 12) continue;
       int remote = 0, ok = 0;
       if (stream_one(i2c, k, *n, i, r, rn, &remote, &ok)) flags |= KEYBIT_CHANGED;
-      if (all12) fast_result(ok);
+      if (all13) fast_result(ok);
       used = 1;
       break;
     }
