@@ -70,25 +70,17 @@ int keybit_bus_unstick(I2C_HandleTypeDef *i2c);
  * how many were assigned. */
 int keybit_bus_assign(I2C_HandleTypeDef *i2c);
 
-/* Read every assigned Keybit into out. Returns the count. Probes all
- * addresses, so it takes tens of ms; run it every few hundred ms. */
-int keybit_bus_scan(I2C_HandleTypeDef *i2c, keybit_info_t *out, int max);
-
-/* Fast path for typing: refresh key_down of the n Keybits from the last
- * scan, one 1-byte read each (well under 1 ms apiece at 100 kHz). Returns a
- * bitmask of entries whose key state changed. */
+/* Refresh key_down of the Keybits before v12, one 1-byte read each (~2 ms
+ * apiece at 20 kHz). Returns a bitmask of entries whose key state changed. */
 uint32_t keybit_bus_poll_keys(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n);
 
-/* Drain relayed events from the n touching Keybits into the remote table
- * (r, with *rn entries in use) and age out silent ones. Run it with
- * keybit_bus_poll_keys. Returns 1 if any entry changed. */
-int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n,
-                          keybit_remote_t *r, int *rn);
-
-/* All the side bus work, a little per call: key polls every 15 ms, event
- * drains (every 15 ms from a Keybit that relays chained ones, else 60 ms),
- * and an address scan that looks at one address per call on calls with
- * nothing else to do, about every 500 ms. Call it every main loop pass. */
+/* All the side bus work, a little per call. v12 Keybits: one status stream
+ * read (key, events) per slot, round robin, at up to 100 kHz while every
+ * touching Keybit is v12 (stepping down when reads fail). Older ones: key
+ * polls every 15 ms and event drains every 15 ms (60 ms if nothing is
+ * chained behind it) at 20 kHz. An address scan looks at one address per
+ * call on calls with nothing else to do, about every 500 ms, at 20 kHz.
+ * Call it every main loop pass. */
 #define KEYBIT_CHANGED 1   /* a key, a Keybit or where one is changed */
 #define KEYBIT_JOINED  2   /* a Keybit joined, touching or chained */
 int keybit_bus_service(I2C_HandleTypeDef *i2c, keybit_info_t *k, int *n, keybit_remote_t *r, int *rn);

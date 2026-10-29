@@ -235,33 +235,6 @@ static char keyword_side(char keybit_side)
   }
 }
 
-int keybit_bus_scan(I2C_HandleTypeDef *i2c, keybit_info_t *out, int max)
-{
-  int n = 0;
-  for (uint8_t a = ADDR_FIRST; a <= ADDR_LAST && n < max; a++) {
-    IWDG->KR = 0xAAAA;
-    if (a == KEYBIT_DEFAULT_ADDR || a == LINK_ADDR || a == CHARGER_ADDR) continue;
-    if (!is_ready(i2c, a)) continue;
-
-    uint8_t head[10];
-    if (!read_regs(i2c, a, REG_MAGIC, head, sizeof(head)) || head[0] != MAGIC) continue;
-
-    keybit_info_t *k = &out[n];
-    memset(k, 0, sizeof(*k));
-    /* Reading the UID also catches two Keybits on one address: the loser of
-     * the arbitration drops its address and turns up on the default one. */
-    if (!read_regs(i2c, a, REG_UID, k->uid, sizeof(k->uid))) continue;
-    k->addr = a;
-    k->fw = head[1];
-    k->key_down = head[6] & 1;
-    k->keybit_side = (char)head[7];
-    k->at = keyword_side(k->keybit_side);
-    k->backwards = k->fw >= 6 ? head[9] & 0x0F : 0;  /* reg 0x09 is new in v6 */
-    n++;
-  }
-  return n;
-}
-
 uint32_t keybit_bus_poll_keys(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n)
 {
   uint32_t changed = 0;
@@ -451,14 +424,6 @@ static int relay_age(keybit_remote_t *r, int rn)
     }
   }
   return changed;
-}
-
-int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n,
-                          keybit_remote_t *r, int *rn)
-{
-  int changed = 0, remote = 0;
-  for (int i = 0; i < n; i++) changed |= relay_one(i2c, k, n, i, r, rn, &remote);
-  return changed | relay_age(r, *rn);
 }
 
 /* ------------------------------------------------------------------------ */
