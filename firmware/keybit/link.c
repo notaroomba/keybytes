@@ -87,10 +87,11 @@ int link_poll(const link_pins_t *p, int doorbell, uint8_t my_depth, const uint8_
   if (!doorbell && !DT(p)) return LINK_SKIPPED;
   CK_LOW(p);
 
-  /* A ringing child already holds DT low, so wait for it to let go
-   * before taking DT low as the ack. */
-  int ok = !doorbell ? 1 : wait_pin(p->dt, 1, ACK_US, idle);
-  if (ok > 0) ok = wait_pin(p->dt, 0, ACK_US, idle);
+  /* A ringing child already holds DT low: it acks by letting go. (It used
+   * to let go for 3 us and pull it low again, and a parent busy serving
+   * I2C between looks missed that pulse and timed out.) Otherwise the ack
+   * is DT low. */
+  int ok = wait_pin(p->dt, doorbell ? 1 : 0, ACK_US, idle);
   if (ok <= 0) { CK_REL(p); return ok < 0 ? LINK_ABORTED : LINK_NO_ACK; }
   DelaySysTick(HALF);
   CK_REL(p);
@@ -190,11 +191,9 @@ int link_serve(const link_pins_t *p, int ringing, const link_reply_t *reply,
   for (int i = 0; i < len; i++) crc = crc8(crc, out[i]);
   out[len++] = crc;
 
-  if (ringing) {
-    DT_REL(p);
-    Delay_Us(3);  /* long enough for the parent to see DT high */
-  }
-  DT_LOW(p);
+  /* Ack: let go of the doorbell, or pull DT low; then wait for CK high. */
+  if (ringing) DT_REL(p);
+  else DT_LOW(p);
   int ok = spin(&f, 1);
   DT_REL(p);
   if (!ok) return 0;

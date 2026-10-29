@@ -9,15 +9,15 @@
  *   Request   The parent pulls CK low with DT high.
  *   Doorbell  A child with events pulls DT low with CK high, so its parent
  *             polls it now instead of at the next periodic poll.
- *   Ack       The child pulls DT low while CK is low (if it was ringing the
- *             doorbell, it lets DT go high first so the edge is visible).
- *             The parent then releases CK, the child releases DT, and both
- *             lines high again marks the start of the frame.
+ *   Ack       The child pulls DT low while CK is low; if it was ringing the
+ *             doorbell (DT already low), it lets DT go instead. The parent
+ *             then releases CK, the child releases DT, and both lines high
+ *             again marks the start of the frame.
  *   Bits      The parent clocks every bit. Each half period is
  *             LINK_HALF_US. The parent's bits are sampled on CK rising;
  *             the child sets its bits on CK falling and the parent reads
  *             them just before CK falls again. MSB first.
- *   Frame     parent -> child: 0xA6, parent depth, parent uid32 (4),
+ *   Frame     parent -> child: 0xA7, parent depth, parent uid32 (4),
  *                              the parent's side this is (N/E/S/W)
  *             child -> parent: child depth, n (<= 8), n events of 11
  *                              bytes (uid32, flags, parent uid32, parent
@@ -33,7 +33,7 @@
 
 #include <stdint.h>
 
-#define LINK_MAGIC   0xA6   /* v11 frames; v10 used 0xA5 and a different layout */
+#define LINK_MAGIC   0xA7   /* v12; v11 used 0xA6 (doorbell ack was a pulse), v10 0xA5 */
 #define LINK_EVENTS  8
 #define LINK_EV_SIZE 11  /* uid32, flags, parent uid32, parent side, face */
 #define LINK_ME_SIZE 5   /* what a parent tells a child about itself: uid32, side */

@@ -59,8 +59,14 @@
  *              and its own side facing it
  *   0x53-0x7A  the same events, 5 bytes each (UID, flags), for older keywords
  *              (bit 0 pressed, bit 1 heartbeat, bit 2 a neighbour is on
- *              backwards, bits 4-7 origin depth)
+ *              backwards, bit 3 its place is new or due again, bits 4-7
+ *              origin depth)
  *   0x7B       (write) n: drop the first n events, they were received
+ *   0xE0       status stream, read from here only: key state (bit 0) and
+ *              backwards (bit 1), the event count, then events 5 bytes each
+ *              as at 0x53. A read that ends normally drops the events it
+ *              covered, up to the first one with bit 3 set: read that one's
+ *              place at 0x80 and drop it with 0x7B.
  *
  * PD1 stays SWIO so the keyword can always reflash us. Don't remap it.
  */
@@ -69,11 +75,12 @@
 #include "link.h"
 #include <string.h>
 
-#define FW_VERSION          11
+#define FW_VERSION          12
 #define KEYBIT_DEFAULT_ADDR 0x30
 #define LINK_ADDR           0x31  /* reserved: the keyword never assigns it */
 #define BTN_PIN             PD6   /* MX switch to GND */
-#define DEBOUNCE            200   /* main loop passes */
+#define KEY_AGREE           3     /* reads in a row that must agree on a change */
+#define KEY_LOCK_MS         5     /* after a change, contact bounce: ignore the pin */
 
 #define DEPTH_NONE          0xFF
 #define FRESH_MS            600   /* a neighbour's depth counts this long */
@@ -83,6 +90,7 @@
 #define LINK_FRESH_MS       1000  /* a side counts as a link this long after a frame */
 #define LINK_REQ_US         50    /* CK held low this long on an unknown side = link request */
 #define HEARTBEAT_MS        1000
+#define WHERE_EVERY         4     /* heartbeats; our place goes along on every 4th */
 #define BACKWARDS_MS        200   /* DT low, CK high this long = neighbour on backwards */
 #define QUEUE_LEN           32
 #define BATCH               8
@@ -97,6 +105,9 @@
 #define EV_PRESSED   0x01
 #define EV_HEARTBEAT 0x02
 #define EV_BACKWARDS 0x04
+#define EV_WHERE     0x08   /* parent, side and face in this event are news */
+#define REG_STREAM   0xE0
+#define STREAM_EV    5      /* uid32, flags */
 
 typedef struct {
   uint16_t magic;
@@ -146,11 +157,11 @@ static side_t sides[4];
 /* Link diagnostics, read over I2C at 0x30 + 8 * side (S, E, W, N): link
  * requests we sent, ones that came back ok, no ack, called off for keyword
  * traffic, bad frames, requests we answered as a child, ones we failed to
- * answer, and probes skipped because the lines weren't idle. Each counts up
- * to 255 and stays there. */
+ * answer, and probes skipped because the lines weren't idle. Each wraps at
+ * 256, so two reads a while apart give rates. */
 enum { D_REQ, D_OK, D_NO_ACK, D_ABORT, D_BAD, D_SERVED, D_SERVE_FAIL, D_SKIPPED, D_N };
 static uint8_t diag[4][D_N];
-static void diag_count(int s, int what) { if (diag[s][what] < 255) diag[s][what]++; }
+static void diag_count(int s, int what) { diag[s][what]++; }
 static uint8_t backwards;  /* reg 0x09: sides with a Keybit on backwards */
 
 static uint8_t uid[12];
@@ -214,6 +225,7 @@ static void queue_push(const event_t *e)
 /* The side our depth comes from, so we can say where we hang off. */
 static int8_t up_side = -1;
 
+/* flags may include EV_WHERE when our place is news. */
 static void queue_own(uint8_t flags)
 {
   event_t e;
@@ -291,6 +303,10 @@ static void polled_by(int s, uint8_t depth)
   sides[s].parent_seen = ticks();
 }
 
+static int8_t kw_side = -1;   /* the side the keyword has addressed us on */
+static const soft_i2c_target_t target;
+static void listen(void);
+
 static int match_addr(uint8_t addr, soft_i2c_bus_t *bus)
 {
   int s = side_index(bus);
@@ -303,12 +319,37 @@ static int match_addr(uint8_t addr, soft_i2c_bus_t *bus)
     sides[s].keyword = 1;
     sides[s].link = 0;
     polled_by(s, 0);
+    kw_side = (int8_t)s;
   }
   return mine;
 }
 
-static uint8_t read_reg(uint8_t reg, soft_i2c_bus_t *bus)
+/* The keyword's START only lasts one SCL high period, and a main loop pass
+ * takes longer than that, so look at its bus between every step, not once
+ * a pass. */
+static void listen(void)
 {
+  if (kw_side >= 0) soft_i2c_poll(&buses[kw_side], &target);
+}
+
+/* The first n events in the queue, up to the first one with EV_WHERE. */
+static int plain_events(int n)
+{
+  int i = 0;
+  while (i < n && i < q_count && !(queue_at(i)->flags & EV_WHERE)) i++;
+  return i;
+}
+
+static uint8_t read_reg(uint8_t reg, uint8_t idx, soft_i2c_bus_t *bus)
+{
+  if ((uint8_t)(reg - idx) == REG_STREAM) {
+    if (idx == 0) return (uint8_t)(key_down | (backwards ? 2 : 0));
+    if (idx == 1) return q_count < BATCH ? q_count : BATCH;
+    int i = (idx - 2) / STREAM_EV, b = (idx - 2) % STREAM_EV;
+    if (i >= q_count || i >= BATCH) return 0xFF;
+    const event_t *e = queue_at(i);
+    return b < 4 ? e->uid[b] : e->flags;
+  }
   if (reg >= 0x02 && reg <= 0x05) return uid[reg - 0x02];
   if (reg >= 0x10 && reg <= 0x1B) return uid[reg - 0x10];
   if (reg >= 0x30 && reg < 0x30 + sizeof(diag)) return diag[(reg - 0x30) / D_N][(reg - 0x30) % D_N];
@@ -334,6 +375,13 @@ static uint8_t read_reg(uint8_t reg, soft_i2c_bus_t *bus)
   case 0x52: return q_count < BATCH ? q_count : BATCH;
   default:   return 0xFF;
   }
+}
+
+/* A status stream read went through: drop the events it covered whole. */
+static void read_done(uint8_t first, uint8_t n)
+{
+  if (first != REG_STREAM || n < 2 + STREAM_EV) return;
+  queue_pop(plain_events((n - 2) / STREAM_EV));
 }
 
 static void write_reg(uint8_t reg, uint8_t value, soft_i2c_bus_t *bus)
@@ -365,6 +413,7 @@ static const soft_i2c_target_t target = {
   .read = read_reg,
   .write = write_reg,
   .lost = lost_arbitration,
+  .read_done = read_done,
 };
 
 /* ------------------------------------------------------------------------ */
@@ -384,7 +433,7 @@ static void update_depth(void)
   if (my_depth == DEPTH_NONE) from = -1;
   if (from != up_side) {
     up_side = from;
-    if (from >= 0) queue_own(0);   /* tell the keyword where we hang off now */
+    if (from >= 0) queue_own(EV_WHERE);   /* tell the keyword where we hang off now */
   }
 }
 
@@ -544,22 +593,27 @@ static void relay(int listening)
     sd->polled_at = ticks();
     sd->poll_wait = MS((child ? CHILD_POLL_MS : PROBE_MS) + jitter());
     poll_child(s, rang);
+    listen();
   }
 }
 
 /* ------------------------------------------------------------------------ */
 
-/* Counts towards the pin's level and only flips once it gets all the way. */
+/* A change counts as soon as KEY_AGREE reads in a row see it, so a press
+ * goes out within a few passes; then the pin is left alone for KEY_LOCK_MS
+ * while the switch contacts bounce. */
 static void debounce_key(void)
 {
-  static int16_t count;
-  if (!funDigitalRead(BTN_PIN)) { if (count < DEBOUNCE) count++; }
-  else if (count > 0) count--;
-
-  uint8_t was = key_down;
-  if (count == DEBOUNCE) key_down = 1;
-  else if (count == 0) key_down = 0;
-  if (key_down != was) queue_own(0);
+  static uint8_t agree;
+  static uint32_t changed_at;
+  if (!elapsed(changed_at, MS(KEY_LOCK_MS))) return;
+  uint8_t down = !funDigitalRead(BTN_PIN);
+  if (down == key_down) { agree = 0; return; }
+  if (++agree < KEY_AGREE) return;
+  agree = 0;
+  key_down = down;
+  changed_at = ticks();
+  queue_own(0);
 }
 
 /* A Keybit turned the wrong way round puts its GND on our DT and its 3V3
@@ -588,9 +642,10 @@ static void watch_backwards(int listening)
 static void heartbeat(void)
 {
   static uint32_t last;
+  static uint8_t beats;
   if (my_depth == DEPTH_NONE || !elapsed(last, MS(HEARTBEAT_MS + uid[1]))) return;
   last = ticks();
-  queue_own(EV_HEARTBEAT);
+  queue_own(EV_HEARTBEAT | (++beats % WHERE_EVERY == 0 && up_side >= 0 ? EV_WHERE : 0));
 }
 
 int main(void)
@@ -617,11 +672,16 @@ int main(void)
     for (int i = 0; i < 4; i++) {
       if (!is_link(i)) soft_i2c_poll(&buses[i], &target);
       answer_link(i, listening);
+      listen();
     }
     debounce_key();
+    listen();
     relay(listening);
+    listen();
     doorbell();
+    listen();
     watch_backwards(listening);
+    listen();
     heartbeat();
     if (save_addr >= 0) {
       store_config((uint8_t)save_addr);

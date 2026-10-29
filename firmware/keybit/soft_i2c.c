@@ -63,23 +63,23 @@ static int send_ack(soft_i2c_bus_t *b)
 }
 
 /* Clock out 8 bits, then read the controller's ACK. Returns 1 on ACK, 0 on
- * NACK or timeout, -1 if we lost arbitration. We hold SCL low (clock
+ * NACK, -1 if we lost arbitration, -2 on a timeout. We hold SCL low (clock
  * stretching) while setting up each bit, so slow polling can't miss the
  * setup time. */
 static int send_byte(soft_i2c_bus_t *b, uint8_t v)
 {
   for (int bit = 7; bit >= 0; bit--) {
     int one = (v >> bit) & 1;
-    if (!wait_scl(b, 0)) { SDA_REL(b); return 0; }
+    if (!wait_scl(b, 0)) { SDA_REL(b); return -2; }
     SCL_LOW(b);
     if (one) SDA_REL(b); else SDA_LOW(b);
     SCL_REL(b);
-    if (!wait_scl(b, 1)) { SDA_REL(b); return 0; }
+    if (!wait_scl(b, 1)) { SDA_REL(b); return -2; }
     if (one && !SDA(b)) return -1;  /* someone else is sending a 0 */
   }
-  if (!wait_scl(b, 0)) { SDA_REL(b); return 0; }
+  if (!wait_scl(b, 0)) { SDA_REL(b); return -2; }
   SDA_REL(b);
-  if (!wait_scl(b, 1)) return 0;
+  if (!wait_scl(b, 1)) return -2;
   int ack = !SDA(b);
   wait_scl(b, 0);
   return ack;
@@ -114,12 +114,16 @@ static int serve(soft_i2c_bus_t *b, const soft_i2c_target_t *t)
 
     if (a & 1) {  /* controller reads */
       int r;
-      while ((r = send_byte(b, t->read(reg_ptr++, b))) == 1) { }
-      if (r < 0) {
+      uint8_t first = reg_ptr, n = 0;
+      while ((r = send_byte(b, t->read(reg_ptr++, n, b))) == 1) n++;
+      n++;
+      if (r == 0 && t->read_done) t->read_done(first, n);
+      if (r == -1) {
         if (t->lost) t->lost(addr);
         wait_bus_free(b);
         return addressed;
       }
+      if (r < 0) return addressed;
       /* NACK ends the read; next is STOP or a repeated START */
       ev = recv_byte(b, &a);
       if (ev == EV_START) continue;

@@ -27,12 +27,16 @@ typedef struct {
   /* Return 1 if we answer to this 7-bit address on this bus. Called for
    * every address seen, so it also tells us who else uses the bus. */
   int (*match)(uint8_t addr, soft_i2c_bus_t *bus);
-  /* A byte the controller reads, from register reg. */
-  uint8_t (*read)(uint8_t reg, soft_i2c_bus_t *bus);
+  /* A byte the controller reads, from register reg, the idx-th of this read
+   * (so reg - idx is where the read started). */
+  uint8_t (*read)(uint8_t reg, uint8_t idx, soft_i2c_bus_t *bus);
   /* A byte the controller wrote to register reg. */
   void (*write)(uint8_t reg, uint8_t value, soft_i2c_bus_t *bus);
   /* We lost arbitration while answering on addr. */
   void (*lost)(uint8_t addr);
+  /* A read that started at register first ended the normal way, the
+   * controller NACKing the last of the n bytes we sent: it has them all. */
+  void (*read_done)(uint8_t first, uint8_t n);
 } soft_i2c_target_t;
 
 /* Make both pins open-drain and released (high through the 10k pull-ups). */
