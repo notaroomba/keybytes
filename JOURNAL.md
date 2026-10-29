@@ -57,7 +57,11 @@ The first idea was a 2 wire system where power and data both go through 2 termin
 
 It turns out its doable but it needs a MOSFET bridge instead of diodes (a 0.6V drop at every key would kill the power a few keys out), a small choke so the bulk cap doesnt short out the data, and the data has to be sent as a 2MHz carrier.
 
-Then for the stagger, if the contacts are on a 2.38mm grid (19.05 / 8) a key can slide along another one and snap every 25%, which covers every normal ANSI/ISO stagger since those are all multiples of a quarter key (37.5% isnt really a thing). If every contact is a magnet on a pogo pin with the poles going N S N S clockwise on every side, then at every quarter step N lands on S and pulls, halfway between N lands on N and pushes it to the next step, and it still works when you rotate a key 90 degrees. I was looking at these 1mm x 2mm magnets from JC magnetics for it
+Then for the stagger, if the contacts are on a 2.38mm grid (19.05 / 8) a key can slide along another one and snap every 25%, which covers every normal ANSI/ISO stagger since those are all multiples of a quarter key (37.5% isnt really a thing). If every contact is a magnet on a pogo pin with the poles going N S N S clockwise on every side, then at every quarter step N lands on S and pulls, halfway between N lands on N and pushes it to the next step, and it still works when you rotate a key 90 degrees. Here are my sketches of the alternating magnets around the edges, the pogo pins with springs on each side, and how the contacts line up when two keys slide past each other
+
+![image](assets/journal/magnet_pogo_sketch.jpeg)
+
+I was looking at these 1mm x 2mm magnets from JC magnetics for it
 
 ![image](assets/journal/jc_magnetics_1x2.jpeg)
 
