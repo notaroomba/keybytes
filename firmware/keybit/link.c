@@ -77,7 +77,7 @@ static uint8_t p_get(const link_pins_t *p, int turn)
   return x;
 }
 
-int link_poll(const link_pins_t *p, int doorbell, uint8_t my_depth,
+int link_poll(const link_pins_t *p, int doorbell, uint8_t my_depth, const uint8_t me[LINK_ME_SIZE],
               link_reply_t *child, uint8_t room, uint8_t *kept, link_idle_fn idle)
 {
   if (!CK(p)) return LINK_SKIPPED;
@@ -104,6 +104,7 @@ int link_poll(const link_pins_t *p, int doorbell, uint8_t my_depth,
   DelaySysTick(HALF);
   p_put(p, LINK_MAGIC, 0);
   p_put(p, my_depth, 0);
+  for (int i = 0; i < LINK_ME_SIZE; i++) p_put(p, me[i], 0);
   RELEASE(p->dt);
 
   child->depth = p_get(p, 1);
@@ -169,7 +170,7 @@ static inline __attribute__((always_inline)) int c_put(const fast_t *f, const li
 }
 
 int link_serve(const link_pins_t *p, int ringing, const link_reply_t *reply,
-               uint8_t *parent_depth, uint8_t *kept)
+               uint8_t *parent_depth, uint8_t parent[LINK_ME_SIZE], uint8_t *kept)
 {
   /* CK and DT may sit on different ports. */
   fast_t f = { &GpioOf(p->ck)->INDR, 1u << (p->ck & 0xf), 0 };
@@ -194,8 +195,10 @@ int link_serve(const link_pins_t *p, int ringing, const link_reply_t *reply,
   DT_REL(p);
   if (!ok) return 0;
 
-  uint8_t magic, depth;
+  uint8_t magic, depth, them[LINK_ME_SIZE];
   if (!c_get(&f, &d, &magic) || !c_get(&f, &d, &depth) || magic != LINK_MAGIC) return 0;
+  for (int i = 0; i < LINK_ME_SIZE; i++)
+    if (!c_get(&f, &d, &them[i])) return 0;
 
   /* The parent let go of DT after its last bit and gives us an extra TURN
    * on this first low phase; wait half of it, then drive. */
@@ -212,6 +215,7 @@ int link_serve(const link_pins_t *p, int ringing, const link_reply_t *reply,
   uint8_t k, inv;
   if (!c_get(&f, &d, &k) || !c_get(&f, &d, &inv)) return 0;
   *parent_depth = depth;
+  for (int i = 0; i < LINK_ME_SIZE; i++) parent[i] = them[i];
   *kept = (uint8_t)~inv == k && k <= reply->n ? k : 0;
   return 1;
 

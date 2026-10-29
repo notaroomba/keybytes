@@ -38,6 +38,12 @@ typedef struct {
   uint8_t via;         /* address of the touching Keybit it came through */
   uint8_t dirty;       /* set on any change; the consumer clears it */
   uint8_t fresh_down;  /* went down in a relay batch the consumer hasn't seen yet */
+  /* Where it is (v11 Keybits): the Keybit it hangs off (low 32 bits of its
+   * UID), that Keybit's side it's on and its own side facing it, as
+   * N/E/S/W; 0 / '?' until known. moved: these changed since last reported. */
+  uint32_t parent;
+  char pside, face;
+  uint8_t moved;
   uint8_t tap;         /* a press and release came in one batch: 1 = report down, 2 = then up */
   uint32_t last_seen;  /* HAL_GetTick() */
 } keybit_remote_t;

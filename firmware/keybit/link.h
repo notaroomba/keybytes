@@ -17,9 +17,11 @@
  *             LINK_HALF_US. The parent's bits are sampled on CK rising;
  *             the child sets its bits on CK falling and the parent reads
  *             them just before CK falls again. MSB first.
- *   Frame     parent -> child: 0xA5, parent depth
- *             child -> parent: child depth, n (<= 8), n events of 5
- *                              bytes, CRC-8 of all of those
+ *   Frame     parent -> child: 0xA6, parent depth, parent uid32 (4),
+ *                              the parent's side this is (N/E/S/W)
+ *             child -> parent: child depth, n (<= 8), n events of 11
+ *                              bytes (uid32, flags, parent uid32, parent
+ *                              side, face), CRC-8 of all of those
  *             parent -> child: kept, ~kept
  *             The child drops the first `kept` events from its queue.
  *
@@ -31,9 +33,10 @@
 
 #include <stdint.h>
 
-#define LINK_MAGIC   0xA5
+#define LINK_MAGIC   0xA6   /* v11 frames; v10 used 0xA5 and a different layout */
 #define LINK_EVENTS  8
-#define LINK_EV_SIZE 5
+#define LINK_EV_SIZE 11  /* uid32, flags, parent uid32, parent side, face */
+#define LINK_ME_SIZE 5   /* what a parent tells a child about itself: uid32, side */
 
 typedef struct {
   uint8_t dt, ck;  /* ch32fun pin numbers: the side's SDA and SCL */
@@ -57,13 +60,13 @@ enum { LINK_OK = 1, LINK_SKIPPED = 0, LINK_NO_ACK = -1, LINK_ABORTED = -2, LINK_
  * before we started). On success fills *child and returns LINK_OK, else
  * one of the other codes; *kept is the number of events we told the child
  * we kept (the caller takes those). */
-int link_poll(const link_pins_t *p, int doorbell, uint8_t my_depth,
+int link_poll(const link_pins_t *p, int doorbell, uint8_t my_depth, const uint8_t me[LINK_ME_SIZE],
               link_reply_t *child, uint8_t room, uint8_t *kept, link_idle_fn idle);
 
 /* Child: CK is low on this side and the caller decided it's a request.
- * Answers with *reply. On success sets *parent_depth and *kept and
- * returns 1. */
+ * Answers with *reply. On success sets *parent_depth, parent (its uid32
+ * and the side of it we're on) and *kept, and returns 1. */
 int link_serve(const link_pins_t *p, int ringing, const link_reply_t *reply,
-               uint8_t *parent_depth, uint8_t *kept);
+               uint8_t *parent_depth, uint8_t parent[LINK_ME_SIZE], uint8_t *kept);
 
 #endif

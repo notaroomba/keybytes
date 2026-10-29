@@ -14,6 +14,8 @@
 #define REG_EV_COUNT 0x52
 #define REG_EV_DATA  0x53
 #define REG_EV_POP   0x7B
+#define REG_EV_DATA11 0x80  /* v11: 11-byte events with where the Keybit is */
+#define EV_SIZE11    11
 #define EV_BATCH     8
 #define EV_PRESSED   0x01
 #define EV_HEARTBEAT 0x02
@@ -205,14 +207,17 @@ int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n,
     uint8_t count;
     if (!read_regs(i2c, k[i].addr, REG_EV_COUNT, &count, 1) || count == 0) continue;
     if (count > EV_BATCH) count = EV_BATCH;
-    uint8_t ev[EV_BATCH * 5];
-    if (!read_regs(i2c, k[i].addr, REG_EV_DATA, ev, (uint16_t)(count * 5))) continue;
+    /* v11 Keybits also say where each Keybit is; older ones only uid + flags. */
+    int size = k[i].fw >= 11 ? EV_SIZE11 : 5;
+    uint8_t ev[EV_BATCH * EV_SIZE11];
+    if (!read_regs(i2c, k[i].addr, size == 5 ? REG_EV_DATA : REG_EV_DATA11, ev, (uint16_t)(count * size))) continue;
     HAL_I2C_Mem_Write(i2c, (uint16_t)(k[i].addr << 1), REG_EV_POP, I2C_MEMADD_SIZE_8BIT,
                       &count, 1, I2C_TIMEOUT_MS);
 
     for (int e = 0; e < count; e++) {
-      uint32_t uid = uid32(&ev[e * 5]);
-      uint8_t flags = ev[e * 5 + 4];
+      const uint8_t *x8 = &ev[e * size];
+      uint32_t uid = uid32(x8);
+      uint8_t flags = x8[4];
 
       /* Touching Keybits queue their own key events too. Their key is read
        * directly, but a tap shorter than the key poll only shows up here:
@@ -248,6 +253,17 @@ int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n,
       x->backwards = back;
       x->depth = flags >> 4;
       x->via = k[i].addr;
+      if (size == EV_SIZE11 && x8[10] != '?') {
+        uint32_t parent = uid32(&x8[5]);
+        if (parent != x->parent || x8[9] != x->pside || x8[10] != x->face) {
+          x->parent = parent;
+          x->pside = (char)x8[9];
+          x->face = (char)x8[10];
+          x->moved = 1;
+          x->dirty = 1;
+          changed = 1;
+        }
+      }
       x->last_seen = now;
     }
   }

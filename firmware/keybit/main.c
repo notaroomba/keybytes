@@ -53,7 +53,11 @@
  *   0x30-0x4F  link diagnostics, 8 counters per side (see diag below)
  *   0x51       our depth, 0xFF if we can't reach the keyword yet
  *   0x52       events ready to read, at most 8
- *   0x53-0x7A  up to 8 events, 5 bytes each: UID bits 0..31, then flags
+ *   0x80-0xD7  up to 8 events, 11 bytes each: UID bits 0..31, flags, the
+ *              UID bits 0..31 of the Keybit it hangs off (0 for the
+ *              keyword), that Keybit's side it's on ('K' for the keyword),
+ *              and its own side facing it
+ *   0x53-0x7A  the same events, 5 bytes each (UID, flags), for older keywords
  *              (bit 0 pressed, bit 1 heartbeat, bit 2 a neighbour is on
  *              backwards, bits 4-7 origin depth)
  *   0x7B       (write) n: drop the first n events, they were received
@@ -65,7 +69,7 @@
 #include "link.h"
 #include <string.h>
 
-#define FW_VERSION          10
+#define FW_VERSION          11
 #define KEYBIT_DEFAULT_ADDR 0x30
 #define LINK_ADDR           0x31  /* reserved: the keyword never assigns it */
 #define BTN_PIN             PD6   /* MX switch to GND */
@@ -101,7 +105,11 @@ typedef struct {
 typedef struct {
   uint8_t uid[4];
   uint8_t flags;
+  uint8_t parent[4];  /* uid32 of the Keybit we hang off, 0 for the keyword */
+  uint8_t pside;      /* its side we're on (N/E/S/W), 'K' for the keyword */
+  uint8_t face;       /* our side facing it (N/E/S/W) */
 } event_t;
+_Static_assert(sizeof(event_t) == LINK_EV_SIZE, "an event goes over the link as is");
 
 typedef struct {
   /* Learned when the neighbour polls us: it's a parent (or a peer). Only
@@ -120,6 +128,7 @@ typedef struct {
   uint8_t ringing;       /* we're holding DT low as a doorbell */
   uint32_t polled_at;    /* tick of our last link poll here */
   uint32_t poll_wait;    /* how long after polled_at the next one is due */
+  uint8_t parent[LINK_ME_SIZE];  /* the Keybit polling us here: uid32, its side */
   uint8_t held;          /* DT low with CK high since held_at */
   uint32_t held_at;
 } side_t;
@@ -200,10 +209,23 @@ static void queue_push(const event_t *e)
   q_count++;
 }
 
+/* The side our depth comes from, so we can say where we hang off. */
+static int8_t up_side = -1;
+
 static void queue_own(uint8_t flags)
 {
   event_t e;
+  memset(&e, 0, sizeof(e));
   memcpy(e.uid, uid, 4);
+  e.pside = e.face = '?';
+  if (up_side >= 0) {
+    e.face = (uint8_t)buses[up_side].side;
+    if (sides[up_side].parent_depth == 0) e.pside = 'K';
+    else {
+      memcpy(e.parent, sides[up_side].parent, 4);
+      e.pside = sides[up_side].parent[4];
+    }
+  }
   uint8_t d = my_depth > 15 ? 15 : my_depth;
   e.flags = (uint8_t)(flags | (key_down ? EV_PRESSED : 0) | (backwards ? EV_BACKWARDS : 0) | (d << 4));
   queue_push(&e);
@@ -288,6 +310,11 @@ static uint8_t read_reg(uint8_t reg, soft_i2c_bus_t *bus)
   if (reg >= 0x02 && reg <= 0x05) return uid[reg - 0x02];
   if (reg >= 0x10 && reg <= 0x1B) return uid[reg - 0x10];
   if (reg >= 0x30 && reg < 0x30 + sizeof(diag)) return diag[(reg - 0x30) / D_N][(reg - 0x30) % D_N];
+  if (reg >= 0x80 && reg < 0x80 + BATCH * LINK_EV_SIZE) {   /* v11 events, LINK_EV_SIZE bytes each */
+    int i = (reg - 0x80) / LINK_EV_SIZE, b = (reg - 0x80) % LINK_EV_SIZE;
+    if (i >= q_count) return 0xFF;
+    return ((const uint8_t *)queue_at(i))[b];
+  }
   if (reg >= 0x53 && reg < 0x53 + BATCH * 5) {
     int i = (reg - 0x53) / 5, b = (reg - 0x53) % 5;
     if (i >= q_count) return 0xFF;
@@ -344,13 +371,19 @@ static const soft_i2c_target_t target = {
 static void update_depth(void)
 {
   uint8_t best = DEPTH_NONE;
+  int8_t from = -1;
   for (int s = 0; s < 4; s++) {
     side_t *sd = &sides[s];
     if (sd->parent_depth == DEPTH_NONE) continue;
     if (elapsed(sd->parent_seen, MS(FRESH_MS))) { sd->parent_depth = DEPTH_NONE; continue; }
-    if (sd->parent_depth < best) best = sd->parent_depth;
+    if (sd->parent_depth < best) { best = sd->parent_depth; from = (int8_t)s; }
   }
   my_depth = best == DEPTH_NONE || best >= 0xFE ? DEPTH_NONE : (uint8_t)(best + 1);
+  if (my_depth == DEPTH_NONE) from = -1;
+  if (from != up_side) {
+    up_side = from;
+    if (from >= 0) queue_own(0);   /* tell the keyword where we hang off now */
+  }
 }
 
 static void fill_reply(link_reply_t *r)
@@ -358,9 +391,7 @@ static void fill_reply(link_reply_t *r)
   r->depth = my_depth;
   r->n = q_count < BATCH ? q_count : BATCH;
   for (int i = 0; i < r->n; i++) {
-    const event_t *e = queue_at(i);
-    memcpy(&r->ev[i * LINK_EV_SIZE], e->uid, 4);
-    r->ev[i * LINK_EV_SIZE + 4] = e->flags;
+    memcpy(&r->ev[i * LINK_EV_SIZE], queue_at(i), LINK_EV_SIZE);
   }
 }
 
@@ -392,7 +423,8 @@ static void poll_child(int s, int doorbell)
   uint8_t kept = 0;
 
   link_side = s;
-  int ok = link_poll(&p, doorbell, my_depth, &got, (uint8_t)(QUEUE_LEN - q_count), &kept, serve_others);
+  uint8_t me[LINK_ME_SIZE] = { uid[0], uid[1], uid[2], uid[3], (uint8_t)buses[s].side };
+  int ok = link_poll(&p, doorbell, my_depth, me, &got, (uint8_t)(QUEUE_LEN - q_count), &kept, serve_others);
   link_side = -1;
   reset_i2c_edge(s);
   if (ok != LINK_SKIPPED) diag_count(s, D_REQ);
@@ -407,8 +439,7 @@ static void poll_child(int s, int doorbell)
   sd->child_seen = ticks();
   for (int i = 0; i < kept; i++) {
     event_t e;
-    memcpy(e.uid, &got.ev[i * LINK_EV_SIZE], 4);
-    e.flags = got.ev[i * LINK_EV_SIZE + 4];
+    memcpy(&e, &got.ev[i * LINK_EV_SIZE], LINK_EV_SIZE);
     queue_push(&e);
   }
 }
@@ -433,7 +464,7 @@ static void answer_link(int s, int listening)
   link_reply_t r;
   uint8_t depth, kept;
   fill_reply(&r);
-  int ok = link_serve(&p, sd->ringing, &r, &depth, &kept);
+  int ok = link_serve(&p, sd->ringing, &r, &depth, sd->parent, &kept);
   sd->ringing = 0;
   reset_i2c_edge(s);
   diag_count(s, ok ? D_SERVED : D_SERVE_FAIL);

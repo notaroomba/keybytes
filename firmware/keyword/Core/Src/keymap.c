@@ -195,7 +195,10 @@ static void Remote_Line(char *out, size_t n, const keybit_remote_t *r)
   {
     if (present[i].addr == r->via) PROTO_FormatUid(via, present[i].uid);
   }
-  snprintf(out, n, "KEY+ uid=%s at=X via=%s depth=%u", uid, via, r->depth);
+  int len = snprintf(out, n, "KEY+ uid=%s at=X via=%s depth=%u", uid, via, r->depth);
+  /* v11: what it hangs off, which of that one's sides, and its own side facing it */
+  if (r->face && r->face != '?' && len > 0 && (size_t)len < n)
+    snprintf(out + len, n - (size_t)len, " parent=%08lX pside=%c face=%c", (unsigned long)r->parent, r->pside, r->face);
 }
 
 int KEYMAP_KeyLine(int i, char *out, size_t n)
@@ -204,7 +207,8 @@ int KEYMAP_KeyLine(int i, char *out, size_t n)
   if (i < present_count)
   {
     PROTO_FormatUid(uid, present[i].uid);
-    snprintf(out, n, "KEY+ uid=%s at=%c v=%u", uid, present[i].at, present[i].fw);   /* v: Keybit reg 0x01 */
+    /* v: Keybit reg 0x01; face: its own side touching the keyword */
+    snprintf(out, n, "KEY+ uid=%s at=%c v=%u face=%c", uid, present[i].at, present[i].fw, present[i].keybit_side);
     return 1;
   }
   i -= present_count;
@@ -328,7 +332,14 @@ static void Remote_Keys(void)
     if (k->present && !remote_shown[r])
     {
       remote_shown[r] = 1;
+      k->moved = 0;
       memset(s, 0, sizeof(*s));
+      Remote_Line(line, sizeof(line), k);
+      PROTO_Send("%s", line);
+    }
+    else if (k->present && k->moved)
+    {
+      k->moved = 0;   /* same Keybit, now known (or known to be) somewhere else */
       Remote_Line(line, sizeof(line), k);
       PROTO_Send("%s", line);
     }
