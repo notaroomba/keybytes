@@ -63,10 +63,10 @@
  *              origin depth)
  *   0x7B       (write) n: drop the first n events, they were received
  *   0xE0       status stream, read from here only: key state (bit 0) and
- *              backwards (bit 1), the event count, then events 5 bytes each
- *              as at 0x53. A read that ends normally drops the events it
- *              covered, up to the first one with bit 3 set: read that one's
- *              place at 0x80 and drop it with 0x7B.
+ *              backwards (bit 1), the event count, then the events: 5 bytes
+ *              (UID, flags as at 0x53), or all 11 as at 0x80 when flags bit
+ *              3 says the place is in it. A read that ends normally drops
+ *              the events it covered whole.
  *
  * PD1 stays SWIO so the keyword can always reflash us. Don't remap it.
  */
@@ -107,7 +107,7 @@
 #define EV_BACKWARDS 0x04
 #define EV_WHERE     0x08   /* parent, side and face in this event are news */
 #define REG_STREAM   0xE0
-#define STREAM_EV    5      /* uid32, flags */
+#define STREAM_EV    5      /* uid32, flags; LINK_EV_SIZE with EV_WHERE */
 
 typedef struct {
   uint16_t magic;
@@ -332,23 +332,20 @@ static void listen(void)
   if (kw_side >= 0) soft_i2c_poll(&buses[kw_side], &target);
 }
 
-/* The first n events in the queue, up to the first one with EV_WHERE. */
-static int plain_events(int n)
-{
-  int i = 0;
-  while (i < n && i < q_count && !(queue_at(i)->flags & EV_WHERE)) i++;
-  return i;
-}
+static int stream_size(const event_t *e) { return e->flags & EV_WHERE ? LINK_EV_SIZE : STREAM_EV; }
 
 static uint8_t read_reg(uint8_t reg, uint8_t idx, soft_i2c_bus_t *bus)
 {
   if ((uint8_t)(reg - idx) == REG_STREAM) {
     if (idx == 0) return (uint8_t)(key_down | (backwards ? 2 : 0));
     if (idx == 1) return q_count < BATCH ? q_count : BATCH;
-    int i = (idx - 2) / STREAM_EV, b = (idx - 2) % STREAM_EV;
-    if (i >= q_count || i >= BATCH) return 0xFF;
-    const event_t *e = queue_at(i);
-    return b < 4 ? e->uid[b] : e->flags;
+    int pos = 2;
+    for (int i = 0; i < q_count && i < BATCH; i++) {
+      const event_t *e = queue_at(i);
+      if (idx < pos + stream_size(e)) return ((const uint8_t *)e)[idx - pos];
+      pos += stream_size(e);
+    }
+    return 0xFF;
   }
   if (reg >= 0x02 && reg <= 0x05) return uid[reg - 0x02];
   if (reg >= 0x10 && reg <= 0x1B) return uid[reg - 0x10];
@@ -380,8 +377,10 @@ static uint8_t read_reg(uint8_t reg, uint8_t idx, soft_i2c_bus_t *bus)
 /* A status stream read went through: drop the events it covered whole. */
 static void read_done(uint8_t first, uint8_t n)
 {
-  if (first != REG_STREAM || n < 2 + STREAM_EV) return;
-  queue_pop(plain_events((n - 2) / STREAM_EV));
+  if (first != REG_STREAM) return;
+  int pos = 2, k = 0;
+  while (k < q_count && k < BATCH && pos + stream_size(queue_at(k)) <= n) pos += stream_size(queue_at(k++));
+  queue_pop(k);
 }
 
 static void write_reg(uint8_t reg, uint8_t value, soft_i2c_bus_t *bus)

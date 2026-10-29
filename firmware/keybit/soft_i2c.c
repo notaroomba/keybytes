@@ -85,14 +85,24 @@ static int send_byte(soft_i2c_bus_t *b, uint8_t v)
   return ack;
 }
 
-/* Sit out the rest of a transaction that isn't for us. */
-static void wait_bus_free(soft_i2c_bus_t *b)
+/* Sit out the rest of a transaction that isn't for us. It's called right
+ * after the address byte, before its 9th clock, so counting 9-bit bytes
+ * from here was one bit off: at the end it could be left waiting through
+ * TIMEOUT for an SCL fall after the STOP, deaf to the next transfer.
+ * Instead just watch for SDA moving while SCL stays high. Returns 1 on a
+ * repeated START (the caller reads its address), 0 on a STOP or when the
+ * lines sit still for TIMEOUT. */
+static int wait_bus_free(soft_i2c_bus_t *b)
 {
-  uint8_t dummy;
-  for (int n = 0; n < 64; n++) {
-    int ev = recv_byte(b, &dummy);
-    if (ev == EV_STOP || ev == EV_TIMEOUT) return;
-    if (ev == EV_BYTE) { if (!wait_scl(b, 1) || !wait_scl(b, 0)) return; }  /* 9th clock */
+  int scl = SCL(b), sda = SDA(b);
+  uint32_t t0 = SysTick->CNT;
+  for (;;) {
+    int c = SCL(b), d = SDA(b);
+    if (c && scl && d != sda) return !d;   /* SDA fell: START, rose: STOP */
+    if (c != scl || d != sda) t0 = SysTick->CNT;
+    else if (SysTick->CNT - t0 >= TIMEOUT) return 0;
+    scl = c;
+    sda = d;
   }
 }
 
@@ -108,7 +118,10 @@ static int serve(soft_i2c_bus_t *b, const soft_i2c_target_t *t)
     if (ev == EV_START) continue;
     if (ev != EV_BYTE) return addressed;
     uint8_t addr = a >> 1;
-    if (!t->match(addr, b)) { wait_bus_free(b); return addressed; }
+    if (!t->match(addr, b)) {
+      if (wait_bus_free(b)) continue;
+      return addressed;
+    }
     addressed = 1;
     if (!send_ack(b)) return addressed;
 
