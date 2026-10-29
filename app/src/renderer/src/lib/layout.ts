@@ -63,6 +63,8 @@ export function layout(
   sides: Partial<Record<Side, boolean>>,
   /** The side the user put an L/T Keybit on, by UID. */
   prefer: Record<string, Side> = {},
+  /** For chained Keybits, which of the possible cells the user picked, by UID. */
+  pick: Record<string, number> = {},
 ): Placed[] {
   const cells = new Map<string, string>([[key([0, 0]), 'keyword']]);
   const at: Record<string, Cell> = {};
@@ -104,9 +106,10 @@ export function layout(
     }).length;
     const straight = (c: Cell) => c[0] - from[0] === out[0] && c[1] - from[1] === out[1];
     free.sort((a, b) => touching(b) - touching(a) || Number(straight(b)) - Number(straight(a)));
-    at[uid] = free[0];
-    cells.set(key(free[0]), uid);
-    hop[`${k.via}:${k.depth}`] ??= free[0];
+    const c = free[(pick[uid] ?? 0) % free.length];
+    at[uid] = c;
+    cells.set(key(c), uid);
+    hop[`${k.via}:${k.depth}`] ??= c;
   }
 
   const px = ([x, y]: Cell) => ({ x: x * STEP, y: y * STEP, w: TILE, h: TILE });

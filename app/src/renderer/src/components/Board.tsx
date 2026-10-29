@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { ArrowLeftRight } from 'lucide-react';
+import { ArrowLeftRight, Move } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { actionLabel, activeProfile, demo, entryOf, keyName, openAssign } from '../controller.ts';
 import { bounds, layout, otherSide, type Placed } from '../lib/layout.ts';
@@ -13,9 +13,14 @@ const MAX_H = 320;
 const PAD = 16;
 /** Where the user put Keybits that could be on the left or the top, by UID. */
 const PREFER_KEY = 'board-side';
+/** Which spot the user picked for each chained Keybit, by UID. */
+const PICK_KEY = 'board-pick';
 
-function loadPrefer(): Record<string, Side> {
-  try { return JSON.parse(localStorage.getItem(PREFER_KEY) || '{}'); } catch { return {}; }
+function load<T>(name: string): Record<string, T> {
+  try { return JSON.parse(localStorage.getItem(name) || '{}'); } catch { return {}; }
+}
+function save(name: string, value: object) {
+  try { localStorage.setItem(name, JSON.stringify(value)); } catch { /* only a convenience */ }
 }
 
 /**
@@ -30,15 +35,21 @@ export function Board() {
   useApp((s) => s.store); // labels follow the active profile
   const isDemo = transport === 'demo';
 
-  const [prefer, setPrefer] = useState(loadPrefer);
+  const [prefer, setPrefer] = useState(() => load<Side>(PREFER_KEY));
+  const [pick, setPick] = useState(() => load<number>(PICK_KEY));
   const flip = (uid: string, now: Side) => {
     const to = otherSide(now);
     if (!to) return;
     const next = { ...prefer, [uid]: to };
     setPrefer(next);
-    try { localStorage.setItem(PREFER_KEY, JSON.stringify(next)); } catch { /* only a convenience */ }
+    save(PREFER_KEY, next);
   };
-  const placed = useMemo(() => layout(keys, sides, prefer), [keys, sides, prefer]);
+  const move = (uid: string) => {
+    const next = { ...pick, [uid]: (pick[uid] ?? 0) + 1 };
+    setPick(next);
+    save(PICK_KEY, next);
+  };
+  const placed = useMemo(() => layout(keys, sides, prefer, pick), [keys, sides, prefer, pick]);
 
   // Keep what just left on screen long enough to pop out.
   const [leaving, setLeaving] = useState<Placed[]>([]);
@@ -112,6 +123,24 @@ export function Board() {
     );
   };
 
+  /** A chained Keybit's spot is a guess, so it gets a button to try the next spot. */
+  const mover = (p: Placed) => {
+    if (p.kind !== 'keybit' || !p.estimated || !p.uid) return null;
+    return (
+      <button
+        key={`move-${p.id}`}
+        type="button"
+        title="Not here? Move it to the next spot next to the Keybit it's attached to"
+        aria-label="Move to the next spot"
+        onClick={() => move(p.uid!)}
+        style={{ left: p.x - b.x + p.w - 26, top: p.y - b.y + 4 }}
+        className="absolute grid size-[22px] place-items-center rounded-md text-muted hover:bg-line hover:text-fg motion-safe:transition-[left,top] motion-safe:duration-300"
+      >
+        <Move size={13} />
+      </button>
+    );
+  };
+
   /** A Keybit that could be on the left or the top gets a button to swap it. */
   const flipper = (p: Placed) => {
     const k = p.uid ? keys[p.uid] : undefined;
@@ -146,6 +175,7 @@ export function Board() {
           {placed.map((p) => tile(p, false))}
           {leaving.map((p) => tile(p, true))}
           {placed.map(flipper)}
+          {placed.map(mover)}
         </div>
       </div>
       {isDemo && <p className="text-xs text-muted">Demo: click a side to attach or remove a Keybit.</p>}
