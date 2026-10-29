@@ -110,7 +110,7 @@ static void LED_Set(uint8_t r, uint8_t g, uint8_t b)
  *   red    Keybit on the dock failed to flash (until it's taken off)
  *   red    blinking: SDA held low, a Keybit is on backwards (bus paused)
  *   red    double blink: a Keybit reports a neighbour on backwards
- *   white  blinking: a Keybit just connected on a side
+ *   white  blinking: a Keybit just connected, on a side or chained
  *   blue   Keybit on the dock (flashing); green once it's done
  *   white  idle */
 /* Dock: EMPTY until something answers, WORKING while flashing (blue), then
@@ -486,7 +486,11 @@ static void Keybit_Bus_Poll(void)
   }
   if (HAL_GetTick() - last_relay >= KEYBIT_RELAY_MS) {
     last_relay = HAL_GetTick();
+    int had = 0, has = 0;
+    for (int i = 0; i < keybit_remote_count; i++) had += keybit_remotes[i].present;
     keybit_bus_poll_relay(&hi2c3, keybits, keybit_count, keybit_remotes, &keybit_remote_count);
+    for (int i = 0; i < keybit_remote_count; i++) has += keybit_remotes[i].present;
+    if (has > had) white_until = HAL_GetTick() + WHITE_BLINK_MS;   /* a chained Keybit joined too */
   }
   if (HAL_GetTick() - last_scan < KEYBIT_SCAN_MS) return;
   last_scan = HAL_GetTick();
