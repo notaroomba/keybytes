@@ -19,7 +19,7 @@
  * of correct contacts reaches the Keyword; it boots from scratch whenever
  * it gains power.
  *
- * Apple arm64 only (ctx_arm64.S).
+ * Apple arm64 (ctx_arm64.S) or Linux x86_64 (ctx_x86_64.S).
  */
 #include <dlfcn.h>
 #include <math.h>
@@ -172,10 +172,19 @@ static void run_until(int64_t t)
 static void start_coroutine(node_t *n)
 {
   if (!n->stack) n->stack = malloc(STACK);
+#if defined(__x86_64__)
+  /* r15 r14 r13 r12 rbx rbp, then the return address; after ctx_switch's
+     ret the stack is 16-byte aligned for ctx_boot's call */
+  void **sp = (void **)(n->stack + STACK - 72);
+  memset(sp, 0, 72);
+  sp[4] = n;                    /* rbx */
+  sp[6] = (void *)ctx_boot;
+#else
   void **sp = (void **)(n->stack + STACK - 160);
   memset(sp, 0, 160);
   sp[0] = n;                    /* x19 */
   sp[11] = (void *)ctx_boot;    /* x30 */
+#endif
   n->sp = sp;
 }
 
