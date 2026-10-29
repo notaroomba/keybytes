@@ -25,6 +25,7 @@ typedef struct {
    * queued events: saw_down is set when a poll reads it down, pend when
    * its press event arrived unseen, tap 1 = report a down next, 2 = then up. */
   uint8_t saw_down, pend, tap;
+  uint32_t last_ok;  /* HAL_GetTick() of its last good read, any kind */
 } keybit_info_t;
 
 /* A Keybit further out, known only through events relayed by its
@@ -81,6 +82,14 @@ uint32_t keybit_bus_poll_keys(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n);
  * keybit_bus_poll_keys. Returns 1 if any entry changed. */
 int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n,
                           keybit_remote_t *r, int *rn);
+
+/* All the side bus work, a little per call: key polls every 15 ms, event
+ * drains (every 15 ms from a Keybit that relays chained ones, else 60 ms),
+ * and an address scan that looks at one address per call on calls with
+ * nothing else to do, about every 500 ms. Call it every main loop pass. */
+#define KEYBIT_CHANGED 1   /* a key, a Keybit or where one is changed */
+#define KEYBIT_JOINED  2   /* a Keybit joined, touching or chained */
+int keybit_bus_service(I2C_HandleTypeDef *i2c, keybit_info_t *k, int *n, keybit_remote_t *r, int *rn);
 
 /* Plain register access for other devices on I2C3, such as the BQ25895
  * charger (0x6A, never handed to a Keybit). Everything on the bus runs from

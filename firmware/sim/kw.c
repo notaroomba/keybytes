@@ -9,11 +9,12 @@
 #include "stm32wbxx_hal.h"
 #include "../keyword/Core/Src/keybit_bus.c"
 
+
 GPIO_TypeDef sim_gpiob;
 IWDG_TypeDef sim_iwdg;
 
 /* Timing knobs, settable from sim.c */
-int kw_keys_ms = 15, kw_relay_ms = 60, kw_scan_ms = 500, kw_task_ms = 5;
+int kw_task_ms = 5;
 int64_t kw_loop_ps = 50 * PS_US;      /* rest of the main loop: BLE, USB */
 int64_t kw_t_low = 25 * PS_US, kw_t_high = 25 * PS_US;
 #define T_SDADEL (500 * PS_NS)
@@ -168,6 +169,15 @@ HAL_StatusTypeDef HAL_I2C_Mem_Write(I2C_HandleTypeDef *h, uint16_t addr, uint16_
   return HAL_OK;
 }
 
+/* The cycle counter at 64 MHz; each look costs a few cycles. */
+DWT_TypeDef *sim_dwt(void)
+{
+  static DWT_TypeDef d;
+  sim_sleep(100 * PS_NS);
+  d.CYCCNT = (uint32_t)(sim_now() / 15625);
+  return &d;
+}
+uint32_t HAL_RCC_GetHCLKFreq(void) { return 64000000u; }
 uint32_t HAL_GetTick(void) { return (uint32_t)(sim_now() / PS_MS); }
 void HAL_Delay(uint32_t ms) { sim_sleep((int64_t)ms * PS_MS); }
 GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *port, uint16_t pin)
@@ -189,53 +199,19 @@ HAL_I2C_StateTypeDef HAL_I2C_GetState(I2C_HandleTypeDef *h) { (void)h; return HA
 /* ------------------------------------------------------------------------ */
 /* main.c: Keybit_Bus_Poll, without the host messages                       */
 
-#define KEYBIT_MISSES_MAX 2
-
 static I2C_HandleTypeDef hi2c3;
 keybit_info_t keybits[KEYBIT_MAX];
 int keybit_count;
 keybit_remote_t keybit_remotes[KEYBIT_REMOTE_MAX];
 int keybit_remote_count;
+static int kick;   /* KEYMAP_Kick: the keys task runs on the next pass */
 
 static void Keybit_Bus_Poll(void)
 {
-  static uint32_t last_scan, last_keys, last_relay;
-
   keybit_bus_unstick(&hi2c3);
   if (keybit_bus_jammed()) return;
-  if (HAL_GetTick() - last_keys >= (uint32_t)kw_keys_ms) {
-    last_keys = HAL_GetTick();
-    keybit_bus_poll_keys(&hi2c3, keybits, keybit_count);
-  }
-  if (HAL_GetTick() - last_relay >= (uint32_t)kw_relay_ms) {
-    last_relay = HAL_GetTick();
-    keybit_bus_poll_relay(&hi2c3, keybits, keybit_count, keybit_remotes, &keybit_remote_count);
-  }
-  if (HAL_GetTick() - last_scan < (uint32_t)kw_scan_ms) return;
-  last_scan = HAL_GetTick();
-
-  keybit_bus_assign(&hi2c3);
-  static uint8_t missed[KEYBIT_MAX];
-  keybit_info_t found[KEYBIT_MAX];
-  uint8_t found_missed[KEYBIT_MAX] = {0};
-  int n = keybit_bus_scan(&hi2c3, found, KEYBIT_MAX);
-  for (int i = 0; i < keybit_count && n < KEYBIT_MAX; i++) {
-    int here = 0;
-    for (int j = 0; j < n && !here; j++)
-      if (memcmp(found[j].uid, keybits[i].uid, sizeof(found[j].uid)) == 0) {
-        here = 1;
-        found[j].saw_down = keybits[i].saw_down;
-        found[j].pend = keybits[i].pend;
-        found[j].tap = keybits[i].tap;
-      }
-    if (!here && missed[i] < KEYBIT_MISSES_MAX) {
-      found[n] = keybits[i];
-      found_missed[n++] = (uint8_t)(missed[i] + 1);
-    }
-  }
-  memcpy(keybits, found, n * sizeof(found[0]));
-  memcpy(missed, found_missed, sizeof(missed));
-  keybit_count = n;
+  if (keybit_bus_service(&hi2c3, keybits, &keybit_count, keybit_remotes, &keybit_remote_count) & KEYBIT_CHANGED)
+    kick = 1;
 }
 
 /* ------------------------------------------------------------------------ */
@@ -281,7 +257,7 @@ static void Keys_Task(void)
 
 /* Probe mode: instead of the poll loop, IsDeviceReady the first Keybit at
  * the given half period, like I2CSCAN after I2CSPEED. */
-int kw_probe_left, kw_probe_acks;
+int kw_probe_left, kw_probe_acks, kw_probe_read;
 int64_t kw_probe_half;
 
 void kw_main(void)
@@ -295,8 +271,10 @@ void kw_main(void)
       /* I2CSCAN: every address in a row, as proto.c does it */
       int64_t lo = kw_t_low, hi = kw_t_high;
       kw_t_low = kw_t_high = kw_probe_half;
-      for (uint8_t a = 0x08; a <= 0x77; a++) {
-        int ok = HAL_I2C_IsDeviceReady(&hi2c3, (uint16_t)(a << 1), 1, 10) == HAL_OK;
+      for (uint8_t a = kw_probe_read ? keybits[0].addr : 0x08; a <= (kw_probe_read ? keybits[0].addr : 0x77); a++) {
+        uint8_t b4[4];
+        int ok = kw_probe_read ? HAL_I2C_Mem_Read(&hi2c3, (uint16_t)(a << 1), 0, 1, b4, 4, 10) == HAL_OK && b4[0] == 0x4B
+                               : HAL_I2C_IsDeviceReady(&hi2c3, (uint16_t)(a << 1), 1, 10) == HAL_OK;
         if (a == keybits[0].addr) {
           kw_probe_acks += ok;
           if (getenv("KW_TRACE")) printf("probe %02x at %.3f ms: %s\n", a, sim_now() / 1e9, ok ? "ack" : "NACK");
@@ -305,15 +283,16 @@ void kw_main(void)
       kw_probe_left--;
       kw_t_low = lo; kw_t_high = hi;
       /* the normal poll loop runs between I2CSCAN commands */
-      int64_t until = sim_now() + (100 + rand() % 200) * PS_MS;
+      int64_t until = sim_now() + (kw_probe_read ? 150 : 100 + rand() % 200) * PS_MS;
       while (sim_now() < until) { Keybit_Bus_Poll(); sim_sleep(kw_loop_ps); }
       continue;
     }
-    Keybit_Bus_Poll();
-    if (HAL_GetTick() - last_task >= (uint32_t)kw_task_ms) {
+    if (kick || HAL_GetTick() - last_task >= (uint32_t)kw_task_ms) {
+      kick = 0;
       last_task = HAL_GetTick();
       Keys_Task();
     }
+    Keybit_Bus_Poll();
     sim_sleep(kw_loop_ps);
   }
 }

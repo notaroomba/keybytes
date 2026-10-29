@@ -1,3 +1,4 @@
 sim
-node.bundle
+*.bundle
 *.dSYM/
+build_v10/

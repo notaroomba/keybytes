@@ -17,6 +17,9 @@
 
 void KEYMAP_Init(void);
 
+/* Run the keys task on the next sequencer pass instead of the next tick. */
+void KEYMAP_Kick(void);
+
 /* 0 on success (also when flash already matched), -1 on a flash error. */
 int KEYMAP_Save(void);
 

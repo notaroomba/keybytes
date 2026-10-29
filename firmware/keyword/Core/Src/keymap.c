@@ -399,6 +399,11 @@ static void Keys_Task(void)
   BATT_Poll(HAL_GetTick());
 }
 
+void KEYMAP_Kick(void)
+{
+  UTIL_SEQ_SetTask(1 << CFG_TASK_KEYS_ID, CFG_SCH_PRIO_0);
+}
+
 static void Keys_Tick(void)
 {
   UTIL_SEQ_SetTask(1 << CFG_TASK_KEYS_ID, CFG_SCH_PRIO_0);

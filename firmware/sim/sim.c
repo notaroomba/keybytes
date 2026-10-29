@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #include "sim.h"
 #include "ch32fun.h"
 
@@ -57,6 +58,8 @@ typedef struct {
   uint8_t (*depth)(void);
   uint8_t (*qcount)(void);
   const uint8_t *(*diag)(void);
+  int (*has_press)(uint32_t);
+  uint8_t (*key)(void);
   sim_systick_t st;
   sim_gpio_t gpio[4];
   sim_esig_t esig;
@@ -89,9 +92,11 @@ static int op_cycles = 16;    /* a pin or SysTick access, with the code around i
 static int spin_cycles = 5;   /* one pass of link.c's tight spin on the input register */
 /* The main loop's own work between register accesses (depth, doorbell,
  * side bookkeeping), charged once per pass on its one read of the key pin.
- * Fitted to the real Keybits: they answer every address at 25 kHz, half at
- * 30 kHz and none at 35 kHz (I2CSPEED sweep, 2026-10-29). */
-static int pass_cycles = 300;
+ * Fitted to the real v10 Keybits on 2026-10-29: `I2CRD 0a 00 4` after
+ * I2CSPEED succeeded 29/30 at 10 kHz, 30/30 at 15, 26/30 at 20, 13/20 at 25,
+ * 7/20 at 35 and 0/20 at 50 kHz. With 1100 the sim gets 20, 20, 18, 12, 10
+ * and 3 of 20 (`PROBE_READ=1 ./sim node_v10.bundle speed`). */
+static int pass_cycles = 1100;
 static double c_pf = 15, kw_pullup_k = 4.7;
 static unsigned seed = 1;
 static uint32_t tick0_all;
@@ -221,6 +226,7 @@ static void wire_update(int wi, int64_t t)
 /* Topology                                                                 */
 
 static int uf[MAXN * NPIN];
+static int vv[MAXN][MAXN];   /* the right way round to each other (3V3 meets 3V3) */
 static int find(int a) { while (uf[a] != a) a = uf[a] = uf[uf[a]]; return a; }
 
 static int side_facing(const node_t *n, int dx, int dy)
@@ -251,7 +257,6 @@ static void build(void)
   int ties[MAXN * NPIN];
   memset(ties, 0, sizeof(ties));
   for (int i = 0; i < MAXN * NPIN; i++) uf[i] = i;
-  int vv[MAXN][MAXN];
   memset(vv, 0, sizeof(vv));
 
   for (int a = 1; a < n_nodes; a++) {
@@ -340,6 +345,8 @@ static void build(void)
       k->depth = (uint8_t (*)(void))dlsym(dl, "sim_node_depth");
       k->qcount = (uint8_t (*)(void))dlsym(dl, "sim_node_qcount");
       k->diag = (const uint8_t *(*)(void))dlsym(dl, "sim_node_diag");
+      k->has_press = (int (*)(uint32_t))dlsym(dl, "sim_node_has_press");
+      k->key = (uint8_t (*)(void))dlsym(dl, "sim_node_key");
       memset(k->mode, GPIO_CFGLR_IN_FLOATING, sizeof(k->mode));
       memset(k->out, 1, sizeof(k->out));
       k->t = k->t_boot = sim_t + (int64_t)(1 + 2 * frand()) * PS_MS;
@@ -459,7 +466,7 @@ static int n_presses;
 
 extern int kw_present(uint32_t uid);
 extern int kw_where(uint32_t uid, uint32_t *parent, char *pside, char *face);
-extern int kw_keys_ms, kw_relay_ms, kw_scan_ms, kw_task_ms;
+extern int kw_task_ms;
 
 static uint32_t uid_of(int n) { return nodes[n].esig.UNIID1; }
 
@@ -527,6 +534,10 @@ static void measure(lat_t *by_depth, int max_depth, const int *depth_of)
       if (reports[r].uid == uid_of(p->node) && reports[r].down && reports[r].t >= p->down && reports[r].t < until) {
         got = reports[r].t; break;
       }
+    static FILE *dump;
+    static int dump_init;
+    if (!dump_init) { dump_init = 1; const char *f = getenv("LAT_DUMP"); if (f) dump = fopen(f, "a"); }
+    if (dump) fprintf(dump, "%d %.3f\n", d, got < 0 ? -1.0 : (got - p->down) / 1e9);
     if (got < 0) by_depth[d].lost++;
     else if (nb[d] < LOG_MAX / 8) buf[d][nb[d]++] = got - p->down;
   }
@@ -558,6 +569,7 @@ static int64_t wait_present(int64_t limit)
 }
 
 /* Taps on random powered Keybits: hold hold_ms (+ up to 50%), gap gap_ms (+ up to 100%). */
+static int dropouts;   /* times a powered Keybit wasn't in the Keyword's list between taps */
 static void type_keys(int count, int hold_ms, int gap_ms)
 {
   for (int i = 0; i < count; i++) {
@@ -570,6 +582,11 @@ static void type_keys(int count, int hold_ms, int gap_ms)
     run_until(sim_t + hold);
     nodes[n].button = 0;
     run_until(sim_t + gap);
+    for (int k = 1; k < n_nodes; k++)
+      if (nodes[k].powered && !kw_present(uid_of(k))) {
+        dropouts++;
+        if (getenv("SHOW_DROPS")) printf("  kb%d missing at %.0f ms\n", k, sim_t / 1e9);
+      }
   }
   run_until(sim_t + 200 * PS_MS);   /* let the last ones arrive */
 }
@@ -609,38 +626,243 @@ static void report_latency(const char *name, int max_depth)
     lost += lat[d].lost;
   }
   CHECK(lost == 0, "%s: %d presses never reached the Keyword", name, lost);
+  CHECK(dropouts == 0, "%s: Keybits dropped out of the Keyword's list %d times", name, dropouts);
 }
 
-/* A straight line out of the Keyword's right side, every Keybit the usual way round. */
-static void sc_chain(int len, int presses_n)
+/* Hops from the Keyword over contacts the right way round, 0 if unpowered. */
+static void expected_depths(int *depth)
 {
-  printf("chain of %d\n", len);
-  reset_world();
-  for (int i = 1; i <= len; i++) add_keybit(i, 0, 0);
-  build();
+  for (int n = 0; n < n_nodes; n++) depth[n] = 0;
+  int q[MAXN], h = 0, t = 0, seen[MAXN] = { 1 };
+  q[t++] = 0;
+  while (h < t) {
+    int a = q[h++];
+    for (int b = 1; b < n_nodes; b++)
+      if (!seen[b] && vv[a][b] && nodes[b].placed) { seen[b] = 1; depth[b] = depth[a] + 1; q[t++] = b; }
+  }
+}
+
+static const char COMPASS[4] = { 'N', 'E', 'S', 'W' };
+
+static int node_by_uid(uint32_t uid)
+{
+  for (int n = 1; n < n_nodes; n++) if (nodes[n].placed && uid_of(n) == uid) return n;
+  return -1;
+}
+
+/* Depths, and for v11+ Keybits where the Keyword thinks each chained one is. */
+static void check_places(void)
+{
+  int want[MAXN];
+  expected_depths(want);
+  int placed = 0;
+  for (int n = 1; n < n_nodes; n++) {
+    if (!want[n]) continue;
+    CHECK(nodes[n].powered && nodes[n].depth() == want[n], "kb%d depth %d, want %d", n,
+          nodes[n].powered ? nodes[n].depth() : -1, want[n]);
+    uint32_t parent;
+    char pside, face;
+    if (want[n] < 2 || !kw_where(uid_of(n), &parent, &pside, &face)) continue;
+    int p = node_by_uid(parent);
+    int ok = p > 0 && want[p] == want[n] - 1 && vv[p][n];
+    if (ok) {
+      int dx = nodes[n].x - nodes[p].x, dy = nodes[n].y - nodes[p].y;
+      ok = COMPASS[side_facing(&nodes[p], dx, dy)] == pside && COMPASS[side_facing(&nodes[n], -dx, -dy)] == face;
+    }
+    CHECK(ok, "kb%d reported on kb%d's %c side facing it with %c: wrong", n, p, pside, face);
+    placed += ok;
+  }
+  printf("  depths checked, %d chained Keybits placed right\n", placed);
+}
+
+typedef struct { int x, y, rot; } cell_t;
+
+static void settle(const char *name)
+{
   int64_t t = wait_present(10000 * PS_MS);
-  printf("  all present after %.0f ms\n", t / 1e9);
-  CHECK(t >= 0, "not every Keybit showed up");
-  for (int n = 1; n < n_nodes; n++) CHECK(nodes[n].depth() == n, "kb%d depth %d, want %d", n, nodes[n].depth(), n);
-  type_keys(presses_n, 60, 120);
-  report_latency("tap", len);
+  printf("  %s: all present after %.0f ms\n", name, t / 1e9);
+  CHECK(t >= 0, "%s: not every powered Keybit showed up", name);
+  run_until(sim_t + 1500 * PS_MS);   /* positions settle after the first heartbeats */
+  check_places();
+}
+
+static void finish(void)
+{
   print_diag();
   printf("  shorts=%ld fights=%ld  kb1 main loop pass %.1f us\n", shorts, fights,
          btn_reads[1] ? (sim_t - nodes[1].t_boot) / 1e6 / btn_reads[1] : 0);
 }
 
+static void sc_layout(const char *name, const cell_t *c, int n, int presses_n)
+{
+  printf("%s (%d Keybits)\n", name, n);
+  reset_world();
+  for (int i = 0; i < n; i++) add_keybit(c[i].x, c[i].y, c[i].rot);
+  build();
+  settle(name);
+  type_keys(presses_n, 60, 120);
+  report_latency("tap", 8);
+  CHECK(shorts == 0, "a pin drove against a supply %ld times", shorts);
+  finish();
+}
+
+/* A straight line out of the Keyword's right side, every Keybit the usual way round. */
+static void sc_chain(int len, int presses_n)
+{
+  cell_t c[MAXN];
+  for (int i = 0; i < len; i++) c[i] = (cell_t){ i + 1, 0, 0 };
+  sc_layout("chain", c, len, presses_n);
+}
+
+/* The same, every other Keybit in the second turn that meets its neighbours
+ * the right way: N to the west instead of W, so S to the east. */
+static void sc_turns(int len, int presses_n)
+{
+  cell_t c[MAXN];
+  for (int i = 0; i < len; i++) c[i] = (cell_t){ i + 1, 0, i & 1 ? 3 : 0 };
+  sc_layout("turns", c, len, presses_n);
+}
+
+/* The Keyword in a corner of a 2x2 square. */
+static void sc_square(int presses_n)
+{
+  static const cell_t c[] = { { -1, 0, 0 }, { 0, -1, 0 }, { -1, -1, 0 } };
+  sc_layout("square", c, 3, presses_n);
+}
+
+/* 20 Keybits around the Keyword, three of them touching it. */
+static void sc_block(int presses_n)
+{
+  cell_t c[MAXN];
+  int n = 0;
+  for (int y = -2; y <= 0; y++)
+    for (int x = -3; x <= 3; x++)
+      if (y < 0 || x != 0) c[n++] = (cell_t){ x, y, 0 };
+  sc_layout("block", c, n, presses_n);
+}
+
+/* A chain of 3 with a 4th turned the wrong way round at the end: it gets no
+ * power, kb3 must flag it and leave that side alone, the rest keep working. */
+static void sc_reversed(int presses_n)
+{
+  static const cell_t c[] = { { 1, 0, 0 }, { 2, 0, 0 }, { 3, 0, 0 }, { 4, 0, 2 } };
+  printf("reversed\n");
+  reset_world();
+  for (int i = 0; i < 4; i++) add_keybit(c[i].x, c[i].y, c[i].rot);
+  build();
+  CHECK(!nodes[4].powered, "the backwards Keybit has power");
+  settle("reversed");
+  type_keys(presses_n, 60, 120);
+  report_latency("tap", 8);
+  CHECK(shorts == 0, "a pin drove against a supply %ld times", shorts);
+  finish();
+}
+
+/* Pull the middle of a chain out and put it back. */
+static void sc_joinleave(int presses_n)
+{
+  printf("join/leave\n");
+  reset_world();
+  for (int i = 1; i <= 4; i++) add_keybit(i, 0, 0);
+  build();
+  settle("start");
+  type_keys(presses_n / 2, 60, 120);
+  nodes[2].placed = 0;
+  build();
+  CHECK(!nodes[3].powered && !nodes[4].powered, "the Keybits behind the gap kept power");
+  run_until(sim_t + 4000 * PS_MS);
+  CHECK(kw_present(uid_of(1)) && !kw_present(uid_of(2)) && !kw_present(uid_of(3)), "the Keyword still lists Keybits that left");
+  nodes[2].placed = 1;
+  build();
+  settle("rejoined");
+  n_presses = n_reports = 0;
+  type_keys(presses_n / 2, 60, 120);
+  report_latency("tap", 8);
+  finish();
+}
+
+/* A Keybit pushed onto the end of a chain bounces: contact on and off every
+ * 1-3 ms for 40 ms while someone types on the others. */
+static void sc_bounce(int presses_n)
+{
+  printf("bounce\n");
+  reset_world();
+  for (int i = 1; i <= 4; i++) add_keybit(i, 0, 0);
+  nodes[4].placed = 0;
+  build();
+  settle("start");
+  nodes[1].button = 1;
+  presses[n_presses++] = (press_t){ 1, sim_t, sim_t + 30 * PS_MS };
+  for (int64_t end = sim_t + 40 * PS_MS; sim_t < end;) {
+    nodes[4].placed ^= 1;
+    build();
+    run_until(sim_t + (1 + rnd() % 3) * PS_MS);
+    if (nodes[1].button && sim_t >= presses[0].up) nodes[1].button = 0;
+  }
+  nodes[1].button = 0;
+  nodes[4].placed = 1;
+  build();
+  settle("after");
+  type_keys(presses_n, 60, 120);
+  report_latency("tap", 8);
+  CHECK(shorts == 0, "a pin drove against a supply %ld times", shorts);
+  finish();
+}
+
+/* Fast typing: 15-22 ms taps 30-60 ms apart. */
+/* Where one press spends its time, hop by hop, on a chain of len. */
+static void sc_trace(int len, int presses_n)
+{
+  printf("trace, chain of %d\n", len);
+  reset_world();
+  for (int i = 1; i <= len; i++) add_keybit(i, 0, 0);
+  build();
+  settle("trace");
+  for (int p = 0; p < presses_n; p++) {
+    int n = len;
+    int64_t t0 = sim_t, seen[MAXN] = { 0 }, deb = 0, rep = 0;
+    int r0 = n_reports;
+    nodes[n].button = 1;
+    while (sim_t - t0 < 400 * PS_MS && !rep) {
+      run_until(sim_t + 250 * PS_US);
+      if (!deb && nodes[n].key()) deb = sim_t - t0;
+      for (int k = 1; k <= len; k++) if (!seen[k] && nodes[k].has_press(uid_of(n))) seen[k] = sim_t - t0;
+      for (int r = r0; r < n_reports; r++) if (reports[r].uid == uid_of(n) && reports[r].down) rep = reports[r].t - t0;
+      if (sim_t - t0 > 60 * PS_MS) nodes[n].button = 0;
+    }
+    nodes[n].button = 0;
+    printf("  press %2d at %.1f ms: debounced %.1f", p, t0 / 1e9, deb / 1e9);
+    for (int k = len; k >= 1; k--) printf("  kb%d %.1f", k, seen[k] / 1e9);
+    printf("  reported %.1f ms\n", rep / 1e9);
+    run_until(sim_t + (100 + rnd() % 100) * PS_MS);
+  }
+}
+
+static void sc_fast(int presses_n)
+{
+  printf("fast taps, chain of 5\n");
+  reset_world();
+  for (int i = 1; i <= 5; i++) add_keybit(i, 0, 0);
+  build();
+  settle("fast");
+  type_keys(presses_n, 15, 30);
+  report_latency("fast", 8);
+  finish();
+}
+
 /* How often the first Keybit answers an address at each bus speed. */
 static void sc_speed(void)
 {
-  extern int kw_probe_left, kw_probe_acks;
+  extern int kw_probe_left, kw_probe_acks, kw_probe_read;
+  kw_probe_read = getenv("PROBE_READ") != NULL;   /* I2CRD 0a 00 4 instead of I2CSCAN */
   extern int64_t kw_probe_half;
   printf("speed (1 direct + 3 chained)\n");
   reset_world();
   for (int i = 1; i <= 4; i++) add_keybit(i, 0, 0);
   build();
   CHECK(wait_present(10000 * PS_MS) >= 0, "not every Keybit showed up");
-  static const int khz[] = { 20, 25, 28, 30, 32, 35, 40 };
-  for (int i = 0; i < 7; i++) {
+  static const int khz[] = { 10, 15, 20, 25, 35, 50 };
+  for (int i = 0; i < 6; i++) {
     kw_probe_half = PS_MS / khz[i] / 2;
     kw_probe_acks = 0;
     kw_probe_left = 20;
@@ -656,9 +878,6 @@ int main(int argc, char **argv)
   snprintf(tmpdir, sizeof(tmpdir), "/tmp/keybit-sim-XXXXXX");
   if (!mkdtemp(tmpdir)) return 1;
   const char *e;
-  if ((e = getenv("KW_KEYS_MS"))) kw_keys_ms = atoi(e);
-  if ((e = getenv("KW_RELAY_MS"))) kw_relay_ms = atoi(e);
-  if ((e = getenv("KW_SCAN_MS"))) kw_scan_ms = atoi(e);
   if ((e = getenv("OP_CYCLES"))) op_cycles = atoi(e);
   if ((e = getenv("SPIN_CYCLES"))) spin_cycles = atoi(e);
   if ((e = getenv("PASS_CYCLES"))) pass_cycles = atoi(e);
@@ -667,8 +886,29 @@ int main(int argc, char **argv)
   const char *sc = argc > 2 ? argv[2] : "chain";
   int len = argc > 3 ? atoi(argv[3]) : 5;
   int np = argc > 4 ? atoi(argv[4]) : 40;
-  if (!strcmp(sc, "chain")) sc_chain(len, np);
+  static const char *suite[] = { "chain", "turns", "square", "block", "reversed", "joinleave", "bounce", "fast" };
+  int all = !strcmp(sc, "all");
+  for (int i = 0; i < (int)(sizeof(suite) / sizeof(suite[0])); i++) {
+    if (!all && strcmp(sc, suite[i])) continue;
+    pid_t pid = all ? fork() : 0;   /* each scenario in its own process: the Keyword keeps state */
+    if (pid == 0) {
+      if (i == 0) sc_chain(len, np);
+      if (i == 1) sc_turns(len, np);
+      if (i == 2) sc_square(np);
+      if (i == 3) sc_block(np);
+      if (i == 4) sc_reversed(np);
+      if (i == 5) sc_joinleave(np);
+      if (i == 6) sc_bounce(np);
+      if (i == 7) sc_fast(np);
+      if (all) { fflush(stdout); _exit(fails != 0); }
+    } else {
+      int st;
+      waitpid(pid, &st, 0);
+      if (!WIFEXITED(st) || WEXITSTATUS(st)) fails++;
+    }
+  }
   if (!strcmp(sc, "speed")) sc_speed();
+  if (!strcmp(sc, "trace")) sc_trace(len, np);
   char cmd[600];
   snprintf(cmd, sizeof(cmd), "rm -rf '%s'", tmpdir);
   system(cmd);

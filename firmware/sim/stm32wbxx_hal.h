@@ -14,6 +14,11 @@ typedef struct { int unused; } GPIO_TypeDef;
 typedef struct { uint32_t Pin, Mode, Pull, Speed; } GPIO_InitTypeDef;
 typedef struct { volatile uint32_t KR; } IWDG_TypeDef;
 
+typedef struct { volatile uint32_t CYCCNT; } DWT_TypeDef;
+DWT_TypeDef *sim_dwt(void);
+#define DWT (sim_dwt())
+uint32_t HAL_RCC_GetHCLKFreq(void);
+
 extern GPIO_TypeDef sim_gpiob;
 extern IWDG_TypeDef sim_iwdg;
 #define GPIOB (&sim_gpiob)

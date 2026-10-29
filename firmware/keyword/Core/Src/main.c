@@ -28,6 +28,7 @@
 #include "ch32v003_swio.h"
 #include "keybit_image.h"
 #include "keybit_bus.h"
+#include "keymap.h"
 #include "proto.h"
 
 /* USER CODE END Includes */
@@ -43,15 +44,7 @@
 #define LED_STEP_MS 500
 #define GREEN_BLINK_MS 150   /* 3 green blinks, this long on and off, once a Keybit is flashed */
 #define KEYBIT_POLL_MS 250
-#define KEYBIT_SCAN_MS 500
-/* At 20 kHz one register read is ~2 ms, and every Keybit on the bus has to
- * sit through every transfer in its software I2C target. Polling keys every
- * 5 ms kept the bus close to 100% busy, which left a Keybit no quiet gap
- * to run a link frame to its neighbour, so chained Keybits never joined. */
-#define KEYBIT_KEYS_MS 15
-#define KEYBIT_RELAY_MS 60
 #define HALT_TRIES_MAX 60      /* dock polls (250 ms) with a failed halt before giving up */
-#define KEYBIT_MISSES_MAX 2   /* scans a Keybit may miss in a row before it counts as gone */
 
 /* USER CODE END PD */
 
@@ -72,7 +65,7 @@ static ch32_swio_t keybit_swio;
 uint32_t keybit_dock_pause_until;
 uint32_t keyword_reset_csr;   /* HAL tick; the dock poll stays off the line until then */
 /* Keybits touching the keyword's sides: the list is rebuilt every
- * KEYBIT_SCAN_MS, key_down refreshed every KEYBIT_KEYS_MS. keybit_changed
+ * ~500 ms and key_down refreshed every 15 ms (keybit_bus_service). keybit_changed
  * collects bits of entries whose key_down changed; whoever consumes key
  * events clears the bits it has handled. */
 keybit_info_t keybits[KEYBIT_MAX];
@@ -463,7 +456,7 @@ void Keybit_Dock_Id(char *out, size_t len, int reset)
 /* Hand addresses to new Keybits, then refresh the list of who is there. */
 static void Keybit_Bus_Poll(void)
 {
-  static uint32_t last_scan, last_keys, last_relay, held_since;
+  static uint32_t held_since;
 
   /* A backwards Keybit holds SDA low; tell the host once it has lasted
    * BUS_HELD_MS and once it clears, and leave the bus alone meanwhile. */
@@ -480,49 +473,12 @@ static void Keybit_Bus_Poll(void)
   }
   if (keybit_bus_unstick(&hi2c3)) PROTO_Send("OK BUS recovered");
   if (keybit_bus_jammed()) return;
-  if (HAL_GetTick() - last_keys >= KEYBIT_KEYS_MS) {
-    last_keys = HAL_GetTick();
-    keybit_changed |= keybit_bus_poll_keys(&hi2c3, keybits, keybit_count);
+  int f = keybit_bus_service(&hi2c3, keybits, &keybit_count, keybit_remotes, &keybit_remote_count);
+  if (f & KEYBIT_CHANGED) {
+    keybit_changed = 1;
+    KEYMAP_Kick();   /* report it now, not at the next 5 ms tick */
   }
-  if (HAL_GetTick() - last_relay >= KEYBIT_RELAY_MS) {
-    last_relay = HAL_GetTick();
-    int had = 0, has = 0;
-    for (int i = 0; i < keybit_remote_count; i++) had += keybit_remotes[i].present;
-    keybit_bus_poll_relay(&hi2c3, keybits, keybit_count, keybit_remotes, &keybit_remote_count);
-    for (int i = 0; i < keybit_remote_count; i++) has += keybit_remotes[i].present;
-    if (has > had) white_until = HAL_GetTick() + WHITE_BLINK_MS;   /* a chained Keybit joined too */
-  }
-  if (HAL_GetTick() - last_scan < KEYBIT_SCAN_MS) return;
-  last_scan = HAL_GetTick();
-
-  int fresh = keybit_bus_assign(&hi2c3);
-  int before = keybit_count;
-  /* A Keybit busy serving a link now and then misses a scan. Keep it
-   * through KEYBIT_MISSES_MAX scans in a row before calling it gone, or it
-   * flickers in and out. */
-  static uint8_t missed[KEYBIT_MAX];
-  keybit_info_t found[KEYBIT_MAX];
-  uint8_t found_missed[KEYBIT_MAX] = {0};
-  int n = keybit_bus_scan(&hi2c3, found, KEYBIT_MAX);
-  for (int i = 0; i < keybit_count && n < KEYBIT_MAX; i++) {
-    int here = 0;
-    for (int j = 0; j < n && !here; j++)
-      if (memcmp(found[j].uid, keybits[i].uid, sizeof(found[j].uid)) == 0) {
-        here = 1;
-        /* keep its tap tracking across the rescan */
-        found[j].saw_down = keybits[i].saw_down;
-        found[j].pend = keybits[i].pend;
-        found[j].tap = keybits[i].tap;
-      }
-    if (!here && missed[i] < KEYBIT_MISSES_MAX) {
-      found[n] = keybits[i];
-      found_missed[n++] = (uint8_t)(missed[i] + 1);
-    }
-  }
-  memcpy(keybits, found, n * sizeof(found[0]));
-  memcpy(missed, found_missed, sizeof(missed));
-  keybit_count = n;
-  if (fresh > 0 || keybit_count > before) white_until = HAL_GetTick() + WHITE_BLINK_MS;
+  if (f & KEYBIT_JOINED) white_until = HAL_GetTick() + WHITE_BLINK_MS;
 }
 
 /* USER CODE END 0 */
