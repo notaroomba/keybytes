@@ -417,17 +417,25 @@ static void write_reg(uint8_t reg, uint8_t value, soft_i2c_bus_t *bus)
 
 /* Another Keybit answered on our address with a lower UID: we're the
  * duplicate, so go back to the default address and get a new one. Only a
- * UID read tells that (the keyword's scans read it): losing a bit anywhere
- * else is more likely another Keybit that took part of a transfer for a
- * START and answered garbage, and giving our address up for that cut off
- * everything chained behind us until the next scan. */
+ * UID read tells that (the keyword's scans read it), and only twice in a
+ * row: losing a bit once is more likely another Keybit that took part of a
+ * transfer for a START and answered garbage, and giving our address up for
+ * that cut off everything chained behind us for most of a second. */
+#define LOST_AGAIN_MS 2000   /* a real duplicate loses every UID read; a stray loses once */
 static void lost_arbitration(uint8_t addr, uint8_t reg)
 {
+  static uint32_t lost_at;
+  static uint8_t lost_once;
   int uid_reg = (reg >= 0x02 && reg <= 0x05) || (reg >= 0x10 && reg <= 0x1B);
-  if (my_addr && addr == my_addr && uid_reg) {
-    my_addr = 0;
-    save_addr = 0;
+  if (!my_addr || addr != my_addr || !uid_reg) return;
+  if (!lost_once || elapsed(lost_at, MS(LOST_AGAIN_MS))) {
+    lost_once = 1;
+    lost_at = ticks();
+    return;
   }
+  lost_once = 0;
+  my_addr = 0;
+  save_addr = 0;
 }
 
 static const soft_i2c_target_t target = {
