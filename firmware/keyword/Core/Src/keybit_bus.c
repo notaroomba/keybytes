@@ -20,6 +20,9 @@
 #define EV_PRESSED   0x01
 #define EV_HEARTBEAT 0x02
 #define EV_BACKWARDS 0x04
+#define EV_WHERE     0x08   /* v12: this event's place fields are news */
+#define REG_STREAM   0xE0   /* v12: key state, event count, then 5-byte events */
+#define STREAM_EV    5
 #define MAGIC      0x4B
 
 /* I2C3's pins (see stm32wbxx_hal_msp.c); IDR still reads them in AF mode. */
@@ -100,6 +103,39 @@ static HAL_StatusTypeDef ended(HAL_StatusTypeDef st)
 {
   bus_free_at = DWT->CYCCNT;
   return st;
+}
+
+/* v12 Keybits look at the bus between every step of their main loop, so
+ * they keep up with a faster clock than older ones. The side bus runs fast
+ * only while every touching Keybit is v12, and always slow for scans and
+ * address handouts, where a Keybit of any version may answer. */
+#define SLOW_KHZ 20
+#ifndef FAST_KHZ
+#define FAST_KHZ 100
+#endif
+/* SDA changes this many 0.25 us ticks after SCL falls. A Keybit reads SCL
+ * and then SDA; if SDA moved in between it sees a START or STOP that isn't
+ * there, so give it time (the low phase still has SCLDEL for setup). */
+#ifndef SDADEL
+#define SDADEL 2
+#endif
+
+static void bus_khz(I2C_HandleTypeDef *i2c, unsigned khz)
+{
+  static unsigned now_khz = SLOW_KHZ;
+  if (khz == now_khz) return;
+  now_khz = khz;
+  /* I2C3 runs off PCLK1 (64 MHz); PRESC=15 makes a tick 0.25 us */
+  uint32_t half = 2000u / khz;
+  uint32_t t = (15u << 28) | (4u << 20) | ((uint32_t)SDADEL << 16) | ((half - 1) << 8) | (half - 1);
+#ifdef KEYBIT_SIM
+  (void)i2c;
+  sim_i2c_timing(t);
+#else
+  __HAL_I2C_DISABLE(i2c);
+  i2c->Instance->TIMINGR = t;
+  __HAL_I2C_ENABLE(i2c);
+#endif
 }
 
 static int is_ready(I2C_HandleTypeDef *i2c, uint8_t addr)
@@ -198,6 +234,7 @@ uint32_t keybit_bus_poll_keys(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n)
   uint32_t changed = 0;
   for (int i = 0; i < n; i++) {
     uint8_t v;
+    if (k[i].fw >= 12) continue;   /* read with its events instead */
     if (!read_regs(i2c, k[i].addr, REG_KEY, &v, 1)) continue;  /* scans drop it if this keeps up */
     k[i].last_ok = HAL_GetTick();
     if (v & 1) {
@@ -228,16 +265,75 @@ static keybit_remote_t *remote_slot(keybit_remote_t *r, int *rn, uint32_t uid)
   return free_slot;  /* NULL when the table is full */
 }
 
-/* Drain one touching Keybit's queued events. Returns 1 if any entry
- * changed; *remote is set when they included a chained Keybit's. */
+/* One event from touching Keybit k[i]'s queue: size 5 (uid, flags) or 11
+ * (with the place). Returns 1 if an entry changed; *remote is set when it
+ * was a chained Keybit's. */
+static int take_event(keybit_info_t *k, int n, int i, const uint8_t *x8, int size,
+                      keybit_remote_t *r, int *rn, int *remote)
+{
+  uint32_t uid = uid32(x8);
+  uint8_t flags = x8[4];
+
+  /* Touching Keybits queue their own key events too. Their key is read
+   * directly, but a tap shorter than the key poll only shows up here:
+   * a press the poll never saw, then its release, is a missed tap. */
+  int direct = 0;
+  for (int j = 0; j < n; j++) {
+    if (uid32(k[j].uid) != uid) continue;
+    direct = 1;
+    if (flags & EV_HEARTBEAT) continue;   /* only key changes count */
+    if (flags & EV_PRESSED) {
+      if (!k[j].saw_down) k[j].pend = 1;
+    } else {
+      if (k[j].pend && !k[j].saw_down && !k[j].tap) k[j].tap = 1;
+      k[j].pend = 0;
+    }
+  }
+  if (direct) return 0;
+
+  *remote = 1;
+  keybit_remote_t *x = remote_slot(r, rn, uid);
+  if (!x) return 0;
+  int changed = 0;
+  uint8_t down = flags & EV_PRESSED;
+  uint8_t back = (flags & EV_BACKWARDS) != 0;
+  /* Down and up again before the keys task saw the down: keep it as a tap. */
+  if (down && !x->key_down) x->fresh_down = 1;
+  if (!down && x->key_down && x->fresh_down && !x->tap) x->tap = 1;
+  if (x->uid != uid || !x->present || x->key_down != down || x->backwards != back) {
+    x->dirty = 1;
+    changed = 1;
+  }
+  x->uid = uid;
+  x->present = 1;
+  x->key_down = down;
+  x->backwards = back;
+  x->depth = flags >> 4;
+  x->via = k[i].addr;
+  if (size == EV_SIZE11 && x8[10] != '?') {
+    uint32_t parent = uid32(&x8[5]);
+    if (parent != x->parent || x8[9] != x->pside || x8[10] != x->face) {
+      x->parent = parent;
+      x->pside = (char)x8[9];
+      x->face = (char)x8[10];
+      x->moved = 1;
+      x->dirty = 1;
+      changed = 1;
+    }
+  }
+  x->last_seen = HAL_GetTick();
+  return changed;
+}
+
+/* Drain one touching Keybit's queued events (before v12). Returns 1 if any
+ * entry changed; *remote is set when they included a chained Keybit's. */
 static int relay_one(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n, int i,
                      keybit_remote_t *r, int *rn, int *remote)
 {
   int changed = 0;
-  uint32_t now = HAL_GetTick();
   uint8_t count;
   if (!read_regs(i2c, k[i].addr, REG_EV_COUNT, &count, 1)) goto done;
-  k[i].last_ok = now;
+  k[i].last_ok = HAL_GetTick();
   if (count == 0) goto done;
   if (count > EV_BATCH) count = EV_BATCH;
   /* v11 Keybits also say where each Keybit is; older ones only uid + flags. */
@@ -245,62 +341,48 @@ static int relay_one(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n, int i,
   uint8_t ev[EV_BATCH * EV_SIZE11];
   if (!read_regs(i2c, k[i].addr, size == 5 ? REG_EV_DATA : REG_EV_DATA11, ev, (uint16_t)(count * size))) goto done;
   write_regs(i2c, k[i].addr, REG_EV_POP, &count, 1);
-
-  for (int e = 0; e < count; e++) {
-    const uint8_t *x8 = &ev[e * size];
-    uint32_t uid = uid32(x8);
-    uint8_t flags = x8[4];
-
-    /* Touching Keybits queue their own key events too. Their key is read
-     * directly, but a tap shorter than the key poll only shows up here:
-     * a press the poll never saw, then its release, is a missed tap. */
-    int direct = 0;
-    for (int j = 0; j < n; j++) {
-      if (uid32(k[j].uid) != uid) continue;
-      direct = 1;
-      if (flags & EV_HEARTBEAT) continue;   /* only key changes count */
-      if (flags & EV_PRESSED) {
-        if (!k[j].saw_down) k[j].pend = 1;
-      } else {
-        if (k[j].pend && !k[j].saw_down && !k[j].tap) k[j].tap = 1;
-        k[j].pend = 0;
-      }
-    }
-    if (direct) continue;
-
-    *remote = 1;
-    keybit_remote_t *x = remote_slot(r, rn, uid);
-    if (!x) continue;
-    uint8_t down = flags & EV_PRESSED;
-    uint8_t back = (flags & EV_BACKWARDS) != 0;
-    /* Down and up again before the keys task saw the down: keep it as a tap. */
-    if (down && !x->key_down) x->fresh_down = 1;
-    if (!down && x->key_down && x->fresh_down && !x->tap) x->tap = 1;
-    if (x->uid != uid || !x->present || x->key_down != down || x->backwards != back) {
-      x->dirty = 1;
-      changed = 1;
-    }
-    x->uid = uid;
-    x->present = 1;
-    x->key_down = down;
-    x->backwards = back;
-    x->depth = flags >> 4;
-    x->via = k[i].addr;
-    if (size == EV_SIZE11 && x8[10] != '?') {
-      uint32_t parent = uid32(&x8[5]);
-      if (parent != x->parent || x8[9] != x->pside || x8[10] != x->face) {
-        x->parent = parent;
-        x->pside = (char)x8[9];
-        x->face = (char)x8[10];
-        x->moved = 1;
-        x->dirty = 1;
-        changed = 1;
-      }
-    }
-    x->last_seen = now;
-  }
+  for (int e = 0; e < count; e++) changed |= take_event(k, n, i, &ev[e * size], size, r, rn, remote);
 done:
   /* Its next batch's events are measured against the polls until then. */
+  k[i].saw_down = k[i].key_down;
+  return changed;
+}
+
+/* v12: key state, event count and the first events in one read. The Keybit
+ * drops the events a read covered once the read has gone through, except
+ * one carrying its place (EV_WHERE): that one is read whole at 0x80 and
+ * dropped with a write. Returns 1 if anything changed. */
+static int stream_one(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n, int i,
+                      keybit_remote_t *r, int *rn, int *remote)
+{
+  int changed = 0, want = 1;
+  for (int round = 0, tries = 0; round < 3; round++) {
+    uint8_t b[2 + EV_BATCH * STREAM_EV];
+    if (!read_regs(i2c, k[i].addr, REG_STREAM, b, (uint16_t)(2 + want * STREAM_EV))) {
+      /* busy with a link frame for a moment: one more try */
+      if (round == 0 && !tries++) { round--; continue; }
+      break;
+    }
+    k[i].last_ok = HAL_GetTick();
+    if (round == 0) {
+      uint8_t down = b[0] & 1;
+      if (down) { k[i].saw_down = 1; k[i].pend = 0; }
+      if (down != k[i].key_down) { k[i].key_down = down; changed = 1; }
+    }
+    int count = b[1] > EV_BATCH ? EV_BATCH : b[1];
+    int got = count < want ? count : want, e = 0;
+    while (e < got && !(b[2 + e * STREAM_EV + 4] & EV_WHERE))
+      changed |= take_event(k, n, i, &b[2 + e++ * STREAM_EV], STREAM_EV, r, rn, remote);
+    if (e < got) {   /* everything before it is gone, so it's first now */
+      uint8_t full[EV_SIZE11], one = 1;
+      if (!read_regs(i2c, k[i].addr, REG_EV_DATA11, full, EV_SIZE11)) break;
+      changed |= take_event(k, n, i, full, EV_SIZE11, r, rn, remote);
+      write_regs(i2c, k[i].addr, REG_EV_POP, &one, 1);
+      e++;
+    }
+    if (count - e <= 0) break;
+    want = count - e;
+  }
   k[i].saw_down = k[i].key_down;
   return changed;
 }
@@ -348,11 +430,15 @@ int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n,
 #ifndef SCAN_GAP_MS
 #define SCAN_GAP_MS    2    /* between scan probes: room for link frames */
 #endif
+#ifndef STREAM_SLOT_MS
+#define STREAM_SLOT_MS 2    /* v12 Keybits: one of them is read per slot, round robin */
+#endif
 #define MISSES_MAX     2    /* scans a Keybit may miss in a row before it counts as gone, */
 #define GONE_MS        1000 /* and no read of any kind worked for this long */
 
 static struct {
-  uint32_t keys_at, scan_at, probe_at;
+  uint32_t keys_at, scan_at, probe_at, stream_at;
+  uint8_t stream_next;
   uint32_t relay_at[128], chain_at[128];  /* by address */
   uint8_t chained[128];                   /* relayed a chained Keybit lately */
   uint8_t cursor;                         /* next address to look at, 0 = between scans */
@@ -421,8 +507,24 @@ static int scan_commit(keybit_info_t *k, int *n)
 
 int keybit_bus_service(I2C_HandleTypeDef *i2c, keybit_info_t *k, int *n, keybit_remote_t *r, int *rn)
 {
-  int flags = 0, used = 0;
+  int flags = 0, used = 0, all12 = *n > 0, any12 = 0;
   uint32_t now = HAL_GetTick();
+  for (int i = 0; i < *n; i++) { all12 &= k[i].fw >= 12; any12 |= k[i].fw >= 12; }
+  bus_khz(i2c, all12 ? FAST_KHZ : SLOW_KHZ);
+
+  int had = 0, has = 0;
+  for (int i = 0; i < *rn; i++) had += r[i].present;
+  if (any12 && now - bs.stream_at >= STREAM_SLOT_MS) {
+    bs.stream_at = now;
+    for (int tries = 0; tries < *n; tries++) {
+      int i = bs.stream_next++ % *n;
+      if (k[i].fw < 12) continue;
+      int remote = 0;
+      if (stream_one(i2c, k, *n, i, r, rn, &remote)) flags |= KEYBIT_CHANGED;
+      used = 1;
+      break;
+    }
+  }
 
   if (now - bs.keys_at >= KEYS_MS) {
     bs.keys_at = now;
@@ -430,10 +532,9 @@ int keybit_bus_service(I2C_HandleTypeDef *i2c, keybit_info_t *k, int *n, keybit_
     used = 1;
   }
 
-  int had = 0, has = 0;
-  for (int i = 0; i < *rn; i++) had += r[i].present;
   for (int i = 0; i < *n; i++) {
     uint8_t a = k[i].addr & 0x7F;
+    if (k[i].fw >= 12) continue;
     if (bs.chained[a] && now - bs.chain_at[a] > CHAIN_FORGET_MS) bs.chained[a] = 0;
     if (now - bs.relay_at[a] < (bs.chained[a] ? RELAY_CHAIN_MS : RELAY_MS)) continue;
     bs.relay_at[a] = now;
@@ -450,6 +551,7 @@ int keybit_bus_service(I2C_HandleTypeDef *i2c, keybit_info_t *k, int *n, keybit_
    * most every SCAN_GAP_MS, so a scan never holds up the key polls for
    * more than one read and leaves the Keybits gaps for their links. */
   if (used) return flags;
+  bus_khz(i2c, SLOW_KHZ);
   if (!bs.cursor) {
     if (now - bs.scan_at < SCAN_MS) return flags;
     bs.scan_at = now;

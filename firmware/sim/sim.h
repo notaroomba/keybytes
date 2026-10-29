@@ -32,6 +32,7 @@ void sim_kw_drive(int pin, int high);   /* pin 0 SCL, 1 SDA, open drain */
 int sim_kw_read(int pin);
 void kw_main(void);
 void kw_report(uint32_t uid, int down);  /* the keys task saw this key change */
+void sim_i2c_timing(uint32_t timingr);   /* I2C3 TIMINGR: SCLL and SCLH in 0.25 us ticks */
 
 #define PS_NS 1000LL
 #define PS_US 1000000LL

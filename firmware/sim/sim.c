@@ -855,6 +855,8 @@ static void sc_speed(void)
 {
   extern int kw_probe_left, kw_probe_acks, kw_probe_read;
   kw_probe_read = getenv("PROBE_READ") != NULL;   /* I2CRD 0a 00 4 instead of I2CSCAN */
+  extern int64_t kw_probe_sdadel;
+  if (getenv("SDADEL_TICKS")) kw_probe_sdadel = atoi(getenv("SDADEL_TICKS")) * 250 * PS_NS;
   extern int64_t kw_probe_half;
   printf("speed (1 direct + 3 chained)\n");
   reset_world();
@@ -878,6 +880,10 @@ int main(int argc, char **argv)
   snprintf(tmpdir, sizeof(tmpdir), "/tmp/keybit-sim-XXXXXX");
   if (!mkdtemp(tmpdir)) return 1;
   const char *e;
+  /* Two fits to the same hardware numbers; a change has to hold up under both.
+   * lump: the main loop's own work in one block per pass (default).
+   * even: no block, every pin or SysTick access costs 45 cycles. */
+  if ((e = getenv("MODEL")) && !strcmp(e, "even")) { op_cycles = 45; pass_cycles = 0; }
   if ((e = getenv("OP_CYCLES"))) op_cycles = atoi(e);
   if ((e = getenv("SPIN_CYCLES"))) spin_cycles = atoi(e);
   if ((e = getenv("PASS_CYCLES"))) pass_cycles = atoi(e);

@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "stm32wbxx_hal.h"
+#define KEYBIT_SIM
+int64_t kw_t_low, kw_t_high;
 #include "../keyword/Core/Src/keybit_bus.c"
 
 
@@ -16,8 +18,8 @@ IWDG_TypeDef sim_iwdg;
 /* Timing knobs, settable from sim.c */
 int kw_task_ms = 5;
 int64_t kw_loop_ps = 50 * PS_US;      /* rest of the main loop: BLE, USB */
-int64_t kw_t_low = 25 * PS_US, kw_t_high = 25 * PS_US;
-#define T_SDADEL (500 * PS_NS)
+
+static int64_t T_SDADEL = 500 * PS_NS;   /* SDADEL from TIMINGR */
 #define T_POLL   (250 * PS_NS)
 #define T_HAL    (20 * PS_US)          /* HAL call overhead */
 
@@ -169,6 +171,13 @@ HAL_StatusTypeDef HAL_I2C_Mem_Write(I2C_HandleTypeDef *h, uint16_t addr, uint16_
   return HAL_OK;
 }
 
+void sim_i2c_timing(uint32_t t)
+{
+  T_SDADEL = (int64_t)((t >> 16) & 0xF) * 250 * PS_NS;
+  kw_t_low = (int64_t)((t & 0xFF) + 1) * 250 * PS_NS;
+  kw_t_high = (int64_t)(((t >> 8) & 0xFF) + 1) * 250 * PS_NS;
+}
+
 /* The cycle counter at 64 MHz; each look costs a few cycles. */
 DWT_TypeDef *sim_dwt(void)
 {
@@ -258,10 +267,11 @@ static void Keys_Task(void)
 /* Probe mode: instead of the poll loop, IsDeviceReady the first Keybit at
  * the given half period, like I2CSCAN after I2CSPEED. */
 int kw_probe_left, kw_probe_acks, kw_probe_read;
-int64_t kw_probe_half;
+int64_t kw_probe_half, kw_probe_sdadel = 500 * PS_NS;
 
 void kw_main(void)
 {
+  kw_t_low = kw_t_high = 25 * PS_US;   /* 20 kHz, as I2C3 boots */
   sim_kw_drive(0, 1);
   sim_kw_drive(1, 1);
   sim_sleep(5 * PS_MS);
@@ -269,8 +279,9 @@ void kw_main(void)
   for (;;) {
     if (kw_probe_left > 0 && keybit_count > 0) {
       /* I2CSCAN: every address in a row, as proto.c does it */
-      int64_t lo = kw_t_low, hi = kw_t_high;
+      int64_t lo = kw_t_low, hi = kw_t_high, sd = T_SDADEL;
       kw_t_low = kw_t_high = kw_probe_half;
+      T_SDADEL = kw_probe_sdadel;
       for (uint8_t a = kw_probe_read ? keybits[0].addr : 0x08; a <= (kw_probe_read ? keybits[0].addr : 0x77); a++) {
         uint8_t b4[4];
         int ok = kw_probe_read ? HAL_I2C_Mem_Read(&hi2c3, (uint16_t)(a << 1), 0, 1, b4, 4, 10) == HAL_OK && b4[0] == 0x4B
@@ -281,7 +292,7 @@ void kw_main(void)
         }
       }
       kw_probe_left--;
-      kw_t_low = lo; kw_t_high = hi;
+      kw_t_low = lo; kw_t_high = hi; T_SDADEL = sd;
       /* the normal poll loop runs between I2CSCAN commands */
       int64_t until = sim_now() + (kw_probe_read ? 150 : 100 + rand() % 200) * PS_MS;
       while (sim_now() < until) { Keybit_Bus_Poll(); sim_sleep(kw_loop_ps); }

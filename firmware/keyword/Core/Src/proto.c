@@ -395,17 +395,19 @@ static void Handle_Line(proto_port_t *port, char *cmd)
   }
   else if (strcmp(cmd, "I2CSPEED") == 0)
   {
-    /* I2CSPEED <khz>: retime the side bus. I2C3 runs off PCLK1 (64 MHz);
-     * with PRESC=15 one tick is 0.25 us, so SCL low and high max out at
-     * 256 ticks each and the slowest it goes is about 7.8 kHz. */
-    unsigned khz = (unsigned)atoi(args);
-    if (khz < 1 || khz > 400)
-      Reply(port, "ERR usage: I2CSPEED <khz 1-400>");
+    /* I2CSPEED <khz> [sdadel]: retime the side bus. I2C3 runs off PCLK1
+     * (64 MHz); with PRESC=15 one tick is 0.25 us, so SCL low and high max
+     * out at 256 ticks each and the slowest it goes is about 7.8 kHz.
+     * sdadel (0-15 ticks, default 2) is how long after SCL falls SDA moves. */
+    unsigned khz = 0, sdadel = 2;
+    sscanf(args, "%u %u", &khz, &sdadel);
+    if (khz < 1 || khz > 400 || sdadel > 15)
+      Reply(port, "ERR usage: I2CSPEED <khz 1-400> [sdadel 0-15]");
     else {
       uint32_t half = 2000u / khz;   /* ticks per half period */
       if (half > 256) half = 256;
       if (half < 2) half = 2;
-      uint32_t t = (15u << 28) | (4u << 20) | (2u << 16) | ((half - 1) << 8) | (half - 1);
+      uint32_t t = (15u << 28) | (4u << 20) | (sdadel << 16) | ((half - 1) << 8) | (half - 1);
       __HAL_I2C_DISABLE(&hi2c3);
       hi2c3.Instance->TIMINGR = t;
       __HAL_I2C_ENABLE(&hi2c3);
