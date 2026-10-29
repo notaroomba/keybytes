@@ -24,6 +24,7 @@ void sim_pin_write(uint8_t pin, int high);
 void sim_pin_mode(uint8_t pin, int mode);
 uint32_t sim_port_read(const volatile uint32_t *in);
 void sim_delay_ticks(uint32_t n);
+void sim_cycles(uint32_t n);       /* charge n CPU cycles of plain computation */
 
 /* Keyword side */
 int64_t sim_now(void);              /* ps */

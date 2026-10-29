@@ -449,6 +449,13 @@ void sim_delay_ticks(uint32_t n)
   advance((int64_t)((n - into) * cur->ps_per_tick) + cur->op_ps);
 }
 
+/* Register accesses are charged as they happen; plain computation is free
+ * unless the code charges it here. A tick is 8 CPU cycles (HCLK/8). */
+void sim_cycles(uint32_t n)
+{
+  advance((int64_t)(n * cur->ps_per_tick / 8));
+}
+
 int64_t sim_now(void) { return cur->t; }
 void sim_sleep(int64_t ps) { advance(ps); }
 void sim_kw_drive(int pin, int high)
@@ -761,6 +768,7 @@ static void settle(const char *name)
   int64_t t = wait_present(10000 * PS_MS);
   printf("  %s: all present after %.0f ms\n", name, t / 1e9);
   CHECK(t >= 0, "%s: not every powered Keybit showed up", name);
+  CHECK(t < 2500 * PS_MS, "%s: joining took %.0f ms", name, t / 1e9);
   run_until(sim_t + 1500 * PS_MS);   /* positions settle after the first heartbeats */
   check_places();
 }

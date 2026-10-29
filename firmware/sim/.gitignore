@@ -3,4 +3,5 @@ sim_base
 *.bundle
 *.dSYM/
 build_v10/
+build_v12/
 build_base/
