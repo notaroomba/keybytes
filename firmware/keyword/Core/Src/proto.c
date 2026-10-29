@@ -355,6 +355,15 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     for (size_t o = 0, l = strlen(buf); o < l || o == 0; o += 100)
       Reply(port, "DOCKID%s %.100s", o ? "+" : "", buf + o);
   }
+  else if (strcmp(cmd, "RST?") == 0)
+  {
+    /* Why the keyword last reset (RCC->CSR at boot). Several flags can be set. */
+    uint32_t c = keyword_reset_csr;
+    Reply(port, "RST csr=%08lx%s%s%s%s%s%s", (unsigned long)c, (c & RCC_CSR_IWDGRSTF) ? " iwdg" : "",
+          (c & RCC_CSR_WWDGRSTF) ? " wwdg" : "", (c & RCC_CSR_BORRSTF) ? " bor" : "",
+          (c & RCC_CSR_PINRSTF) ? " pin" : "", (c & RCC_CSR_SFTRSTF) ? " sw" : "",
+          (c & RCC_CSR_LPWRRSTF) ? " lpwr" : "");
+  }
   else if (strcmp(cmd, "I2CSCAN") == 0)
   {
     /* Every 7-bit address that ACKs on the side bus, and the idle line levels. */

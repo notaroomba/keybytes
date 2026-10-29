@@ -63,7 +63,8 @@ PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
 static ch32_swio_t keybit_swio;
-uint32_t keybit_dock_pause_until;   /* HAL tick; the dock poll stays off the line until then */
+uint32_t keybit_dock_pause_until;
+uint32_t keyword_reset_csr;   /* HAL tick; the dock poll stays off the line until then */
 /* Keybits touching the keyword's sides: the list is rebuilt every
  * KEYBIT_SCAN_MS, key_down refreshed every KEYBIT_KEYS_MS. keybit_changed
  * collects bits of entries whose key_down changed; whoever consumes key
@@ -468,7 +469,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  keyword_reset_csr = RCC->CSR;   /* why we last reset, for HELLO */
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -487,6 +488,7 @@ int main(void)
   PeriphCommonClock_Config();
 
   /* USER CODE BEGIN SysInit */
+  RCC->CSR |= RCC_CSR_RMVF;   /* after MX_APPE_Config has read them, so the next reset reports only its own cause */
 
   /* USER CODE END SysInit */
 

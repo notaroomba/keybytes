@@ -79,7 +79,9 @@ int keybit_bus_jammed(void)
 
 static int is_ready(I2C_HandleTypeDef *i2c, uint8_t addr)
 {
-  return HAL_I2C_IsDeviceReady(i2c, (uint16_t)(addr << 1), 1, I2C_TIMEOUT_MS) == HAL_OK;
+  /* Just the address byte (~0.5 ms at 20 kHz): a short timeout, or a
+   * misbehaving bus makes a full scan outlast the bootloader's ~8 s watchdog. */
+  return HAL_I2C_IsDeviceReady(i2c, (uint16_t)(addr << 1), 1, 3) == HAL_OK;
 }
 
 static int read_regs(I2C_HandleTypeDef *i2c, uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
@@ -134,6 +136,7 @@ int keybit_bus_scan(I2C_HandleTypeDef *i2c, keybit_info_t *out, int max)
 {
   int n = 0;
   for (uint8_t a = ADDR_FIRST; a <= ADDR_LAST && n < max; a++) {
+    IWDG->KR = 0xAAAA;
     if (a == KEYBIT_DEFAULT_ADDR || a == LINK_ADDR || a == CHARGER_ADDR) continue;
     if (!is_ready(i2c, a)) continue;
 
