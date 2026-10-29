@@ -1,4 +1,6 @@
 sim
+sim_base
 *.bundle
 *.dSYM/
 build_v10/
+build_base/
