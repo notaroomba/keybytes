@@ -397,6 +397,19 @@ int Keybit_Dock_Regs(uint32_t *v, uint32_t delay_ms, int halt, int x, int *hr)
   return r;
 }
 
+/* DOCKRD: halt whatever is on the dock without resetting it, read n words
+ * of its memory from addr, then let it run on (resumereq, no reset), so a
+ * running Keybit's RAM can be inspected. Returns the halt or read status. */
+int Keybit_Dock_Read(uint32_t addr, uint32_t *out, int n)
+{
+  int r = ch32_halt(&keybit_swio, 0);
+  if (r != CH32_OK && ch32_detect(&keybit_swio) == CH32_OK) r = ch32_halt(&keybit_swio, 0);
+  for (int i = 0; r == CH32_OK && i < n; i++) r = ch32_read_word(&keybit_swio, addr + 4u * i, &out[i]);
+  ch32_write_reg(&keybit_swio, CH32_DMCONTROL, 0x40000001);  /* resumereq */
+  ch32_write_reg(&keybit_swio, CH32_DMCONTROL, 0x40000001);
+  return r;
+}
+
 /* DOCKID: walk detect, halt, chip ID, a few flash and FLASH register reads
  * and the unlock, printing each step's result into out. Stops at the first
  * failure, adding the last DMABSTRACTCS. */

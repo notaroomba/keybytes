@@ -60,6 +60,7 @@ int Keybit_Dock_Regs(uint32_t *v, uint32_t delay_ms, int halt, int x, int *hr);
 extern uint32_t keybit_dock_pause_until;
 extern uint32_t keyword_reset_csr;   /* RCC->CSR at boot, before the reset flags were cleared */
 void Keybit_Dock_Id(char *out, size_t len, int reset);
+int Keybit_Dock_Read(uint32_t addr, uint32_t *out, int n);
 
 /* USER CODE END EFP */
 

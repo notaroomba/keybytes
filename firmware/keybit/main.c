@@ -65,7 +65,7 @@
 #include "link.h"
 #include <string.h>
 
-#define FW_VERSION          9
+#define FW_VERSION          10
 #define KEYBIT_DEFAULT_ADDR 0x30
 #define LINK_ADDR           0x31  /* reserved: the keyword never assigns it */
 #define BTN_PIN             PD6   /* MX switch to GND */
@@ -118,7 +118,8 @@ typedef struct {
   uint8_t ck_low;        /* CK low on an unknown side since ck_low_at */
   uint32_t ck_low_at;
   uint8_t ringing;       /* we're holding DT low as a doorbell */
-  uint32_t next_poll;    /* tick of our next link poll here */
+  uint32_t polled_at;    /* tick of our last link poll here */
+  uint32_t poll_wait;    /* how long after polled_at the next one is due */
   uint8_t held;          /* DT low with CK high since held_at */
   uint32_t held_at;
 } side_t;
@@ -499,11 +500,16 @@ static void relay(int listening)
        * now and then in case that changed. */
       if (sd->child_depth != DEPTH_NONE && sd->child_depth <= my_depth &&
           !elapsed(sd->child_seen, MS(PEER_RECHECK_MS))) continue;
-      if ((int32_t)(ticks() - sd->next_poll) < 0) continue;
+      /* Unsigned "time since", not a signed compare with a due tick: SysTick
+       * wraps every ~12 min, and a due tick more than ~6 min old (never set,
+       * or a side skipped that long) compared as in the future, so the side
+       * wasn't probed again for up to 6 minutes. */
+      if (!elapsed(sd->polled_at, sd->poll_wait)) continue;
     }
     /* Some UID-based jitter so two Keybits don't keep asking each other
      * in lockstep. */
-    sd->next_poll = ticks() + MS((child ? CHILD_POLL_MS : PROBE_MS) + jitter());
+    sd->polled_at = ticks();
+    sd->poll_wait = MS((child ? CHILD_POLL_MS : PROBE_MS) + jitter());
     poll_child(s, rang);
   }
 }

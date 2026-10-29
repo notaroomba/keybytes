@@ -344,6 +344,23 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     keybit_dock_pause_until = HAL_GetTick() + 5000;
     Reply(port, "DOCKSCAN best a=%u b=%u s=%u score=%d/512 nb=%d", as[bi], bs[bj], ss[bk], best, bn);
   }
+  else if (strcmp(cmd, "DOCKRD") == 0)
+  {
+    /* DOCKRD <addr hex> <words 1-8>: read the docked chip's memory while it runs. */
+    unsigned long ad = 0;
+    unsigned n = 0;
+    uint32_t w[8];
+    if (sscanf(args, "%lx %u", &ad, &n) != 2 || n < 1 || n > 8)
+      Reply(port, "ERR usage: DOCKRD <addr hex> <words 1-8>");
+    else {
+      keybit_dock_pause_until = HAL_GetTick() + 5000;
+      int r = Keybit_Dock_Read((uint32_t)ad, w, (int)n);
+      char hex[8 * 9 + 1];
+      hex[0] = 0;
+      for (unsigned i = 0; r == 0 && i < n; i++) snprintf(hex + 9 * i, 10, " %08lx", (unsigned long)w[i]);
+      Reply(port, "DOCKRD %08lx r=%d%s", ad, r, hex);
+    }
+  }
   else if (strcmp(cmd, "DOCKID") == 0)
   {
     /* optional: h=<0|1> halt with reset (default 1) */
