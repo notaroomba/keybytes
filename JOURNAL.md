@@ -6,42 +6,25 @@
 
 _Time spent: 6h_
 
-So I still couldnt get the keyword to flash the keybits over SWIO, and I wasnt sure if the chips on my keybits were fried or if the driver was wrong, so I got some CH32V003 dev boards off amazon to test with. Turns out it was the driver. The firmware builds with -Og so the delay functions never got inlined and every pulse came out about 15 cycles too long, which made a 1 look almost like a 0. After fixing that I shorted the SWIO stud to ground to make sure the keyword could actually see the line and then it finally started detecting the chip (blue then red lol).
+So I still couldnt get the keyword to flash the keybits so I got some CH32V003 dev boards off amazon to see if my chips were fried. Turns out it was my SWIO driver, the timing was off because the delays werent getting inlined so a 1 looked almost like a 0. After that the halt was breaking the link and most of the writes were getting dropped, so I gave writes their own timing and made it verify and resume instead of starting over, and then it finally flashed the keybit firmware!! It also works without the 1k pull up now and blinks blue while flashing and green when its done.
 
-After that it was a long list of problems:
-
-- the halt command was resending the link setup commands which cut the link every time
-- reads were fine but only like 1 in 4 writes actually landed, so writes needed their own short pulse timing
-- around 1 in 100 messages still got garbled (probably from me holding the board by hand) so I made it verify every write, retry, and resume from the last good block instead of starting over
-
-and then it flashed the whole 6.4KB keybit firmware and read it back as a match!! I also got it working without the 1k pull up on SWIO by driving the line push pull and reading the answer a bit later. Now it blinks blue while flashing, green once when its done or already up to date, and red only when it gives up.
-
-A big bag of switches also came in today so I can actually build more keybits
+A big bag of switches also came in so I can build more keybits
 
 ![image](assets/journal/switches_came.jpeg)
 
-Then the sides werent detecting anything. The keyword talks to the sides with hardware I2C at 100kHz but the keybits bit bang their I2C while also watching their other 3 sides so they couldnt keep up, dropping it to 20kHz fixed that and I got the white blinks for a keybit joining. A second later the bus would lock up though, because a keybit that hadnt been addressed in 2 seconds would pull the clock low to check if that side was another keybit, which jammed the keyword's bus (fixed in v7). After that:
-
-- the I2C timeouts were 10ms but reading a chained keybit at 20kHz takes about 19ms
-- the dock was blocking side polling for seconds while it flashed so keys kept connecting and disconnecting, now it flashes 2 blocks at a time
-- the watchdog was firing during long flashes and resetting the keyword
-- keybits were locking a side as the keyword's side forever (v8), giving up link requests too early (v9), and the probe timing could get stuck when the SysTick timer rolled over (v10)
+Then the sides werent detecting anything, the keybits couldnt keep up with 100kHz I2C so I dropped it to 20kHz. After that it was a bunch of bugs with keys connecting and disconnecting over and over (the keybit jamming the bus, timeouts too short, the dock blocking the sides while flashing) and I went through keybit firmware v7 to v10 fixing them
 
 ![image](assets/journal/app_side_flapping.jpeg)
 
-Another problem is that sometimes when I put a board on the wrong way the whole keyword turns off and drops off USB. Docking it backwards shorts or drags down the 3.3V, and I even got a brownout reset with a board on the right way. So for the next revision I want a current limited load switch on the dock and side 3.3V, ~100 ohm series resistors on SWIO and the I2C lines, and some way to key the dock so a board only goes on one way. Also since all 3 sides share 1 bus the keyword cant tell a rotated keybit on the top from one on the left, so a sense line per side would fix that.
-
-It also detects when a keybit is next to another one backwards now and blinks red twice
+Also when I put a board on the wrong way the whole keyword turns off, so for the next revision I want to protect the 3.3V on the dock and sides and add some resistors on the data lines. It also detects when a keybit is backwards next to another one now
 
 ![image](assets/journal/app_backwards.jpeg)
 
-But by the end I had 3 keybits chained off the keyword in a row and all of them showing up in the app!!
+and by the end I had 3 keybits chained off the keyword and all of them showing up in the app!!
 
 ![image](assets/journal/three_keybits_chained.jpeg)
 
 ![image](assets/journal/app_three_hops.jpeg)
-
-I also made the app draw the chained keybits on the board view so you can see where each one is
 
 ![image](assets/journal/app_board_chained.png)
 
@@ -49,29 +32,21 @@ I also made the app draw the chained keybits on the board view so you can see wh
 
 _Time spent: 4h_
 
-So the current keybit only works in a straight grid and the pogo headers are like half the cost, so I spent today thinking about how to make the next version better.
-
-The first idea was a 2 wire system where power and data both go through 2 terminals so keys can be staggered. I got the idea from my 6.2020 lab where you AC couple a signal through a cap, so the data would go through a cap onto the DC power line and then a bridge rectifier at the other end gets the power back.
+So the current keybit only works in a straight grid and the pogo headers are like half the cost, so I spent today thinking about how to make the next one better. First idea was sending power and data over just 2 wires, kinda like the AC coupling from my 6.2020 lab where the data goes through a cap onto the DC line
 
 ![image](assets/journal/rc_coupling_lab.jpeg)
 
-It turns out its doable but it needs a MOSFET bridge instead of diodes (a 0.6V drop at every key would kill the power a few keys out), a small choke so the bulk cap doesnt short out the data, and the data has to be sent as a 2MHz carrier.
-
-Then for the stagger, if the contacts are on a 2.38mm grid (19.05 / 8) a key can slide along another one and snap every 25%, which covers every normal ANSI/ISO stagger since those are all multiples of a quarter key (37.5% isnt really a thing). If every contact is a magnet on a pogo pin with the poles going N S N S clockwise on every side, then at every quarter step N lands on S and pulls, halfway between N lands on N and pushes it to the next step, and it still works when you rotate a key 90 degrees. Here are my sketches of the alternating magnets around the edges, the pogo pins with springs on each side, and how the contacts line up when two keys slide past each other
+Then for staggered keys, if the contacts are spaced 2.38mm apart (19.05 / 8) a key can slide along another one and snap every 25%, and if every contact is a magnet on a pogo pin going N S N S around the sides it also works when you rotate it. Here are my sketches of it
 
 ![image](assets/journal/magnet_pogo_sketch.jpeg)
 
-I was looking at these 1mm x 2mm magnets from JC magnetics for it
+I was looking at these 1mm x 2mm magnets for it, but theyre a lot weaker than the J7 ones so I would probably need a second row just for holding
 
 ![image](assets/journal/jc_magnetics_1x2.jpeg)
 
-The small magnets are about 3-5x weaker than the J7 ones though, so I would add a second row of bigger block magnets just for holding, and maybe a tongue and groove lip so a row doesnt fold when you pick it up.
+The other idea is making the keybit a flex pcb with 4 flaps for the pogo pins that fold up into a box inside the case, which gets rid of the expensive right angle headers. I priced it out on JLC and its about $1.49 a board.
 
-The other idea is making the keybit a flex pcb with 4 flaps that have pads for the pogo pins. I solder the pogos on, fold the flaps up into a box and slide it into the case, and the case holds the switch. That gets rid of the right angle pogo headers which are the most expensive part. I priced out 5 panels of 5x5 flex boards with the CH32 assembled on JLC and it came out to about $1.49 a board. I also looked at hot swap sockets but the Kailh one is about 0.8mm too wide to fit, so it would have to be the Mill-Max cups.
-
-I also noticed that if a keybit is plugged into another keybit backwards nothing tells you, so now the keybit firmware (v6) flags a side thats held low as backwards and the keyword sends that to the app.
-
-And I rewrote the desktop app in typescript with react and tailwind and installed it as an app on my mac, and cleaned up the firmware folder so the keyword's CubeMX project is in its own folder next to the keybit one.
+I also rewrote the desktop app in typescript with react and tailwind and cleaned up the firmware folder
 
 ![image](assets/journal/app_keybit_pcb.jpeg)
 
@@ -79,35 +54,25 @@ And I rewrote the desktop app in typescript with react and tailwind and installe
 
 _Time spent: 5h_
 
-So it turns out the STLINK V3SET was the problem the whole time (it didnt work on Ember either), so I got out an old STLINK V2 and it connected right away lol
+So it turns out my STLINK V3 was the problem the whole time (it didnt work on Ember either), I used an old STLINK V2 and it connected right away lol
 
 ![image](assets/journal/stlink_v2_flashing.jpeg)
 
-The chip was fine and already booting from flash with no read protection, so I installed the bluetooth stack (1.24.0) and flashed the OTA bootloader with the app. At first nothing ran because I only flashed the app, which lives at 0x08007000 behind the bootloader, so I had to flash the full image at 0x08000000. Then it showed up as "Keyword" in bluetooth with the green LED!! I flashed the second keyword the same way.
-
-Then I tried updating it over bluetooth from the app and it failed because 131 packets in a row went missing on mac, so now it waits 20ms between packets and OTA works. I also added a DFU command so I can get into the USB bootloader from software since BOOT0 isnt connected to anything. The battery also says 87% with no battery plugged in because the charger keeps the empty battery pin at the charge voltage lol
+I installed the bluetooth stack and the bootloader and it showed up as "Keyword" in bluetooth with the green LED!! Then I got updating it over bluetooth from the app working and flashed the second keyword too. The battery also says 87% with no battery plugged in lol
 
 ![image](assets/journal/app_firmware_battery.jpeg)
 
-The dock still couldnt see a keybit though, every read came back as all 1s so the keybit was never pulling the line low. I found a blog post where someone reverse engineered the CH32V003 debug protocol and changed the reset pulse to 2ms but it still didnt answer.
-
-I was also worried about what happens when you put a keybit on rotated. It probably wont kill the CH32 right away but it pushes something like 30-50mA through the clamp diode on SCL (rated for 4mA) and jams the whole bus, so now the keybit wont touch a side that looks reversed and the keyword stops polling and blinks red if SDA gets stuck low.
+The keyword still couldnt see a keybit on the dock though, and I also added some protection in the firmware for when a keybit is put on rotated since that can jam the bus and stress the chips.
 
 # 10/25/2026 11 PM - SWIO, Bluetooth and Not Being Able to Flash
 
 _Time spent: 6h_
 
-Now that it worked I wanted the keyword to be able to flash the keybits by itself. The keyword has 3 studs on top (3.3V, SWIO, GND) that line up with the pads on the bottom of a keybit, so a keybit sitting on top gets powered and its SWIO pin lands on PB5. So I wrote a driver that bit bangs WCH's one wire debug protocol on PB5 (a short low pulse is a 1 and a long one is a 0) and a keybit firmware that bit bangs I2C on all 4 sides, and the keybit image gets embedded in the keyword firmware so it can flash any keybit put on top.
+Now that it worked I wanted the keyword to be able to flash the keybits by itself. The 3 studs on top of the keyword line up with the pads on the bottom of a keybit, so I wrote a driver that bit bangs the CH32's one wire debug protocol (SWIO) and the keyword can flash any keybit put on top. I also wrote the keybit firmware, made the keyword hand out addresses using each chip's unique ID, and added bluetooth and a desktop app to remap keys.
 
-For addressing I was originally gonna have every key pick a random I2C address and check if its taken, but instead the keyword reads each CH32's unique 96 bit ID and hands it an address, and the keybit says which of its sides got addressed so the keyword knows if its on the left, right or top. Keybits that arent touching the keyword pass their presses inward through the other keybits. I also changed the keybit to keybit links to a custom protocol where a keybit with a key press rings a doorbell on the data line and then the data gets sent push pull like half duplex SPI, so it doesnt have to wait for the next poll.
-
-I also added the bluetooth stack and a BLE keyboard to the keyword and started a desktop app that connects over USB or bluetooth, shows which side keys are on and lets me map any key to any key, shortcut, macro or media key with profiles.
-
-Then I spent most of the night trying to flash the keyword over SWD and it would not connect. I had the wires on the wrong header of the STLINK at first, then soldered wires on, swapped DIO and CLK, soldered NRST, held BOOT0 high, tried an Atmel-ICE, and even thought SWCLK was shorted to ground but that was just my multimeter probe touching the ground pad. I also tried going through USB DFU instead and the FUS step changed the option bytes, so now it doesnt go into DFU from the BOOT0 pin anymore aaaa
+Then I spent most of the night trying to flash the keyword and it would not connect. I tried the wrong header on the STLINK, soldering wires on, swapping the data wires, soldering reset, an Atmel-ICE, and I even messed up the boot settings over USB DFU aaaa
 
 ![image](assets/journal/keyword_swd_wires.jpeg)
-
-I also looked at batteries, only a 10-15mAh one fits inside the keyword, but if it sits on top theres room for an 80-130mAh one.
 
 # 10/24/2026 9 PM - It Finally Works!!
 
