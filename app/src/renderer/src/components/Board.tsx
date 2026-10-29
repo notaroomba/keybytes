@@ -1,7 +1,9 @@
 import clsx from 'clsx';
+import { ArrowLeftRight } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { actionLabel, activeProfile, demo, entryOf, keyName, openAssign } from '../controller.ts';
-import { bounds, layout, type Placed } from '../lib/layout.ts';
+import { bounds, layout, otherSide, type Placed } from '../lib/layout.ts';
+import type { Side } from '../lib/types.ts';
 import { useApp } from '../store.ts';
 
 /** How long a Keybit that left keeps showing while it pops out, in ms. */
@@ -9,6 +11,12 @@ const LEAVE_MS = 200;
 /** Tallest the board gets before it scales down, in px. */
 const MAX_H = 320;
 const PAD = 16;
+/** Where the user put Keybits that could be on the left or the top, by UID. */
+const PREFER_KEY = 'board-side';
+
+function loadPrefer(): Record<string, Side> {
+  try { return JSON.parse(localStorage.getItem(PREFER_KEY) || '{}'); } catch { return {}; }
+}
 
 /**
  * The Keyword from above: a slot on each side a Keybit can attach to, and
@@ -22,7 +30,15 @@ export function Board() {
   useApp((s) => s.store); // labels follow the active profile
   const isDemo = transport === 'demo';
 
-  const placed = useMemo(() => layout(keys, sides), [keys, sides]);
+  const [prefer, setPrefer] = useState(loadPrefer);
+  const flip = (uid: string, now: Side) => {
+    const to = otherSide(now);
+    if (!to) return;
+    const next = { ...prefer, [uid]: to };
+    setPrefer(next);
+    try { localStorage.setItem(PREFER_KEY, JSON.stringify(next)); } catch { /* only a convenience */ }
+  };
+  const placed = useMemo(() => layout(keys, sides, prefer), [keys, sides, prefer]);
 
   // Keep what just left on screen long enough to pop out.
   const [leaving, setLeaving] = useState<Placed[]>([]);
@@ -57,9 +73,9 @@ export function Board() {
 
     if (p.kind === 'keyword') {
       return (
-        <div key={p.id} style={style} className={clsx(move, 'flex flex-col items-center justify-center rounded-xl bg-keyword text-keyword-fg shadow-inner')}>
-          <span className="font-semibold tracking-wide">Keyword</span>
-          <small className="mt-0.5 text-[11px] opacity-70">{activeProfile().name}</small>
+        <div key={p.id} style={style} className={clsx(move, 'flex flex-col items-center justify-center overflow-hidden rounded-xl bg-keyword px-1.5 text-center text-keyword-fg shadow-inner')}>
+          <span className="text-sm font-semibold tracking-wide">Keyword</span>
+          <small className="mt-0.5 line-clamp-1 text-[11px] opacity-70">{activeProfile().name}</small>
         </div>
       );
     }
@@ -96,6 +112,26 @@ export function Board() {
     );
   };
 
+  /** A Keybit that could be on the left or the top gets a button to swap it. */
+  const flipper = (p: Placed) => {
+    const k = p.uid ? keys[p.uid] : undefined;
+    if (p.kind !== 'keybit' || !p.side || !k?.at || !otherSide(k.at)) return null;
+    const to = otherSide(p.side) === 'T' ? 'top' : 'left';
+    return (
+      <button
+        key={`flip-${p.id}`}
+        type="button"
+        title={`Turned 90°? Move it to the ${to}`}
+        aria-label={`Move to the ${to}`}
+        onClick={() => flip(p.uid!, p.side!)}
+        style={{ left: p.x - b.x + p.w - 26, top: p.y - b.y + 4 }}
+        className="absolute grid size-[22px] place-items-center rounded-md text-muted hover:bg-line hover:text-fg motion-safe:transition-[left,top] motion-safe:duration-300"
+      >
+        <ArrowLeftRight size={13} />
+      </button>
+    );
+  };
+
   return (
     <div ref={box} className="flex flex-col items-center gap-2 rounded-xl border border-line bg-panel py-5">
       <div
@@ -109,6 +145,7 @@ export function Board() {
         >
           {placed.map((p) => tile(p, false))}
           {leaving.map((p) => tile(p, true))}
+          {placed.map(flipper)}
         </div>
       </div>
       {isDemo && <p className="text-xs text-muted">Demo: click a side to attach or remove a Keybit.</p>}
