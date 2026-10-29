@@ -201,7 +201,17 @@ function addKey(
     pside: where.pside ?? known?.pside ?? null,
     backwards: known?.backwards ?? null,
   };
-  set((st) => ({ keys: { ...st.keys, [uid]: next } }));
+  set((st) => {
+    const keys = { ...st.keys, [uid]: next };
+    // Chained Keybits listed before this one only had its short UID.
+    if (!known && uid.length === 24) {
+      const short = uid.slice(-8);
+      for (const [id, k] of Object.entries(keys))
+        if (k.via === short || k.parent === short)
+          keys[id] = { ...k, via: k.via === short ? uid : k.via, parent: k.parent === short ? uid : k.parent };
+    }
+    return { keys };
+  });
   if (!known) {
     const where = at ? ` on the ${SIDE_NAMES[at]}` : relay?.via ? ` behind ${keyName(resolveUid(relay.via))}` : '';
     activity(`${keyName(uid)} connected${where}`, 'add');
@@ -461,7 +471,8 @@ async function connect(t: Transport, { auto = false } = {}): Promise<boolean> {
   syncKeys();
   timers = [
     setInterval(() => {
-      void send(cmd.sides());
+      // Ask again until it answers: a HELLO sent as the port opens can be lost.
+      void (get().device.fw ? send(cmd.sides()) : send(cmd.hello(), cmd.sides()));
       if (Date.now() - lastRx > STALE_MS) setStatus(`Connected over ${t.label} · no reply from the Keyword`, 'stale');
     }, POLL_MS),
     setInterval(syncKeys, KEYS_POLL_MS),

@@ -146,14 +146,17 @@ function place(
  * way it's turned, so it goes exactly there. Older ones are estimated (dashed).
  */
 export function layout(
-  keys: Record<string, LayoutKey>,
+  rawKeys: Record<string, LayoutKey>,
   sides: Partial<Record<Side, boolean>>,
-  /** The side the user put an L/T Keybit on, by UID. */
+  /** The side the user put an L/T Keybit on, by UID, oldest choice first. */
   prefer: Record<string, Side> = {},
 ): Placed[] {
+  const keys = resolveShort(rawKeys);
   const direct = Object.entries(keys).filter(([, k]) => k.at).sort(([a], [b]) => a.localeCompare(b));
-  // The user's choices first, so they win their side.
-  direct.sort(([a], [b]) => Number(!!prefer[b]) - Number(!!prefer[a]));
+  // The user's choices first, the latest first of all, so it wins its side
+  // over an older one that wants the same.
+  const order = Object.keys(prefer);
+  direct.sort(([a], [b]) => order.indexOf(b) - order.indexOf(a));
 
   // Every way the Keybits that could be on the left or the top can be
   // shared out (at most 2^3), the user's way first; keep the first one
@@ -191,6 +194,23 @@ export function layout(
     if (at[uid] && !loose.includes(uid)) out.push({ id: uid, kind: 'keybit', uid, rot: rot[uid], estimated: !exact.has(uid), ...px(at[uid]) });
   }
   loose.forEach((uid, i) => out.push({ id: uid, kind: 'keybit', uid, estimated: true, ...px([i - 1, 2]) }));
+  return out;
+}
+
+/**
+ * A chained Keybit is reported with the low 32 bits (8 hex digits) of the
+ * Keybit it came through and hangs off. If that one is known by its full
+ * UID, point at it, or the chained one has nowhere to go.
+ */
+export function resolveShort(keys: Record<string, LayoutKey>): Record<string, LayoutKey> {
+  const ids = Object.keys(keys);
+  const full = (u: string | null | undefined) => {
+    if (!u || keys[u]) return u;
+    const m = ids.filter((id) => id.length > u.length && id.endsWith(u));
+    return m.length === 1 ? m[0] : u;
+  };
+  const out: Record<string, LayoutKey> = {};
+  for (const [id, k] of Object.entries(keys)) out[id] = { ...k, via: full(k.via) ?? null, parent: full(k.parent) ?? k.parent };
   return out;
 }
 

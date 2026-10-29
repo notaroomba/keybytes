@@ -83,3 +83,32 @@ test('a turned Keybit on top is placed by its chain, not by a guess', () => {
   }, {});
   assert.ok(!at(items, 'C')!.estimated);
 });
+
+test('chained Keybits named by their short UID still hang off the right one', () => {
+  // The Keyword lists chained Keybits with the low 32 bits of the one they
+  // came through; that one is known by its full UID.
+  const T = 'FFFFFFFF7E8BBD5D1561ABCD';
+  const items = layout({
+    [T]: { at: 'T', via: null, depth: null, face: 'S' },
+    '1560ABCD': { at: null, via: '1561ABCD', depth: 2, parent: '1561ABCD', pside: 'N', face: 'S' },
+    '156AABCD': { at: null, via: '1561ABCD', depth: 3, parent: '1560ABCD', pside: 'N', face: 'S' },
+  }, {});
+  assert.deepStrictEqual(cell(items, '1560ABCD'), [0, -2]);
+  assert.deepStrictEqual(cell(items, '156AABCD'), [0, -3]);
+  assert.ok(!at(items, '1560ABCD')!.estimated && !at(items, '156AABCD')!.estimated);
+});
+
+test('a side saved for a Keybit that now reports the right is ignored', () => {
+  const items = layout({
+    R: { at: 'R', via: null, depth: null, face: 'W' },
+    L: { at: 'L', via: null, depth: null, face: 'E' },
+  }, {}, { R: 'T', L: 'T' });
+  assert.deepStrictEqual(cell(items, 'R'), [1, 0]);
+  assert.deepStrictEqual(cell(items, 'L'), [0, -1]);
+});
+
+test('two saved sides that clash: the latest choice wins', () => {
+  const keys = { A: { at: 'T' as const, via: null, depth: null, face: 'S' as const }, B: { at: 'T' as const, via: null, depth: null, face: 'S' as const } };
+  assert.deepStrictEqual(cell(layout(keys, {}, { A: 'T', B: 'T' }), 'B'), [0, -1]);
+  assert.deepStrictEqual(cell(layout(keys, {}, { B: 'T', A: 'T' }), 'A'), [0, -1]);
+});

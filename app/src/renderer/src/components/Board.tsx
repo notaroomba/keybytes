@@ -34,7 +34,10 @@ export function Board() {
   const flip = (uid: string, now: Side) => {
     const to = otherSide(now);
     if (!to) return;
-    const next = { ...prefer, [uid]: to };
+    // Latest choice last: layout() lets it win a clash with an older one.
+    const next = { ...prefer };
+    delete next[uid];
+    next[uid] = to;
     setPrefer(next);
     try { localStorage.setItem(PREFER_KEY, JSON.stringify(next)); } catch { /* only a convenience */ }
   };
