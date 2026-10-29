@@ -210,6 +210,13 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     if (why) Reply(port, "ERR %s", why);
     else Reply(port, "OK STACK INSTALL");
   }
+  else if (strcmp(cmd, "RESET") == 0)
+  {
+    /* A plain restart, e.g. to bring CPU2 up after a DFU flash jumped
+     * straight into the app. */
+    Reply(port, "OK RESET");
+    OTA_ResetSoon();
+  }
   else if (strcmp(cmd, "STACK?") == 0)
   {
     char info[48];
