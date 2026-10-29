@@ -688,6 +688,8 @@ static void settle(const char *name)
 
 static void finish(void)
 {
+  extern unsigned kw_bus_khz(void);
+  printf("  fast bus at %u kHz by the end\n", kw_bus_khz());
   print_diag();
   printf("  shorts=%ld fights=%ld  kb1 main loop pass %.1f us\n", shorts, fights,
          btn_reads[1] ? (sim_t - nodes[1].t_boot) / 1e6 / btn_reads[1] : 0);
@@ -863,8 +865,8 @@ static void sc_speed(void)
   for (int i = 1; i <= 4; i++) add_keybit(i, 0, 0);
   build();
   CHECK(wait_present(10000 * PS_MS) >= 0, "not every Keybit showed up");
-  static const int khz[] = { 10, 15, 20, 25, 35, 50 };
-  for (int i = 0; i < 6; i++) {
+  static const int khz[] = { 20, 25, 35, 50 };
+  for (int i = 0; i < 4; i++) {
     kw_probe_half = PS_MS / khz[i] / 2;
     kw_probe_acks = 0;
     kw_probe_left = 20;
@@ -915,6 +917,16 @@ int main(int argc, char **argv)
   }
   if (!strcmp(sc, "speed")) sc_speed();
   if (!strcmp(sc, "trace")) sc_trace(len, np);
+  if (!strcmp(sc, "cells")) {   /* CELLS="x,y,rot;x,y,rot;..." */
+    cell_t c[MAXN];
+    int n = 0;
+    for (const char *p = getenv("CELLS"); p && *p && n < MAXN - 1;) {
+      if (sscanf(p, "%d,%d,%d", &c[n].x, &c[n].y, &c[n].rot) == 3) n++;
+      p = strchr(p, ';');
+      if (p) p++;
+    }
+    sc_layout("cells", c, n, np);
+  }
   char cmd[600];
   snprintf(cmd, sizeof(cmd), "rm -rf '%s'", tmpdir);
   system(cmd);

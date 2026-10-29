@@ -117,12 +117,34 @@ static HAL_StatusTypeDef ended(HAL_StatusTypeDef st)
  * and then SDA; if SDA moved in between it sees a START or STOP that isn't
  * there, so give it time (the low phase still has SCLDEL for setup). */
 #ifndef SDADEL
-#define SDADEL 2
+#define SDADEL 8
 #endif
+
+/* If v12 reads keep failing at a speed, step down (100, 50, 20 kHz) and
+ * try the next one up again after a while. */
+#define FALLBACK_WINDOW 32       /* stream reads */
+#define FALLBACK_FAILS  8        /* more failed than this in a window: slower */
+#define FALLBACK_RETRY_MS 30000
+static const unsigned fast_steps[] = { FAST_KHZ, FAST_KHZ / 2, SLOW_KHZ };
+static struct { uint8_t step, reads, fails; uint32_t down_at; } fb;
+
+static unsigned fast_khz(void)
+{
+  if (fb.step && HAL_GetTick() - fb.down_at >= FALLBACK_RETRY_MS) { fb.step--; fb.down_at = HAL_GetTick(); }
+  return fast_steps[fb.step];
+}
+
+static void fast_result(int ok)
+{
+  fb.fails += !ok;
+  if (++fb.reads < FALLBACK_WINDOW) return;
+  if (fb.fails > FALLBACK_FAILS && fb.step < 2) { fb.step++; fb.down_at = HAL_GetTick(); }
+  fb.reads = fb.fails = 0;
+}
 
 static void bus_khz(I2C_HandleTypeDef *i2c, unsigned khz)
 {
-  static unsigned now_khz = SLOW_KHZ;
+  static unsigned now_khz;   /* 0: set it the first time, with our SDADEL */
   if (khz == now_khz) return;
   now_khz = khz;
   /* I2C3 runs off PCLK1 (64 MHz); PRESC=15 makes a tick 0.25 us */
@@ -348,40 +370,40 @@ done:
   return changed;
 }
 
-/* v12: key state, event count and the first events in one read. The Keybit
- * drops the events a read covered once the read has gone through, except
- * one carrying its place (EV_WHERE): that one is read whole at 0x80 and
- * dropped with a write. Returns 1 if anything changed. */
+/* v12: key state, event count and the first events in one read. Events
+ * are 5 bytes, or 11 with their place (EV_WHERE). The Keybit drops the
+ * events a read covered whole once the read has gone through. Returns 1
+ * if anything changed; *ok is set if the first read worked. */
 static int stream_one(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n, int i,
-                      keybit_remote_t *r, int *rn, int *remote)
+                      keybit_remote_t *r, int *rn, int *remote, int *ok)
 {
-  int changed = 0, want = 1;
+  int changed = 0;
+  uint16_t len = 2 + STREAM_EV;   /* most often: nothing, or one key event */
   for (int round = 0, tries = 0; round < 3; round++) {
-    uint8_t b[2 + EV_BATCH * STREAM_EV];
-    if (!read_regs(i2c, k[i].addr, REG_STREAM, b, (uint16_t)(2 + want * STREAM_EV))) {
+    uint8_t b[2 + EV_BATCH * EV_SIZE11];
+    if (!read_regs(i2c, k[i].addr, REG_STREAM, b, len)) {
       /* busy with a link frame for a moment: one more try */
       if (round == 0 && !tries++) { round--; continue; }
       break;
     }
-    k[i].last_ok = HAL_GetTick();
     if (round == 0) {
+      *ok = 1;
+      k[i].last_ok = HAL_GetTick();
       uint8_t down = b[0] & 1;
       if (down) { k[i].saw_down = 1; k[i].pend = 0; }
       if (down != k[i].key_down) { k[i].key_down = down; changed = 1; }
     }
-    int count = b[1] > EV_BATCH ? EV_BATCH : b[1];
-    int got = count < want ? count : want, e = 0;
-    while (e < got && !(b[2 + e * STREAM_EV + 4] & EV_WHERE))
-      changed |= take_event(k, n, i, &b[2 + e++ * STREAM_EV], STREAM_EV, r, rn, remote);
-    if (e < got) {   /* everything before it is gone, so it's first now */
-      uint8_t full[EV_SIZE11], one = 1;
-      if (!read_regs(i2c, k[i].addr, REG_EV_DATA11, full, EV_SIZE11)) break;
-      changed |= take_event(k, n, i, full, EV_SIZE11, r, rn, remote);
-      write_regs(i2c, k[i].addr, REG_EV_POP, &one, 1);
+    int count = b[1] > EV_BATCH ? EV_BATCH : b[1], e = 0, pos = 2;
+    while (e < count && pos + STREAM_EV <= len) {
+      int size = b[pos + 4] & EV_WHERE ? EV_SIZE11 : STREAM_EV;
+      if (pos + size > len) break;   /* not all of it: it stays queued */
+      changed |= take_event(k, n, i, &b[pos], size, r, rn, remote);
+      pos += size;
       e++;
     }
-    if (count - e <= 0) break;
-    want = count - e;
+    if (e >= count) break;
+    /* the rest: room for the first to carry its place, 5 bytes for the others */
+    len = (uint16_t)(2 + EV_SIZE11 + (count - e - 1) * STREAM_EV);
   }
   k[i].saw_down = k[i].key_down;
   return changed;
@@ -430,9 +452,10 @@ int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n,
 #ifndef SCAN_GAP_MS
 #define SCAN_GAP_MS    2    /* between scan probes: room for link frames */
 #endif
-#ifndef STREAM_SLOT_MS
-#define STREAM_SLOT_MS 2    /* v12 Keybits: one of them is read per slot, round robin */
-#endif
+/* v12 Keybits are read one per slot, round robin. A slot is about twice
+ * a short stream read (~90 bit times), so the bus stays at most half busy
+ * and links get their gaps: 2 ms at 100 kHz, 4 at 50, 9 at 20. */
+#define STREAM_SLOT_MS(khz) ((180u + (khz) - 1) / (khz))
 #define MISSES_MAX     2    /* scans a Keybit may miss in a row before it counts as gone, */
 #define GONE_MS        1000 /* and no read of any kind worked for this long */
 
@@ -510,17 +533,19 @@ int keybit_bus_service(I2C_HandleTypeDef *i2c, keybit_info_t *k, int *n, keybit_
   int flags = 0, used = 0, all12 = *n > 0, any12 = 0;
   uint32_t now = HAL_GetTick();
   for (int i = 0; i < *n; i++) { all12 &= k[i].fw >= 12; any12 |= k[i].fw >= 12; }
-  bus_khz(i2c, all12 ? FAST_KHZ : SLOW_KHZ);
+  unsigned khz = all12 ? fast_khz() : SLOW_KHZ;
+  bus_khz(i2c, khz);
 
   int had = 0, has = 0;
   for (int i = 0; i < *rn; i++) had += r[i].present;
-  if (any12 && now - bs.stream_at >= STREAM_SLOT_MS) {
+  if (any12 && now - bs.stream_at >= STREAM_SLOT_MS(khz)) {
     bs.stream_at = now;
     for (int tries = 0; tries < *n; tries++) {
       int i = bs.stream_next++ % *n;
       if (k[i].fw < 12) continue;
-      int remote = 0;
-      if (stream_one(i2c, k, *n, i, r, rn, &remote)) flags |= KEYBIT_CHANGED;
+      int remote = 0, ok = 0;
+      if (stream_one(i2c, k, *n, i, r, rn, &remote, &ok)) flags |= KEYBIT_CHANGED;
+      if (all12) fast_result(ok);
       used = 1;
       break;
     }

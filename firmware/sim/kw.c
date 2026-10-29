@@ -28,6 +28,7 @@ static int64_t T_SDADEL = 500 * PS_NS;   /* SDADEL from TIMINGR */
 
 static int64_t deadline;
 static int timed_out;
+static uint16_t cur_addr, cur_len;
 
 static int scl_up(void)
 {
@@ -113,7 +114,7 @@ static void stop(void)
 
 static HAL_StatusTypeDef fail(void)
 {
-  if (getenv("KW_TRACE2")) printf("%9.3f ms fail%s\n", sim_now() / 1e9, timed_out ? " (timeout)" : "");
+  if (getenv("KW_TRACE2")) printf("%9.3f ms fail %02x len %u%s\n", sim_now() / 1e9, cur_addr >> 1, cur_len, timed_out ? " (timeout)" : "");
   if (timed_out) {
     sim_kw_drive(0, 1);
     sim_kw_drive(1, 1);
@@ -146,6 +147,7 @@ HAL_StatusTypeDef HAL_I2C_Mem_Read(I2C_HandleTypeDef *h, uint16_t addr, uint16_t
 {
   (void)h; (void)regsize;
   begin(timeout);
+  cur_addr = addr; cur_len = len;
   if (!start() || put_byte((uint8_t)addr) != 1 || put_byte((uint8_t)reg) != 1) return fail();
   if (!start() || put_byte((uint8_t)(addr | 1)) != 1) return fail();
   for (int i = 0; i < len; i++)
@@ -307,6 +309,8 @@ void kw_main(void)
     sim_sleep(kw_loop_ps);
   }
 }
+
+unsigned kw_bus_khz(void) { return fast_steps[fb.step]; }
 
 int kw_present(uint32_t uid)
 {
