@@ -95,7 +95,7 @@ static void refresh_moder(ch32_swio_t *s)
  * DOCK? a=/b=/h= (ch32_t1, ch32_t0, ch32_hi), s= (sample point) and od=
  * still change them live. Push-pull by default: drive the bits, then for a
  * read just let go onto the internal pull-up (no kick, that fights the
- * target) and sample late, ~500 ns, so no external pull-up is needed.
+ * target) and sample late, ~640 ns, so no external pull-up is needed.
  * Even tuned, about 1 write frame in 10 gets dropped, so the memory layer
  * reads back every register write, checks DATA1 == addr + 4 after each
  * command to catch a dropped one, and ch32_program retries per block and
@@ -108,7 +108,7 @@ uint32_t ch32_t1 = 19;
 uint32_t ch32_t0 = 52;
 uint32_t ch32_hi = 46;
 uint32_t ch32_t_kick = 0;     /* push-pull read: cycles driven high after the low, before letting go; any kick breaks reads */
-uint32_t ch32_t_sample = 30;  /* cycles from release to sampling, plus ~3; ~500 ns, late enough for the internal pull-up */
+uint32_t ch32_t_sample = 38;  /* cycles from release to sampling, plus ~3; ~640 ns, late enough for the internal pull-up */
 uint32_t ch32_last_acs;     /* last DMABSTRACTCS seen by wait_done, for debugging */
 uint8_t ch32_open_drain = 0;   /* 1 needs the external ~1k pull-up; push-pull works with or without it */
 
@@ -645,11 +645,15 @@ int ch32_resume_pending(const uint32_t uid[3])
 #define BLOCKS_PER_CALL 2
 
 /* After a failed step: clear the command error, drop what we cached about
- * the target and halt it again, so the step can be retried. */
+ * the target, redo the line handshake and halt it again, so the step can be
+ * retried. Without the handshake a block that failed once kept failing
+ * all 8 tries, while the next attempt (which starts with a detect) went
+ * straight past it. */
 static void recover(ch32_swio_t *s)
 {
   ch32_write_reg(s, CH32_DMABSTRACTCS, 0x08000700);
   forget_state(s);
+  ch32_detect(s);
   ch32_halt(s, 0);
   ch32_retries++;
 }
