@@ -125,3 +125,11 @@ test('OTA: stack reply, image checks and chunks', () => {
   assert.deepStrictEqual(chunks.map((c) => c.length), [240, 240, 24]);
   assert.deepStrictEqual([...chunks[2].slice(18)], [1, 1, 0xff, 0xff, 0xff, 0xff]);
 });
+
+test('KEY+ with where a v11 Keybit is', () => {
+  assert.deepStrictEqual(parseLine('KEY+ uid=1560ABCD at=X via=FFFFFFFF7E8BBD5D1561ABCD depth=2 parent=1561ABCD pside=N face=S'), {
+    type: 'keyAdd', uid: '1560ABCD', at: null, v: null, via: 'FFFFFFFF7E8BBD5D1561ABCD', depth: 2,
+    face: 'S', parent: '1561ABCD', pside: 'N',
+  });
+  assert.strictEqual((parseLine('KEY+ uid=FFFFFFFF7E8BBD5D1561ABCD at=L v=11 face=E') as { face: string }).face, 'E');
+});

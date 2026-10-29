@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import type { PickerList } from '../../shared/bridge';
 import { normalizeStore } from './lib/profiles.ts';
 import type { TransportKind } from './lib/transports.ts';
+import type { Compass } from './lib/layout.ts';
 import type { Side, Store } from './lib/types.ts';
 
 export interface KeyState {
@@ -12,6 +13,12 @@ export interface KeyState {
   flashing: number | null;
   via: string | null;
   depth: number | null;
+  // v11 Keybits say where they are: their own side facing the Keyword or the
+  // Keybit they hang off (parent, null for one on the Keyword), and which
+  // side of that Keybit they're on. Null until known.
+  face: Compass | null;
+  parent: string | null;
+  pside: Compass | null;
   // Its own sides (N/E/S/W) where another Keybit is on backwards, '?' when only
   // known to be one of them, null when none.
   backwards: string | null;

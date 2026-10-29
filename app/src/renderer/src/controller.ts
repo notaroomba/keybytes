@@ -12,6 +12,7 @@ import {
   type OtaTarget, type Transport,
 } from './lib/transports.ts';
 import type { Entry, HostAction, Profile, Settings, Side } from './lib/types.ts';
+import type { Compass } from './lib/layout.ts';
 import {
   activeProfileOf, emptyDevice, initialOta, useApp, type ActivityTone, type AppState, type KeyState, type OtaState,
 } from './store.ts';
@@ -168,7 +169,10 @@ function resolveUid(uid: string): string {
 
 let highlightTimer: ReturnType<typeof setTimeout> | undefined;
 
-function addKey(uid: string, at: Side | null, v: number | null, relay: { via: string | null; depth: number | null } | null) {
+function addKey(
+  uid: string, at: Side | null, v: number | null, relay: { via: string | null; depth: number | null } | null,
+  where: { face?: Compass | null; parent?: string | null; pside?: Compass | null } = {},
+) {
   const s = get();
   const known = s.keys[uid];
   // Seen in full for the first time: carry over a setup saved under its short UID.
@@ -192,6 +196,9 @@ function addKey(uid: string, at: Side | null, v: number | null, relay: { via: st
     flashing: known?.flashing ?? null,
     via: relay?.via ? resolveUid(relay.via) : known?.via ?? null,
     depth: relay?.depth ?? known?.depth ?? null,
+    face: where.face ?? known?.face ?? null,
+    parent: where.parent ? resolveUid(where.parent) : known?.parent ?? null,
+    pside: where.pside ?? known?.pside ?? null,
     backwards: known?.backwards ?? null,
   };
   set((st) => ({ keys: { ...st.keys, [uid]: next } }));
@@ -285,7 +292,8 @@ function handleLine(line: string) {
     case 'keyAdd': {
       const uid = resolveUid(msg.uid);
       syncSeen?.add(uid);
-      addKey(uid, msg.at, msg.v, msg.via !== undefined ? { via: msg.via ?? null, depth: msg.depth ?? null } : null);
+      addKey(uid, msg.at, msg.v, msg.via !== undefined ? { via: msg.via ?? null, depth: msg.depth ?? null } : null,
+        { face: msg.face, parent: msg.parent, pside: msg.pside });
       break;
     }
     case 'keyRemove':

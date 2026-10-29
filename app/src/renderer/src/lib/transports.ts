@@ -169,9 +169,12 @@ export class DemoTransport implements Transport {
   private emit(line: string) { setTimeout(() => this.onText?.(line + '\n'), 20); }
   private battLine() { return `BATT pct=${this.battery} chg=0 usb=0`; }
   private sidesLine() { return 'SIDES ' + SIDES.map((s) => `${s}=${this.present[s] ? 1 : 0}`).join(' '); }
-  private keyLine(s: Side) { return `KEY+ uid=${this.uids[s]} at=${s} v=${this.versions[s]}`; }
+  private keyLine(s: Side) { return `KEY+ uid=${this.uids[s]} at=${s} v=${this.versions[s]} face=${({ L: 'E', R: 'W', T: 'S' } as const)[s]}`; }
   private chainedLine() {
-    return `KEY+ uid=${this.chained} at=X via=${this.uids.R} depth=2 v=3\nKEY+ uid=${this.chained2} at=X via=${this.uids.R} depth=3 v=3`;
+    // Like v11 firmware: each says which side of which Keybit it's on and which way it faces it.
+    const r = this.uids.R.slice(-8);
+    return `KEY+ uid=${this.chained} at=X via=${this.uids.R} depth=2 parent=${r} pside=N face=S\n`
+      + `KEY+ uid=${this.chained2} at=X via=${this.uids.R} depth=3 parent=${this.chained} pside=E face=N`;
   }
 
   /** Attaches or removes the Keybit on a side. */

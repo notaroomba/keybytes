@@ -1,6 +1,7 @@
 // Keyword host protocol: newline-terminated ASCII lines, the same over USB CDC and BLE.
 // See PROTOCOL.md for the full description.
 import type { Entry, Side, Step } from './types.ts';
+import type { Compass } from './layout.ts';
 
 export const SIDES: readonly Side[] = ['L', 'R', 'T'];
 
@@ -164,7 +165,10 @@ export function profileCommands(keys: Record<string, Entry>, caps: ReadonlySet<s
 export type Message =
   | { type: 'hello'; fw: string; proto: number; caps: Set<string>; kb: number | null }
   | { type: 'sides'; sides: Partial<Record<Side, boolean>> }
-  | { type: 'keyAdd'; uid: string; at: Side | null; v: number | null; via?: string | null; depth?: number | null }
+  | {
+      type: 'keyAdd'; uid: string; at: Side | null; v: number | null; via?: string | null; depth?: number | null;
+      face?: Compass | null; parent?: string | null; pside?: Compass | null;
+    }
   | { type: 'keyRemove'; uid: string }
   | { type: 'keysEnd' }
   | { type: 'press'; uid: string; down: boolean }
@@ -181,6 +185,7 @@ export type Message =
   | { type: 'unknown'; line: string };
 
 const isSide = (s: string | undefined): s is Side => SIDES.includes(s as Side);
+const isCompass = (s: string | undefined): s is Compass => s === 'N' || s === 'E' || s === 'S' || s === 'W';
 
 /** Parses one line from the Keyword. Anything unrecognised comes back as {type: 'unknown'}. */
 export function parseLine(line: string): Message {
@@ -212,6 +217,10 @@ export function parseLine(line: string): Message {
         v: f.v != null ? int(f.v) : null,
         // Keybits relayed through another Keybit: at=X, via=<uid of the next Keybit in>, depth=<hops>.
         ...(f.via ? { via: isUid(f.via) ? f.via.toUpperCase() : null, depth: int(f.depth) || null } : {}),
+        // v11: its own side facing the Keyword or its parent, and for a chained one
+        // the parent (low 32 bits of its UID) and that Keybit's side it's on.
+        ...(isCompass(f.face) ? { face: f.face } : {}),
+        ...(f.parent && isUid(f.parent) && isCompass(f.pside) ? { parent: f.parent.toUpperCase(), pside: f.pside } : {}),
       };
     case 'KEY-':
       if (!uid) break;

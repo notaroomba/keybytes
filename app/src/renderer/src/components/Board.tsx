@@ -108,6 +108,13 @@ export function Board() {
         )}
       >
         <span className="line-clamp-2">{label}</span>
+        {p.rot !== undefined && present && (
+          // A notch on the Keybit's own N side, so its turn shows.
+          <span
+            aria-hidden
+            className={clsx('absolute rounded-full bg-on opacity-60', ['top-1 left-1/2 h-1 w-4 -translate-x-1/2', 'top-1/2 right-1 h-4 w-1 -translate-y-1/2', 'bottom-1 left-1/2 h-1 w-4 -translate-x-1/2', 'top-1/2 left-1 h-4 w-1 -translate-y-1/2'][p.rot])}
+          />
+        )}
       </button>
     );
   };
