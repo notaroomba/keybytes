@@ -45,6 +45,7 @@
 #define KEYBIT_POLL_MS 250
 #define KEYBIT_SCAN_MS 250
 #define KEYBIT_KEYS_MS 5
+#define HALT_TRIES_MAX 60      /* dock polls (250 ms) with a failed halt before giving up */
 #define KEYBIT_MISSES_MAX 2   /* scans a Keybit may miss in a row before it counts as gone */
 
 /* USER CODE END PD */
@@ -159,6 +160,8 @@ static ch32_status_t Keybit_Dock_Uid(uint32_t uid[3])
 /* One flash attempt on the docked board: done if it verifies or programs,
  * failed once 5 attempts in a row get nowhere. */
 static int32_t best_blk;   /* furthest block the current board's attempts got to */
+static uint32_t next_blk;  /* where flashing the current board carries on */
+static uint8_t checked;    /* the current board's whole image has been checked once */
 static uint8_t stalls;     /* attempts in a row that got no further than where they started */
 
 /* Boards flashed or found up to date since boot; the image is fixed per
@@ -189,6 +192,8 @@ static void Keybit_Dock_Start(const uint32_t uid[3])
     }
   dock_state = DOCK_WORKING;
   best_blk = -1;
+  next_blk = 0;
+  checked = 0;
   stalls = 0;
   LED_Update();    /* blue while flashing */
 }
@@ -202,6 +207,19 @@ static void Keybit_Dock_Attempt(const uint32_t uid[3])
    * If the halt fails anyway, detect again and give it one more go. */
   ch32_status_t h = ch32_halt(&keybit_swio, 0);
   if (h != CH32_OK && ch32_detect(&keybit_swio) == CH32_OK) h = ch32_halt(&keybit_swio, 0);
+  /* The halt fails in runs and then goes through, so a failed one isn't a
+   * stuck attempt: just try again next poll, and only give up after
+   * HALT_TRIES_MAX of them in a row (~15 s). */
+  static uint8_t halt_fails;
+  if (h != CH32_OK) {
+    if (++halt_fails >= HALT_TRIES_MAX) {
+      halt_fails = 0;
+      dock_state = DOCK_FAILED;
+      PROTO_Send("DOCK failed: halt=%d", h);
+    }
+    return;
+  }
+  halt_fails = 0;
   /* The first words all reading blank is more likely a board that isn't
    * seated yet than an erased one, so give it about a second before
    * believing it (an attempt that died after erasing block 0 does leave it blank). */
@@ -213,8 +231,8 @@ static void Keybit_Dock_Attempt(const uint32_t uid[3])
     if (blank && ++blank_polls < 4) return;
   }
   blank_polls = 0;
-  /* Mid-flash there's nothing to check yet: carry straight on. */
-  int resuming = h == CH32_OK && ch32_resume_pending(uid);
+  /* Check the whole image once per docking; after that, carry straight on. */
+  int resuming = h == CH32_OK && checked;
   ch32_status_t v = resuming ? CH32_ERR_VERIFY
                   : h == CH32_OK ? ch32_verify(&keybit_swio, CH32_FLASH_BASE, keybit_image, keybit_image_len) : h;
   /* Only a real mismatch means it needs flashing; a garbled read just gets checked again. */
@@ -232,7 +250,12 @@ static void Keybit_Dock_Attempt(const uint32_t uid[3])
     PROTO_Send("DOCK up to date");
     return;
   }
-  ch32_status_t p = ch32_program(&keybit_swio, keybit_image, keybit_image_len);
+  if (h == CH32_OK && !checked && v == CH32_ERR_VERIFY) {
+    /* Everything before the first mismatch already matches. */
+    checked = 1;
+    next_blk = (ch32_bad_addr - CH32_FLASH_BASE) / CH32_FLASH_BLOCK;
+  }
+  ch32_status_t p = ch32_program(&keybit_swio, keybit_image, keybit_image_len, &next_blk);
   if (p == CH32_MORE) {   /* a couple of blocks done; the rest next poll */
     stalls = 0;
     return;

@@ -631,15 +631,6 @@ uint32_t ch32_retries;
 int32_t ch32_fail_blk = -1;
 uint32_t ch32_resume_from;
 
-/* Where the last unfinished ch32_program got to, and on which chip (UID),
- * so the next attempt on the same chip carries on instead of starting over. */
-static struct { uint32_t uid[3]; uint32_t next_blk; uint8_t valid; } resume;
-
-int ch32_resume_pending(const uint32_t uid[3])
-{
-  return resume.valid && resume.next_blk > 0 && memcmp(uid, resume.uid, sizeof(resume.uid)) == 0;
-}
-
 /* Blocks per ch32_program call: few enough that the caller gets its main
  * loop (the side bus, USB) back every couple of hundred ms. */
 #define BLOCKS_PER_CALL 2
@@ -661,7 +652,7 @@ static void recover(ch32_swio_t *s)
 /* Flashes the image block by block. A frame now and then still comes back
  * garbled, and a flash takes thousands of them, so each step gets a few
  * tries: the unlock up to 5, each 64-byte block (written, then read back) up to 8. */
-ch32_status_t ch32_program(ch32_swio_t *s, const uint8_t *image, uint32_t len)
+ch32_status_t ch32_program(ch32_swio_t *s, const uint8_t *image, uint32_t len, uint32_t *next_blk)
 {
   ch32_status_t r;
   ch32_retries = 0;
@@ -683,22 +674,10 @@ ch32_status_t ch32_program(ch32_swio_t *s, const uint8_t *image, uint32_t len)
   }
   if (r != CH32_OK) return r;
 
-  /* Only trust the UID when two reads agree, or a garbled one restarts at block 0. */
-  uint32_t uid[3], again[3];
-  int have_uid = 0;
-  for (int t = 0; t < 3 && !have_uid; t++) {
-    have_uid = 1;
-    for (int i = 0; i < 3; i++)
-      if (ch32_read_word(s, 0x1FFFF7E8u + 4u * i, &uid[i]) != CH32_OK ||
-          ch32_read_word(s, 0x1FFFF7E8u + 4u * i, &again[i]) != CH32_OK || uid[i] != again[i]) have_uid = 0;
-  }
-  if (!have_uid || !resume.valid || memcmp(uid, resume.uid, sizeof(uid)) != 0) resume.next_blk = 0;
-  resume.valid = have_uid;
-  if (have_uid) memcpy(resume.uid, uid, sizeof(uid));
-  ch32_resume_from = resume.next_blk;
+  ch32_resume_from = *next_blk;
 
   uint32_t done = 0;
-  for (uint32_t off = resume.next_blk * CH32_FLASH_BLOCK; off < len; off += CH32_FLASH_BLOCK) {
+  for (uint32_t off = *next_blk * CH32_FLASH_BLOCK; off < len; off += CH32_FLASH_BLOCK) {
     if (done++ == BLOCKS_PER_CALL) return CH32_MORE;
     uint32_t n = len - off < CH32_FLASH_BLOCK ? len - off : CH32_FLASH_BLOCK;
     IWDG->KR = 0xAAAA;  /* the whole image takes longer than the bootloader's ~8 s watchdog */
@@ -714,9 +693,8 @@ ch32_status_t ch32_program(ch32_swio_t *s, const uint8_t *image, uint32_t len)
       ch32_fail_blk = (int32_t)(off / CH32_FLASH_BLOCK);
       return r;
     }
-    resume.next_blk = off / CH32_FLASH_BLOCK + 1;
+    *next_blk = off / CH32_FLASH_BLOCK + 1;
   }
-  resume.valid = 0;
   ch32_write_word(s, CH_FLASH_CTLR, 0);
   ch32_reboot(s);
   return CH32_OK;

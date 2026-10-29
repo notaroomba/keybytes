@@ -22,13 +22,11 @@ extern uint32_t ch32_t1, ch32_t0, ch32_hi;
 extern uint32_t ch32_t_kick;    /* push-pull read: cycles driven high before release (DOCK? k=) */
 extern uint32_t ch32_t_sample;  /* read: cycles from release to sampling (DOCK? s=) */
 extern uint8_t ch32_open_drain;
-extern uint32_t ch32_last_acs;
+extern uint32_t ch32_last_acs;  /* last DMABSTRACTCS read while waiting on a command */
 extern uint32_t ch32_bad_addr, ch32_bad_want, ch32_bad_got;  /* first mismatch ch32_verify found */
 extern uint32_t ch32_retries;   /* steps ch32_program had to retry */
 extern int32_t ch32_fail_blk;   /* block ch32_program gave up on, -1 if none */
-extern uint32_t ch32_resume_from;
-/* 1 if ch32_program has unfinished work for the chip with this UID. */
-int ch32_resume_pending(const uint32_t uid[3]);  /* block ch32_program started at (resumed from an earlier try) */  /* last DMABSTRACTCS read while waiting on a command */
+extern uint32_t ch32_resume_from;  /* block the last ch32_program call started at */
 /* Idle time after each frame. 2 us is sometimes too short. */
 #ifndef CH32_SWIO_FRAME_GAP_US
 #define CH32_SWIO_FRAME_GAP_US 8
@@ -126,8 +124,10 @@ ch32_status_t ch32_write_flash(ch32_swio_t *s, uint32_t addr,
 ch32_status_t ch32_verify(ch32_swio_t *s, uint32_t addr,
                           const uint8_t *data, uint32_t len);
 
-/* Whole job: detect, halt with reset, flash image at 0x08000000, verify,
- * reboot. */
-ch32_status_t ch32_program(ch32_swio_t *s, const uint8_t *image, uint32_t len);
+/* Flash image at 0x08000000 from block *next_blk on, a couple of blocks per
+ * call: CH32_MORE means call again; *next_blk moves past every block written
+ * and read back, so the caller decides where to carry on. Reboots the chip
+ * when the last block is done. */
+ch32_status_t ch32_program(ch32_swio_t *s, const uint8_t *image, uint32_t len, uint32_t *next_blk);
 
 #endif /* CH32V003_SWIO_H */
