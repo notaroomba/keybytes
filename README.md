@@ -34,6 +34,10 @@ A truly modular keyboard with rearrangeable keys, magnetic cases and Bluetooth!
 
 https://github.com/user-attachments/assets/19bec26d-6e01-4ee0-906e-7e69bace2f9c
 
+Typing over USB:
+
+[![Typing over USB](assets/demo2-preview.jpg)](assets/demo2.mp4)
+
 ## Key Features
 
 - **Rearrangeable layout** where every key is its own 1u PCB
