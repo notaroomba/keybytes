@@ -109,8 +109,9 @@ static void LED_Set(uint8_t r, uint8_t g, uint8_t b)
 /* Status LED, highest priority first:
  *   red    Keybit on the dock failed to flash (until it's taken off)
  *   red    blinking: SDA held low, a Keybit is on backwards (bus paused)
+ *   red    double blink: a Keybit reports a neighbour on backwards
  *   white  blinking: a Keybit just connected on a side
- *   blue   Keybit on the dock (flashed or up to date)
+ *   blue   Keybit on the dock (flashing); green once it's done
  *   white  idle */
 /* Dock: EMPTY until something answers, WORKING while flashing (blue), then
  * DONE (green) or FAILED (red, gave up) until that board is taken off. */
@@ -122,12 +123,22 @@ static uint32_t green_until;   /* green blink after a Keybit is flashed or found
 #define WHITE_BLINK_MS 1200
 #define BUS_HELD_MS 100
 
+/* Any Keybit, touching us or further out, with a neighbour on backwards. */
+static int Keybit_Any_Backwards(void)
+{
+  for (int i = 0; i < keybit_count; i++) if (keybits[i].backwards) return 1;
+  for (int i = 0; i < keybit_remote_count; i++) if (keybit_remotes[i].present && keybit_remotes[i].backwards) return 1;
+  return 0;
+}
+
 static void LED_Update(void)
 {
   uint32_t now = HAL_GetTick();
+  uint32_t t = now % 1000;
   if (dock_state == DOCK_FAILED) LED_Set(1, 0, 0);
   else if ((int32_t)(green_until - now) > 0) LED_Set(0, ((green_until - now) / GREEN_BLINK_MS) & 1, 0);
   else if (bus_held) LED_Set(((now / 250) & 1) == 0, 0, 0);
+  else if (Keybit_Any_Backwards()) LED_Set(t < 100 || (t >= 200 && t < 300), 0, 0);  /* two 100 ms blinks a second */
   else if ((int32_t)(white_until - now) > 0) {
     uint8_t on = ((now / 100) & 1) == 0;
     LED_Set(on, on, on);
