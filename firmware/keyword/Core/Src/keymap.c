@@ -68,6 +68,10 @@ const keybit_info_t *KEYMAP_Present(int *count)
 /* One erase or program, done when neither CPU is blocking flash access:
  * ST's sequence from BLE_RfWithFlash's flash_driver.c. CPU2 was told to
  * use semaphore 7 in APP_BLE_Init. Returns 0 when it ran. */
+/* Why the last save failed (step 1 erase, 2 program, 3 read back, 4 the
+ * page isn't the keymap's), how many tries it had, semaphore 7 then. */
+uint32_t keymap_save_why[3];
+
 static int Flash_Op(uint8_t erase, uint32_t addr_or_page, uint64_t data)
 {
   for (int tries = 0; tries < 1000; tries++)
@@ -99,43 +103,127 @@ static int Flash_Op(uint8_t erase, uint32_t addr_or_page, uint64_t data)
     }
     HAL_Delay(1);   /* CPU2 is in a radio event, try again */
   }
+  keymap_save_why[0] = erase ? 1 : 2;
+  keymap_save_why[1] = 1000;
+  keymap_save_why[2] = HSEM->R[CFG_HW_BLOCK_FLASH_REQ_BY_CPU2_SEMID];   /* R, not RLR: reading RLR locks it */
   return -1;
 }
 
+/* The keymap page is a log: each SAVE writes the whole map after the last
+ * one (header doubleword, entries, then MAP_COMMIT once all of it is in),
+ * and loading takes the newest one with its commit. Writes are single
+ * doublewords, which fit between CPU2's radio events; a page erase takes
+ * ~22 ms and CPU2 never leaves a gap that long while a Bluetooth link is
+ * up (it held semaphore 7 the whole time), so it only happens when the
+ * page is full, in the background, once nobody is connected. */
+#define MAP_COMMIT     0x54494D4D4F43504BULL   /* "KPCOMMIT" */
+#define PAGE_END(base) ((base) + FLASH_PAGE_SIZE)
+
+static uint8_t erase_due;     /* the page is full: erase it, then write the map */
+
+/* The newest committed map in the page, and where the next one goes (0
+ * if the page holds something we can't follow and needs erasing). */
+static const map_image_t *Log_Scan(uint32_t *next)
+{
+  uint32_t base = (uint32_t)Map_Flash(), pos = base;
+  const map_image_t *best = NULL;
+  *next = 0;
+  while (pos + 8 <= PAGE_END(base))
+  {
+    const map_image_t *m = (const map_image_t *)pos;
+    if (*(const uint64_t *)pos == UINT64_MAX) { *next = pos; break; }   /* erased: the end */
+    if (m->magic != MAP_MAGIC || m->count > KEYMAP_MAX) break;
+    uint32_t end = pos + Map_Size(m);
+    if (end + 8 > PAGE_END(base)) break;
+    if (m->version == MAP_VERSION && *(const uint64_t *)end == MAP_COMMIT) best = m;
+    pos = end + 8;   /* a map cut off before its commit is skipped, not reused */
+  }
+  return best;
+}
+
+/* Program the map at addr, commit last. */
+static int Log_Write(uint32_t addr)
+{
+  uint32_t size = Map_Size(&keytable);
+  const uint64_t *src = (const uint64_t *)&keytable;
+  int err = 0;
+  for (uint32_t i = 0; i < size / 8 && !err; i++) err |= Flash_Op(0, addr + 8 * i, src[i]);
+  if (!err) err |= Flash_Op(0, addr + size, MAP_COMMIT);
+  if (!err && memcmp((const void *)addr, &keytable, size) != 0) { keymap_save_why[0] = 3; err = -1; }
+  return err;
+}
+
+static void Flash_Begin(void)
+{
+  while (LL_HSEM_1StepLock(HSEM, CFG_HW_FLASH_SEMID));
+  HAL_FLASH_Unlock();
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
+}
+
+static void Flash_End(void)
+{
+  HAL_FLASH_Lock();
+  LL_HSEM_ReleaseLock(HSEM, CFG_HW_FLASH_SEMID, 0);
+}
+
+/* 0 saved, 1 queued until the page can be erased, -1 failed. */
 int KEYMAP_Save(void)
 {
   keytable.magic = MAP_MAGIC;
   keytable.version = MAP_VERSION;
-  uint32_t size = Map_Size(&keytable);
-  if (memcmp(Map_Flash(), &keytable, size) == 0) return 0;   /* nothing changed */
+  uint32_t size = Map_Size(&keytable), next;
+  /* Only ever the page just under CPU2's, far above the app. */
+  if (Map_Page() < 0x80 || Map_Page() >= 0xFF) { keymap_save_why[0] = 4; return -1; }
 
-  int err = 0;
-  while (LL_HSEM_1StepLock(HSEM, CFG_HW_FLASH_SEMID));
-  HAL_FLASH_Unlock();
-  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
-
-  /* Without the BLE stack running there is nobody to answer SHCI. */
-  if (APP_BLE_Ready()) SHCI_C2_FLASH_EraseActivity(ERASE_ACTIVITY_ON);
-  err |= Flash_Op(1, Map_Page(), 0);
-  if (APP_BLE_Ready()) SHCI_C2_FLASH_EraseActivity(ERASE_ACTIVITY_OFF);
-
-  uint32_t addr = (uint32_t)Map_Flash();
-  const uint64_t *src = (const uint64_t *)&keytable;
-  for (uint32_t i = 0; i < size / 8 && !err; i++)
+  const map_image_t *last = Log_Scan(&next);
+  if (last && memcmp(last, &keytable, size) == 0) { erase_due = 0; return 0; }   /* nothing changed */
+  if (next && next + size + 8 <= PAGE_END((uint32_t)Map_Flash()))
   {
-    err |= Flash_Op(0, addr + 8 * i, src[i]);
+    Flash_Begin();
+    int err = Log_Write(next);
+    Flash_End();
+    if (!err) erase_due = 0;
+    return err ? -1 : 0;
   }
+  erase_due = 1;   /* KEYMAP_Service finishes it */
+  return 1;
+}
 
-  HAL_FLASH_Lock();
-  LL_HSEM_ReleaseLock(HSEM, CFG_HW_FLASH_SEMID, 0);
-  if (err || memcmp(Map_Flash(), &keytable, size) != 0) return -1;
-  return 0;
+/* From the keys task: once the page is due an erase and nobody is
+ * connected over Bluetooth, stop advertising, erase, write the map. With
+ * a link up while USB does the typing, drop the link: the computer comes
+ * back by itself. */
+static void Keymap_Service(void)
+{
+  static uint32_t last;
+  if (!erase_due || HAL_GetTick() - last < 1000) return;
+  last = HAL_GetTick();
+  if (APP_BLE_ConnHandle() != APP_BLE_NO_CONN)
+  {
+    extern USBD_HandleTypeDef hUsbDeviceFS;
+    if (USBD_KW_Ready(&hUsbDeviceFS)) APP_BLE_Drop();
+    return;
+  }
+  int paused = APP_BLE_PauseAdv();
+  Flash_Begin();
+  if (APP_BLE_Ready()) SHCI_C2_FLASH_EraseActivity(ERASE_ACTIVITY_ON);
+  int err = Flash_Op(1, Map_Page(), 0);
+  if (APP_BLE_Ready()) SHCI_C2_FLASH_EraseActivity(ERASE_ACTIVITY_OFF);
+  if (!err) err = Log_Write((uint32_t)Map_Flash());
+  Flash_End();
+  if (paused) APP_BLE_ResumeAdv();
+  if (!err)
+  {
+    erase_due = 0;
+    PROTO_Send("OK SAVE (page erased)");
+  }
 }
 
 static void Map_Load(void)
 {
-  const map_image_t *f = Map_Flash();
-  if (f->magic == MAP_MAGIC && f->version == MAP_VERSION && f->count <= KEYMAP_MAX)
+  uint32_t next;
+  const map_image_t *f = Log_Scan(&next);
+  if (f)
   {
     memcpy(&keytable, f, Map_Size(f));
   }
@@ -366,6 +454,7 @@ static void Remote_Keys(void)
 static void Keys_Task(void)
 {
   keybit_changed = 0;   /* only main-loop code sets it, no ISR */
+  Keymap_Service();
   Direct_Keys();
   Remote_Keys();
 

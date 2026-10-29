@@ -301,6 +301,27 @@ static void Adv_Start(uint8_t fast)
   if (fast) HW_TS_Start(adv_timer_id, FAST_ADV_TIMEOUT);
 }
 
+/* Keymap SAVE: CPU2 holds flash for its radio timing while it advertises,
+ * leaving no gap for a page erase. Stop advertising for one, if nobody is
+ * connected; start again after. */
+int APP_BLE_PauseAdv(void)
+{
+  if (!APP_BLE_Ready() || APP_BLE_ConnHandle() != APP_BLE_NO_CONN) return 0;
+  HW_TS_Stop(adv_timer_id);
+  aci_gap_set_non_discoverable();
+  return 1;
+}
+
+void APP_BLE_ResumeAdv(void)
+{
+  Adv_Start(0);
+}
+
+void APP_BLE_Drop(void)
+{
+  if (APP_BLE_ConnHandle() != APP_BLE_NO_CONN) aci_gap_terminate(APP_BLE_ConnHandle(), 0x13);
+}
+
 void hci_notify_asynch_evt(void *p_Data)
 {
   UNUSED(p_Data);

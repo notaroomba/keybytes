@@ -603,7 +603,12 @@ static void Handle_Line(proto_port_t *port, char *cmd)
       Reply(port, "ERR no BLE stack yet, keymap not saved");
       return;
     }
-    if (KEYMAP_Save() != 0) Reply(port, "ERR flash write failed");
+    extern uint32_t keymap_save_why[3];
+    int r = KEYMAP_Save();
+    if (r > 0) Reply(port, "OK SAVE queued, the page needs erasing first");
+    else if (r < 0)
+      Reply(port, "ERR flash write failed step=%lu tries=%lu sem7=%08lx", (unsigned long)keymap_save_why[0],
+            (unsigned long)keymap_save_why[1], (unsigned long)keymap_save_why[2]);
     else Reply(port, "OK SAVE");
   }
   else
