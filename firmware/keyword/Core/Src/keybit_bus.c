@@ -127,6 +127,7 @@ static char keyword_side(char keybit_side)
   switch (keybit_side) {
   case 'E': return 'L';
   case 'W': return 'R';
+  case 'N': return 'R';   /* turned 90 degrees: only the right side meets an N side the right way round */
   case 'S': return 'T';
   default:  return '?';
   }

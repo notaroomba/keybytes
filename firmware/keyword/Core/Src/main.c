@@ -43,8 +43,13 @@
 #define LED_STEP_MS 500
 #define GREEN_BLINK_MS 150   /* 3 green blinks, this long on and off, once a Keybit is flashed */
 #define KEYBIT_POLL_MS 250
-#define KEYBIT_SCAN_MS 250
-#define KEYBIT_KEYS_MS 5
+#define KEYBIT_SCAN_MS 500
+/* At 20 kHz one register read is ~2 ms, and every Keybit on the bus has to
+ * sit through every transfer in its software I2C target. Polling keys every
+ * 5 ms kept the bus close to 100% busy, which left a Keybit no quiet gap
+ * to run a link frame to its neighbour, so chained Keybits never joined. */
+#define KEYBIT_KEYS_MS 15
+#define KEYBIT_RELAY_MS 60
 #define HALT_TRIES_MAX 60      /* dock polls (250 ms) with a failed halt before giving up */
 #define KEYBIT_MISSES_MAX 2   /* scans a Keybit may miss in a row before it counts as gone */
 
@@ -434,7 +439,7 @@ void Keybit_Dock_Id(char *out, size_t len, int reset)
 /* Hand addresses to new Keybits, then refresh the list of who is there. */
 static void Keybit_Bus_Poll(void)
 {
-  static uint32_t last_scan, last_keys, held_since;
+  static uint32_t last_scan, last_keys, last_relay, held_since;
 
   /* A backwards Keybit holds SDA low; tell the host once it has lasted
    * BUS_HELD_MS and once it clears, and leave the bus alone meanwhile. */
@@ -454,6 +459,9 @@ static void Keybit_Bus_Poll(void)
   if (HAL_GetTick() - last_keys >= KEYBIT_KEYS_MS) {
     last_keys = HAL_GetTick();
     keybit_changed |= keybit_bus_poll_keys(&hi2c3, keybits, keybit_count);
+  }
+  if (HAL_GetTick() - last_relay >= KEYBIT_RELAY_MS) {
+    last_relay = HAL_GetTick();
     keybit_bus_poll_relay(&hi2c3, keybits, keybit_count, keybit_remotes, &keybit_remote_count);
   }
   if (HAL_GetTick() - last_scan < KEYBIT_SCAN_MS) return;
