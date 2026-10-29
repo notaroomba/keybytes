@@ -148,6 +148,7 @@ STM32_WPAN/Target/hw_ipcc.c \
 USB_Device/App/usb_device.c \
 USB_Device/App/usbd_cdc_if.c \
 USB_Device/App/usbd_desc.c \
+USB_Device/App/usbd_kw.c \
 USB_Device/Target/usbd_conf.c \
 Utilities/lpm/tiny_lpm/stm32_lpm.c \
 Utilities/sequencer/stm32_seq.c

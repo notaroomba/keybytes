@@ -8,6 +8,7 @@
 #include "app_ble.h"
 #include "proto.h"
 #include "keymap.h"
+#include "usbd_kw.h"
 
 #define KEYS_PERIOD_MS 5
 #define MAP_MAGIC      0x50414D4BUL   /* "KMAP" */
@@ -392,8 +393,21 @@ static void Keys_Task(void)
   uint8_t report[8];
   uint16_t consumer;
   KEYACT_Step(key_state, acts, KEYBIT_MAX + keybit_remote_count, HAL_GetTick(), report, &consumer);
-  HIDSAPP_SendKeyboard(report);
-  HIDSAPP_SendConsumer(consumer);
+  /* Plugged into a computer: type over USB, from the keymap in flash or
+   * whatever the app last sent, with or without the app running. Only
+   * over Bluetooth otherwise, so a computer that has both doesn't get
+   * every key twice. */
+  extern USBD_HandleTypeDef hUsbDeviceFS;
+  if (USBD_KW_Ready(&hUsbDeviceFS))
+  {
+    USBD_KW_Keyboard(&hUsbDeviceFS, report);
+    USBD_KW_Media(&hUsbDeviceFS, consumer);
+  }
+  else
+  {
+    HIDSAPP_SendKeyboard(report);
+    HIDSAPP_SendConsumer(consumer);
+  }
 
   /* same task as the keys: the charger shares I2C3 with the Keybits */
   BATT_Poll(HAL_GetTick());

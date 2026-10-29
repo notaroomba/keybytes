@@ -5,6 +5,7 @@
 #include "usbd_desc.h"
 #include "usbd_cdc.h"
 #include "usbd_cdc_if.h"
+#include "usbd_kw.h"
 
 USBD_HandleTypeDef hUsbDeviceFS;
 
@@ -36,7 +37,7 @@ void MX_USB_Device_Init(void)
 {
   CDC_PortInit();
   if (USBD_Init(&hUsbDeviceFS, &CDC_Desc, DEVICE_FS) != USBD_OK
-      || USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC) != USBD_OK
+      || USBD_RegisterClass(&hUsbDeviceFS, &USBD_KW) != USBD_OK   /* CDC plus a keyboard */
       || USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS) != USBD_OK
       || USBD_Start(&hUsbDeviceFS) != USBD_OK)
   {
