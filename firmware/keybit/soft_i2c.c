@@ -53,11 +53,14 @@ static int recv_byte(soft_i2c_bus_t *b, uint8_t *out)
   return EV_BYTE;
 }
 
-/* Hold SDA low through the 9th clock. Called with SCL low. */
-static int send_ack(soft_i2c_bus_t *b)
+/* Hold SDA low through the 9th clock. Called with SCL low. With hold, keep
+ * SCL low afterwards: a read's first byte is still to be worked out, and
+ * send_byte lets go once its first bit is on SDA. */
+static int send_ack(soft_i2c_bus_t *b, int hold)
 {
   SDA_LOW(b);
   int ok = wait_scl(b, 1) && wait_scl(b, 0);
+  if (ok && hold) SCL_LOW(b);
   SDA_REL(b);
   return ok;
 }
@@ -65,7 +68,9 @@ static int send_ack(soft_i2c_bus_t *b)
 /* Clock out 8 bits, then read the controller's ACK. Returns 1 on ACK, 0 on
  * NACK, -1 if we lost arbitration, -2 on a timeout. We hold SCL low (clock
  * stretching) while setting up each bit, so slow polling can't miss the
- * setup time. */
+ * setup time. After an ACK we keep holding it while the caller works out
+ * the next byte: an event's CRC takes longer than SCL's low phase, and
+ * without the hold it went out a bit late (v12). */
 static int send_byte(soft_i2c_bus_t *b, uint8_t v)
 {
   for (int bit = 7; bit >= 0; bit--) {
@@ -81,7 +86,8 @@ static int send_byte(soft_i2c_bus_t *b, uint8_t v)
   SDA_REL(b);
   if (!wait_scl(b, 1)) return -2;
   int ack = !SDA(b);
-  wait_scl(b, 0);
+  if (!wait_scl(b, 0)) return -2;
+  if (ack) SCL_LOW(b);
   return ack;
 }
 
@@ -123,7 +129,7 @@ static int serve(soft_i2c_bus_t *b, const soft_i2c_target_t *t)
       return addressed;
     }
     addressed = 1;
-    if (!send_ack(b)) return addressed;
+    if (!send_ack(b, a & 1)) return addressed;
 
     if (a & 1) {  /* controller reads */
       int r;
@@ -148,7 +154,7 @@ static int serve(soft_i2c_bus_t *b, const soft_i2c_target_t *t)
       if (ev != EV_BYTE) break;
       if (first) { reg_ptr = d; first = 0; }
       else t->write(reg_ptr++, d, b);
-      if (!send_ack(b)) return addressed;
+      if (!send_ack(b, 0)) return addressed;
     }
     if (ev == EV_START) continue;
     return addressed;

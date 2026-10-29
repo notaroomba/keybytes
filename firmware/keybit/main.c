@@ -78,7 +78,7 @@
 #include "link.h"
 #include <string.h>
 
-#define FW_VERSION          12
+#define FW_VERSION          13
 #define KEYBIT_DEFAULT_ADDR 0x30
 #define LINK_ADDR           0x31  /* reserved: the keyword never assigns it */
 #define BTN_PIN             PD6   /* MX switch to GND */
