@@ -775,8 +775,8 @@ static void settle(const char *name)
 
 static void finish(void)
 {
-  extern unsigned kw_bus_khz(void);
-  printf("  fast bus at %u kHz by the end%s\n", kw_bus_khz(), glitches ? "" : "");
+  extern unsigned kw_bus_khz(void), kw_top_khz(void);
+  printf("  bus up to %u kHz, fast step %u kHz by the end\n", kw_top_khz(), kw_bus_khz());
   if (glitches) printf("  %ld glitches injected\n", glitches);
   print_diag();
   printf("  shorts=%ld fights=%ld  kb1 main loop pass %.1f us\n", shorts, fights,
@@ -992,6 +992,7 @@ int main(int argc, char **argv)
     if (!all && strcmp(sc, suite[i])) continue;
     pid_t pid = all ? fork() : 0;   /* each scenario in its own process: the Keyword keeps state */
     if (pid == 0) {
+      fails = 0;   /* a forked scenario starts with the parent's count */
       if (i == 0) sc_chain(len, np);
       if (i == 1) sc_turns(len, np);
       if (i == 2) sc_square(np);

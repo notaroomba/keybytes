@@ -175,8 +175,11 @@ HAL_StatusTypeDef HAL_I2C_Mem_Write(I2C_HandleTypeDef *h, uint16_t addr, uint16_
   return HAL_OK;
 }
 
+static unsigned top_khz;   /* fastest clock the Keyword has used */
 void sim_i2c_timing(uint32_t t)
 {
+  unsigned khz = 2000u / ((t & 0xFF) + 1);
+  if (khz > top_khz) top_khz = khz;
   T_SDADEL = (int64_t)((t >> 16) & 0xF) * 250 * PS_NS;
   kw_t_low = (int64_t)((t & 0xFF) + 1) * 250 * PS_NS;
   kw_t_high = (int64_t)(((t >> 8) & 0xFF) + 1) * 250 * PS_NS;
@@ -313,6 +316,7 @@ void kw_main(void)
 }
 
 unsigned kw_bus_khz(void) { return fast_steps[fb.step]; }
+unsigned kw_top_khz(void) { unsigned k = top_khz; top_khz = 0; return k; }
 
 int kw_present(uint32_t uid)
 {

@@ -8,7 +8,13 @@
  * The status stream works out an event's CRC while the Keyword is clocking
  * the read, which is where this matters. CRC_CYCLES overrides it. */
 #include <stdlib.h>
-uint8_t link_crc8_real(uint8_t crc, uint8_t v);
+/* v10's link.c keeps its CRC to itself and main.c never calls one. */
+__attribute__((weak)) uint8_t link_crc8_real(uint8_t crc, uint8_t v)
+{
+  crc ^= v;
+  for (int i = 0; i < 8; i++) crc = (uint8_t)(crc & 0x80 ? (crc << 1) ^ 0x07 : crc << 1);
+  return crc;
+}
 uint8_t link_crc8(uint8_t crc, uint8_t v)
 {
   static int cycles = -1;
