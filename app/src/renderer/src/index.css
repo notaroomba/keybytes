@@ -62,6 +62,8 @@
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   --animate-pop: pop 1.4s ease-out;
   --animate-blink: blink 0.5s ease-out;
+  --animate-tile-in: tile-in 0.25s ease-out;
+  --animate-tile-out: tile-out 0.2s ease-in forwards;
 
   @keyframes pop {
     0% { box-shadow: 0 0 0 3px var(--on); }
@@ -70,6 +72,14 @@
   @keyframes blink {
     0% { color: var(--accent); }
     100% { color: inherit; }
+  }
+  @keyframes tile-in {
+    0% { opacity: 0; transform: scale(0.6); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes tile-out {
+    0% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0.6); }
   }
 }
 

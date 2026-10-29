@@ -144,8 +144,9 @@ export class DemoTransport implements Transport {
   readonly label = 'Demo';
   readonly kind = 'demo';
   readonly uids: Record<Side, string> = { L: '3B0A4F1C88D2E61F5F1821C1', R: '91C7002DE4B3A75C0A33B7E2', T: '0F5E19A2C6B84D37C4D90015' };
-  /** A Keybit chained behind the right one, reported by its low 32 bits like a real relay. */
+  /** Two Keybits chained out from the right one (2 and 3 hops), reported by their low 32 bits like a real relay. */
   readonly chained = 'D00DF00D';
+  readonly chained2 = 'C0FFEE42';
   private versions: Record<Side, number> = { L: 3, R: 2, T: 3 };
   readonly present: Record<Side, boolean> = { L: true, R: false, T: false };
   private maps: Record<string, Record<string, string>> = {};
@@ -169,18 +170,20 @@ export class DemoTransport implements Transport {
   private battLine() { return `BATT pct=${this.battery} chg=0 usb=0`; }
   private sidesLine() { return 'SIDES ' + SIDES.map((s) => `${s}=${this.present[s] ? 1 : 0}`).join(' '); }
   private keyLine(s: Side) { return `KEY+ uid=${this.uids[s]} at=${s} v=${this.versions[s]}`; }
-  private chainedLine() { return `KEY+ uid=${this.chained} at=X via=${this.uids.R} depth=1 v=3`; }
+  private chainedLine() {
+    return `KEY+ uid=${this.chained} at=X via=${this.uids.R} depth=2 v=3\nKEY+ uid=${this.chained2} at=X via=${this.uids.R} depth=3 v=3`;
+  }
 
   /** Attaches or removes the Keybit on a side. */
   toggle(side: Side) {
     this.present[side] = !this.present[side];
     this.emit(this.present[side] ? this.keyLine(side) : `KEY- uid=${this.uids[side]}`);
-    if (side === 'R') this.emit(this.present.R ? this.chainedLine() : `KEY- uid=${this.chained}`);
+    if (side === 'R') this.emit(this.present.R ? this.chainedLine() : `KEY- uid=${this.chained}\nKEY- uid=${this.chained2}`);
     this.emit(this.sidesLine());
   }
 
   private sideOf(uid: string): Side | 'X' | undefined {
-    return SIDES.find((s) => this.uids[s] === uid && this.present[s]) || (uid === this.chained && this.present.R ? 'X' : undefined);
+    return SIDES.find((s) => this.uids[s] === uid && this.present[s]) || ((uid === this.chained || uid === this.chained2) && this.present.R ? 'X' : undefined);
   }
 
   /** Simulates a press and release. */
