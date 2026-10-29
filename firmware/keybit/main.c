@@ -50,6 +50,7 @@
  *   0x10-0x1B  96-bit UID, little endian
  *   0x20-0x2B  ASSIGN: UID to match (write only)
  *   0x2C       ASSIGN: new address, 0 = forget it. Writing this applies it.
+ *   0x30-0x4F  link diagnostics, 8 counters per side (see diag below)
  *   0x51       our depth, 0xFF if we can't reach the keyword yet
  *   0x52       events ready to read, at most 8
  *   0x53-0x7A  up to 8 events, 5 bytes each: UID bits 0..31, then flags
@@ -64,7 +65,7 @@
 #include "link.h"
 #include <string.h>
 
-#define FW_VERSION          8
+#define FW_VERSION          9
 #define KEYBIT_DEFAULT_ADDR 0x30
 #define LINK_ADDR           0x31  /* reserved: the keyword never assigns it */
 #define BTN_PIN             PD6   /* MX switch to GND */
@@ -129,6 +130,15 @@ static soft_i2c_bus_t buses[4] = {
   { .sda = PA1, .scl = PA2, .side = 'N' },
 };
 static side_t sides[4];
+
+/* Link diagnostics, read over I2C at 0x30 + 8 * side (S, E, W, N): link
+ * requests we sent, ones that came back ok, no ack, called off for keyword
+ * traffic, bad frames, requests we answered as a child, ones we failed to
+ * answer, and probes skipped because the lines weren't idle. Each counts up
+ * to 255 and stays there. */
+enum { D_REQ, D_OK, D_NO_ACK, D_ABORT, D_BAD, D_SERVED, D_SERVE_FAIL, D_SKIPPED, D_N };
+static uint8_t diag[4][D_N];
+static void diag_count(int s, int what) { if (diag[s][what] < 255) diag[s][what]++; }
 static uint8_t backwards;  /* reg 0x09: sides with a Keybit on backwards */
 
 static uint8_t uid[12];
@@ -276,6 +286,7 @@ static uint8_t read_reg(uint8_t reg, soft_i2c_bus_t *bus)
 {
   if (reg >= 0x02 && reg <= 0x05) return uid[reg - 0x02];
   if (reg >= 0x10 && reg <= 0x1B) return uid[reg - 0x10];
+  if (reg >= 0x30 && reg < 0x30 + sizeof(diag)) return diag[(reg - 0x30) / D_N][(reg - 0x30) % D_N];
   if (reg >= 0x53 && reg < 0x53 + BATCH * 5) {
     int i = (reg - 0x53) / 5, b = (reg - 0x53) % 5;
     if (i >= q_count) return 0xFF;
@@ -353,8 +364,9 @@ static void fill_reply(link_reply_t *r)
 }
 
 /* Keep serving I2C on the other sides while a link request waits for its
- * ack. Returns 1 (give up on the request) if we served something, so the
- * keyword never waits on us for long. */
+ * ack. Returns 1 (give up on the request) only if the keyword addressed us,
+ * so it never waits on us for long; traffic for other Keybits on its bus
+ * doesn't cut the request short. */
 static int link_side = -1;
 static int serve_others(void)
 {
@@ -382,7 +394,10 @@ static void poll_child(int s, int doorbell)
   int ok = link_poll(&p, doorbell, my_depth, &got, (uint8_t)(QUEUE_LEN - q_count), &kept, serve_others);
   link_side = -1;
   reset_i2c_edge(s);
-  if (!ok) return;
+  if (ok != LINK_SKIPPED) diag_count(s, D_REQ);
+  diag_count(s, ok == LINK_OK ? D_OK : ok == LINK_NO_ACK ? D_NO_ACK : ok == LINK_ABORTED ? D_ABORT
+                : ok == LINK_BAD_FRAME ? D_BAD : D_SKIPPED);
+  if (ok != LINK_OK) return;
 
   side_t *sd = &sides[s];
   sd->link = 1;
@@ -420,6 +435,7 @@ static void answer_link(int s, int listening)
   int ok = link_serve(&p, sd->ringing, &r, &depth, &kept);
   sd->ringing = 0;
   reset_i2c_edge(s);
+  diag_count(s, ok ? D_SERVED : D_SERVE_FAIL);
   if (!ok) return;
 
   sd->link = 1;

@@ -98,16 +98,19 @@ static void wait_bus_free(soft_i2c_bus_t *b)
 
 static uint8_t reg_ptr;
 
-static void serve(soft_i2c_bus_t *b, const soft_i2c_target_t *t)
+/* Returns 1 if we were addressed at some point. */
+static int serve(soft_i2c_bus_t *b, const soft_i2c_target_t *t)
 {
+  int addressed = 0;
   for (;;) {  /* loops on repeated START */
     uint8_t a;
     int ev = recv_byte(b, &a);
     if (ev == EV_START) continue;
-    if (ev != EV_BYTE) return;
+    if (ev != EV_BYTE) return addressed;
     uint8_t addr = a >> 1;
-    if (!t->match(addr, b)) { wait_bus_free(b); return; }
-    if (!send_ack(b)) return;
+    if (!t->match(addr, b)) { wait_bus_free(b); return addressed; }
+    addressed = 1;
+    if (!send_ack(b)) return addressed;
 
     if (a & 1) {  /* controller reads */
       int r;
@@ -115,12 +118,12 @@ static void serve(soft_i2c_bus_t *b, const soft_i2c_target_t *t)
       if (r < 0) {
         if (t->lost) t->lost(addr);
         wait_bus_free(b);
-        return;
+        return addressed;
       }
       /* NACK ends the read; next is STOP or a repeated START */
       ev = recv_byte(b, &a);
       if (ev == EV_START) continue;
-      return;
+      return addressed;
     }
 
     int first = 1;
@@ -130,10 +133,10 @@ static void serve(soft_i2c_bus_t *b, const soft_i2c_target_t *t)
       if (ev != EV_BYTE) break;
       if (first) { reg_ptr = d; first = 0; }
       else t->write(reg_ptr++, d, b);
-      if (!send_ack(b)) return;
+      if (!send_ack(b)) return addressed;
     }
     if (ev == EV_START) continue;
-    return;
+    return addressed;
   }
 }
 
@@ -145,11 +148,11 @@ int soft_i2c_poll(soft_i2c_bus_t *b, const soft_i2c_target_t *t)
   b->prev_scl = scl;
   if (!start) return 0;
 
-  serve(b, t);
+  int addressed = serve(b, t);
   /* However it ended, let go of both lines so we can never hold the bus. */
   SDA_REL(b);
   SCL_REL(b);
   b->prev_sda = SDA(b);
   b->prev_scl = SCL(b);
-  return 1;
+  return addressed;
 }

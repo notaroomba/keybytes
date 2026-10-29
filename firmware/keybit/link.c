@@ -27,12 +27,13 @@
 #define DRIVE(pin)   funPinMode(pin, GPIO_CFGLR_OUT_50Mhz_PP)
 #define RELEASE(pin) do { funDigitalWrite(pin, FUN_HIGH); funPinMode(pin, GPIO_CFGLR_OUT_10Mhz_OD); } while (0)
 
+/* 1 when pin reaches level, 0 on timeout, -1 if idle() called it off. */
 static int wait_pin(uint8_t pin, int level, uint32_t us, link_idle_fn idle)
 {
   uint32_t t0 = SysTick->CNT, span = us * DELAY_US_TIME;
   while ((funDigitalRead(pin) != 0) != level) {
     if (SysTick->CNT - t0 >= span) return 0;
-    if (idle && idle()) return 0;
+    if (idle && idle()) return -1;
   }
   return 1;
 }
@@ -79,21 +80,21 @@ static uint8_t p_get(const link_pins_t *p, int turn)
 int link_poll(const link_pins_t *p, int doorbell, uint8_t my_depth,
               link_reply_t *child, uint8_t room, uint8_t *kept, link_idle_fn idle)
 {
-  if (!CK(p)) return 0;
+  if (!CK(p)) return LINK_SKIPPED;
   /* DT low with CK high and no doorbell expected: a Keybit turned the
    * wrong way round has our DT on its GND and our CK on its 3V3. Pulling
    * CK low would short its rail through our pin, so leave the side alone. */
-  if (!doorbell && !DT(p)) return 0;
+  if (!doorbell && !DT(p)) return LINK_SKIPPED;
   CK_LOW(p);
 
   /* A ringing child already holds DT low, so wait for it to let go
    * before taking DT low as the ack. */
-  int ok = !doorbell || wait_pin(p->dt, 1, ACK_US, idle);
-  ok = ok && wait_pin(p->dt, 0, ACK_US, idle);
+  int ok = !doorbell ? 1 : wait_pin(p->dt, 1, ACK_US, idle);
+  if (ok > 0) ok = wait_pin(p->dt, 0, ACK_US, idle);
+  if (ok <= 0) { CK_REL(p); return ok < 0 ? LINK_ABORTED : LINK_NO_ACK; }
   DelaySysTick(HALF);
   CK_REL(p);
-  ok = ok && wait_pin(p->ck, 1, STEP_US, 0) && wait_pin(p->dt, 1, STEP_US, 0);
-  if (!ok) { CK_REL(p); return 0; }
+  if (wait_pin(p->ck, 1, STEP_US, 0) <= 0 || wait_pin(p->dt, 1, STEP_US, 0) <= 0) { CK_REL(p); return LINK_BAD_FRAME; }
 
   /* From here we own CK and drive it both ways. The frame runs on our
    * clock without waiting for the child, so it can't hang if the child is
@@ -120,9 +121,9 @@ int link_poll(const link_pins_t *p, int doorbell, uint8_t my_depth,
   p_put(p, (uint8_t)~k, 0);
   RELEASE(p->dt);
   RELEASE(p->ck);
-  if (!good) return 0;
+  if (!good) return LINK_BAD_FRAME;
   *kept = k;
-  return 1;
+  return LINK_OK;
 }
 
 /* ------------------------------------------------------------------------ */

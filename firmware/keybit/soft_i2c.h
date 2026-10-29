@@ -38,8 +38,8 @@ typedef struct {
 /* Make both pins open-drain and released (high through the 10k pull-ups). */
 void soft_i2c_init(soft_i2c_bus_t *bus);
 
-/* Look once for a START. If there is one, serve the transaction and return
- * 1. The first byte of a write sets the register pointer; reads and later
+/* Look once for a START. If there is one, serve the transaction; return 1
+ * if we were addressed in it (traffic for others returns 0). The first byte of a write sets the register pointer; reads and later
  * writes auto-increment it. */
 int soft_i2c_poll(soft_i2c_bus_t *bus, const soft_i2c_target_t *t);
 

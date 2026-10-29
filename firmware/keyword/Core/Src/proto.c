@@ -395,6 +395,24 @@ static void Handle_Line(proto_port_t *port, char *cmd)
       Reply(port, "I2CSPEED timing=%08lx ~%lu Hz", (unsigned long)t, (unsigned long)(2000000u / half));
     }
   }
+  else if (strcmp(cmd, "LINKS?") == 0)
+  {
+    /* LINKS? <addr hex>: a Keybit's link counters (v9+, regs 0x30-0x4F), one line per side. */
+    unsigned ad = 0;
+    uint8_t d[32];
+    static const char side[4] = { 'S', 'E', 'W', 'N' };
+    if (sscanf(args, "%x", &ad) != 1)
+      Reply(port, "ERR usage: LINKS? <addr hex>");
+    else if (HAL_I2C_Mem_Read(&hi2c3, (uint16_t)(ad << 1), 0x30, I2C_MEMADD_SIZE_8BIT, d, 16, 50) != HAL_OK ||
+             HAL_I2C_Mem_Read(&hi2c3, (uint16_t)(ad << 1), 0x40, I2C_MEMADD_SIZE_8BIT, d + 16, 16, 50) != HAL_OK)
+      Reply(port, "LINKS %02x err=%08lx", ad, (unsigned long)HAL_I2C_GetError(&hi2c3));
+    else
+      for (int i = 0; i < 4; i++) {
+        const uint8_t *c = d + 8 * i;
+        Reply(port, "LINKS %02x %c req=%u ok=%u noack=%u abort=%u bad=%u served=%u servefail=%u skipped=%u", ad,
+              side[i], c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7]);
+      }
+  }
   else if (strcmp(cmd, "I2CRD") == 0)
   {
     /* I2CRD <addr hex> <reg hex> <n>: raw register read on the side bus. */

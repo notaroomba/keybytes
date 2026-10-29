@@ -50,9 +50,13 @@ typedef struct {
  * keyword just started a transaction on another side and needs serving. */
 typedef int (*link_idle_fn)(void);
 
+/* What link_poll did. */
+enum { LINK_OK = 1, LINK_SKIPPED = 0, LINK_NO_ACK = -1, LINK_ABORTED = -2, LINK_BAD_FRAME = -3 };
+
 /* Parent: run one frame. doorbell says the child was ringing (DT low
- * before we started). On success fills *child and returns 1; *kept is the
- * number of events we told the child we kept (the caller takes those). */
+ * before we started). On success fills *child and returns LINK_OK, else
+ * one of the other codes; *kept is the number of events we told the child
+ * we kept (the caller takes those). */
 int link_poll(const link_pins_t *p, int doorbell, uint8_t my_depth,
               link_reply_t *child, uint8_t room, uint8_t *kept, link_idle_fn idle);
 
