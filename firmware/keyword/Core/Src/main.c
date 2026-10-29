@@ -506,7 +506,14 @@ static void Keybit_Bus_Poll(void)
   int n = keybit_bus_scan(&hi2c3, found, KEYBIT_MAX);
   for (int i = 0; i < keybit_count && n < KEYBIT_MAX; i++) {
     int here = 0;
-    for (int j = 0; j < n && !here; j++) here = memcmp(found[j].uid, keybits[i].uid, sizeof(found[j].uid)) == 0;
+    for (int j = 0; j < n && !here; j++)
+      if (memcmp(found[j].uid, keybits[i].uid, sizeof(found[j].uid)) == 0) {
+        here = 1;
+        /* keep its tap tracking across the rescan */
+        found[j].saw_down = keybits[i].saw_down;
+        found[j].pend = keybits[i].pend;
+        found[j].tap = keybits[i].tap;
+      }
     if (!here && missed[i] < KEYBIT_MISSES_MAX) {
       found[n] = keybits[i];
       found_missed[n++] = (uint8_t)(missed[i] + 1);

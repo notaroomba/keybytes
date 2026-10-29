@@ -21,6 +21,10 @@ typedef struct {
   char keybit_side;  /* the Keybit's own side touching us: N/E/S/W */
   char at;           /* where it is on the keyword: L, R or T, '?' if unknown */
   uint8_t backwards; /* its sides with a Keybit on backwards: bit 0 N, 1 E, 2 S, 3 W */
+  /* Taps too short for the key poll to see, caught from the Keybit's own
+   * queued events: saw_down is set when a poll reads it down, pend when
+   * its press event arrived unseen, tap 1 = report a down next, 2 = then up. */
+  uint8_t saw_down, pend, tap;
 } keybit_info_t;
 
 /* A Keybit further out, known only through events relayed by its
@@ -33,6 +37,8 @@ typedef struct {
   uint8_t backwards;   /* it has a neighbour on backwards (side unknown) */
   uint8_t via;         /* address of the touching Keybit it came through */
   uint8_t dirty;       /* set on any change; the consumer clears it */
+  uint8_t fresh_down;  /* went down in a relay batch the consumer hasn't seen yet */
+  uint8_t tap;         /* a press and release came in one batch: 1 = report down, 2 = then up */
   uint32_t last_seen;  /* HAL_GetTick() */
 } keybit_remote_t;
 
@@ -67,7 +73,7 @@ uint32_t keybit_bus_poll_keys(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n);
 /* Drain relayed events from the n touching Keybits into the remote table
  * (r, with *rn entries in use) and age out silent ones. Run it with
  * keybit_bus_poll_keys. Returns 1 if any entry changed. */
-int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, const keybit_info_t *k, int n,
+int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n,
                           keybit_remote_t *r, int *rn);
 
 /* Plain register access for other devices on I2C3, such as the BQ25895

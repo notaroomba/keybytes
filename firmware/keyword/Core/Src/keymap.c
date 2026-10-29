@@ -256,6 +256,12 @@ static void Direct_Keys(void)
   memcpy(old, present, sizeof(keybit_info_t) * old_count);
   present_count = keybit_count;
   memcpy(present, keybits, sizeof(keybit_info_t) * keybit_count);
+  /* A tap the key poll missed: down for one pass, then up on the next. */
+  for (int i = 0; i < keybit_count; i++)
+  {
+    if (keybits[i].tap == 1) { present[i].key_down = 1; keybits[i].tap = 2; }
+    else if (keybits[i].tap == 2) keybits[i].tap = 0;
+  }
 
   for (int i = 0; i < keybit_count; i++)
   {
@@ -267,9 +273,9 @@ static void Direct_Keys(void)
       KEYMAP_KeyLine(i, line, sizeof(line));
       PROTO_Send("%s", line);
     }
-    if ((was ? was->key_down : 0) != keybits[i].key_down)
+    if ((was ? was->key_down : 0) != present[i].key_down)
     {
-      PROTO_Send("PRESS uid=%s down=%d", uid, keybits[i].key_down);
+      PROTO_Send("PRESS uid=%s down=%d", uid, present[i].key_down);
     }
     if ((was ? was->backwards : 0) != keybits[i].backwards)
     {
@@ -277,7 +283,7 @@ static void Direct_Keys(void)
     }
     if (was) state[i] = key_state[was - old];
     else memset(&state[i], 0, sizeof(state[i]));
-    state[i].down = keybits[i].key_down;
+    state[i].down = present[i].key_down;
   }
   memcpy(key_state, state, sizeof(keyact_key_t) * keybit_count);
   for (int i = keybit_count; i < KEYBIT_MAX; i++)
@@ -309,8 +315,12 @@ static void Remote_Keys(void)
   {
     keybit_remote_t *k = &keybit_remotes[r];
     keyact_key_t *s = &key_state[KEYBIT_MAX + r];
-    uint8_t down = k->present && k->key_down;
+    uint8_t down = k->present && (k->key_down || k->tap == 1);
     uint8_t back = k->present && k->backwards;
+    /* A tap that came and went in one relay batch: down this pass, up the next. */
+    if (k->tap == 1) { k->tap = 2; k->dirty = 1; }
+    else if (k->tap == 2) k->tap = 0;
+    if (down) k->fresh_down = 0;
     if (!k->dirty && k->present == remote_shown[r] && down == remote_down[r] && back == remote_back[r]) continue;
     k->dirty = 0;
 

@@ -16,6 +16,7 @@
 #define REG_EV_POP   0x7B
 #define EV_BATCH     8
 #define EV_PRESSED   0x01
+#define EV_HEARTBEAT 0x02
 #define EV_BACKWARDS 0x04
 #define MAGIC      0x4B
 
@@ -145,6 +146,7 @@ int keybit_bus_scan(I2C_HandleTypeDef *i2c, keybit_info_t *out, int max)
     if (!read_regs(i2c, a, REG_MAGIC, head, sizeof(head)) || head[0] != MAGIC) continue;
 
     keybit_info_t *k = &out[n];
+    memset(k, 0, sizeof(*k));
     /* Reading the UID also catches two Keybits on one address: the loser of
      * the arbitration drops its address and turns up on the default one. */
     if (!read_regs(i2c, a, REG_UID, k->uid, sizeof(k->uid))) continue;
@@ -165,6 +167,10 @@ uint32_t keybit_bus_poll_keys(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n)
   for (int i = 0; i < n; i++) {
     uint8_t v;
     if (!read_regs(i2c, k[i].addr, REG_KEY, &v, 1)) continue;  /* next scan drops it */
+    if (v & 1) {
+      k[i].saw_down = 1;
+      k[i].pend = 0;
+    }
     if ((v & 1) != k[i].key_down) {
       k[i].key_down = v & 1;
       changed |= 1u << i;
@@ -189,7 +195,7 @@ static keybit_remote_t *remote_slot(keybit_remote_t *r, int *rn, uint32_t uid)
   return free_slot;  /* NULL when the table is full */
 }
 
-int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, const keybit_info_t *k, int n,
+int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, keybit_info_t *k, int n,
                           keybit_remote_t *r, int *rn)
 {
   int changed = 0;
@@ -208,16 +214,30 @@ int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, const keybit_info_t *k, int n,
       uint32_t uid = uid32(&ev[e * 5]);
       uint8_t flags = ev[e * 5 + 4];
 
-      /* Touching Keybits queue their own events too; we already read
-       * those directly. */
+      /* Touching Keybits queue their own key events too. Their key is read
+       * directly, but a tap shorter than the key poll only shows up here:
+       * a press the poll never saw, then its release, is a missed tap. */
       int direct = 0;
-      for (int j = 0; j < n; j++) if (uid32(k[j].uid) == uid) direct = 1;
+      for (int j = 0; j < n; j++) {
+        if (uid32(k[j].uid) != uid) continue;
+        direct = 1;
+        if (flags & EV_HEARTBEAT) continue;   /* only key changes count */
+        if (flags & EV_PRESSED) {
+          if (!k[j].saw_down) k[j].pend = 1;
+        } else {
+          if (k[j].pend && !k[j].saw_down && !k[j].tap) k[j].tap = 1;
+          k[j].pend = 0;
+        }
+      }
       if (direct) continue;
 
       keybit_remote_t *x = remote_slot(r, rn, uid);
       if (!x) continue;
       uint8_t down = flags & EV_PRESSED;
       uint8_t back = (flags & EV_BACKWARDS) != 0;
+      /* Down and up again before the keys task saw the down: keep it as a tap. */
+      if (down && !x->key_down) x->fresh_down = 1;
+      if (!down && x->key_down && x->fresh_down && !x->tap) x->tap = 1;
       if (x->uid != uid || !x->present || x->key_down != down || x->backwards != back) {
         x->dirty = 1;
         changed = 1;
@@ -231,6 +251,9 @@ int keybit_bus_poll_relay(I2C_HandleTypeDef *i2c, const keybit_info_t *k, int n,
       x->last_seen = now;
     }
   }
+
+  /* The next batch's events are measured against the polls until then. */
+  for (int i = 0; i < n; i++) k[i].saw_down = k[i].key_down;
 
   for (int i = 0; i < *rn; i++) {
     if (r[i].present && now - r[i].last_seen > KEYBIT_REMOTE_TIMEOUT_MS) {
