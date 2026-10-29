@@ -89,7 +89,9 @@
 
 /* Last 64-byte page. The SWIO flasher only rewrites pages the image uses,
  * so this survives reflashing. */
+#ifndef CONFIG_PAGE   /* the simulator points it at its own copy */
 #define CONFIG_PAGE  0x08003FC0u
+#endif
 #define CONFIG_MAGIC 0x4B42u
 
 #define EV_PRESSED   0x01

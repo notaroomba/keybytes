@@ -134,6 +134,10 @@ int link_poll(const link_pins_t *p, int doorbell, uint8_t my_depth, const uint8_
  * quick: spin on the input register directly, a few cycles per check.
  * SPIN bounds the wait (roughly 200 us at 48 MHz). */
 #define SPIN 4000
+/* The input register read, swapped out by the host simulator (firmware/sim). */
+#ifndef READ_PORT
+#define READ_PORT(in) (*(in))
+#endif
 
 typedef struct {
   const volatile uint32_t *in;
@@ -144,7 +148,7 @@ static inline __attribute__((always_inline)) int spin(const fast_t *f, int level
 {
   uint32_t want = level ? f->ck : 0;
   for (int n = SPIN; n; n--)
-    if ((*f->in & f->ck) == want) return 1;
+    if ((READ_PORT(f->in) & f->ck) == want) return 1;
   return 0;
 }
 
@@ -153,7 +157,7 @@ static inline __attribute__((always_inline)) int c_get(const fast_t *f, const fa
   uint8_t x = 0;
   for (int i = 0; i < 8; i++) {
     if (!spin(f, 0) || !spin(f, 1)) return 0;
-    x = (uint8_t)((x << 1) | ((*d->in & d->dt) != 0));
+    x = (uint8_t)((x << 1) | ((READ_PORT(d->in) & d->dt) != 0));
   }
   *v = x;
   return 1;
