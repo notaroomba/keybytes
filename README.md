@@ -21,6 +21,7 @@ A truly modular keyboard with rearrangeable keys, magnetic cases and Bluetooth!
 <p align="center">
   <a href="#key-features">Key Features</a> •
   <a href="#video-demo">Video Demo</a> •
+  <a href="#connecting-keybits">Connecting Keybits</a> •
   <a href="#pcb">PCB</a> •
   <a href="#case">Case</a> •
   <a href="#credits">Credits</a> •
@@ -47,6 +48,24 @@ https://github.com/user-attachments/assets/19bec26d-6e01-4ee0-906e-7e69bace2f9c
 - **RGB status LED**
 - **USB-C** with ESD protection
 - **Ceramic Bluetooth antenna**
+
+## Connecting Keybits
+
+Going around a keybit, the pogo pins on the N and W sides are 3.3V, SDA, GND, SCL and on the E and S sides they are SCL, GND, SDA, 3.3V. So two keybits only work together when an N or W side touches an E or S side, which gives every joint two ways a keybit can be turned and still work: the usual way, or a quarter turn so the other matching side faces its neighbour. The left and top of the keyword take an E or S side and the right takes an N or W side.
+
+If every keybit is the same way round any shape works, like a square with the keyword in one corner. A keybit turned the wrong way gets 3.3V on its SCL and GND on its SDA, so it gets no power and nothing behind it shows up until it's turned.
+
+**Status LED:**
+
+- **White** idle
+- **White fast blinks** a keybit joined, touching the keyword or further out
+- **Blue** flashing the keybit on the programming pins
+- **Green blinks then green** that keybit is flashed or already up to date
+- **Solid red** flashing it gave up
+- **Red blinking** a keybit on the keyword is turned the wrong way
+- **Red double blink** a keybit somewhere has a neighbour turned the wrong way
+
+**Updating keybits:** the keyword carries the keybit firmware. After updating the keyword, put every keybit on the programming pins once and wait for green. Keybits on different firmware versions don't talk to each other, so do all of them.
 
 ## PCB
 
