@@ -425,6 +425,10 @@ ipcMain.on('state:update', (_e, s: TrayState) => {
 app.on('second-instance', showWindow);
 
 app.whenReady().then(() => {
+  // A packaged app gets its icon from the bundle; in dev the Dock would show Electron's.
+  if (!app.isPackaged && process.platform === 'darwin') {
+    app.dock?.setIcon(nativeImage.createFromPath(path.join(app.getAppPath(), 'build/icon.png')));
+  }
   buildMenu();
   createWindow();
   updateTray();

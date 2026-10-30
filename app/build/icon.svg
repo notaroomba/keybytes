@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b3245"/><stop offset="1" stop-color="#151a26"/></linearGradient>
+    <linearGradient id="cap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fe0a3"/><stop offset="1" stop-color="#2fb978"/></linearGradient>
+    <linearGradient id="side" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f9a5f"/><stop offset="1" stop-color="#146c43"/></linearGradient>
+    <linearGradient id="bit" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset="1" stop-color="#5a86f0"/></linearGradient>
+    <linearGradient id="bitside" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f63c4"/><stop offset="1" stop-color="#2c478f"/></linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="4"/>
+  <rect x="168" y="392" width="150" height="250" rx="34" fill="url(#bitside)"/>
+  <rect x="184" y="398" width="118" height="200" rx="26" fill="url(#bit)"/>
+  <rect x="706" y="392" width="150" height="250" rx="34" fill="url(#bitside)"/>
+  <rect x="722" y="398" width="118" height="200" rx="26" fill="url(#bit)"/>
+  <rect x="338" y="330" width="348" height="380" rx="56" fill="url(#side)"/>
+  <rect x="368" y="342" width="288" height="300" rx="44" fill="url(#cap)"/>
+  <rect x="400" y="362" width="224" height="22" rx="11" fill="#ffffff" opacity="0.25"/>
+  <circle cx="328" cy="470" r="11" fill="#f4c34f"/>
+  <circle cx="328" cy="530" r="11" fill="#f4c34f"/>
+  <circle cx="696" cy="470" r="11" fill="#f4c34f"/>
+  <circle cx="696" cy="530" r="11" fill="#f4c34f"/>
+</svg>
