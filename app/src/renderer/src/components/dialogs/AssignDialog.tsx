@@ -7,7 +7,7 @@ import {
 } from '../../controller.ts';
 import * as Hid from '../../lib/hid.ts';
 import { cleanEntry, isMapped } from '../../lib/profiles.ts';
-import { DEFAULT_HOLD_MS, MAX_MACRO_STEPS } from '../../lib/protocol.ts';
+import { DEFAULT_HOLD_MS } from '../../lib/protocol.ts';
 import type { Entry, HostActionType, Hold, Step } from '../../lib/types.ts';
 import { useApp } from '../../store.ts';
 import { Button, Chip, Dialog, inputClass } from '../ui.tsx';
@@ -57,6 +57,7 @@ function AssignForm({ uid }: { uid: string }) {
   const profiles = useApp((s) => s.store.profiles);
   const caps = useApp((s) => s.device.caps);
   const fw = useApp((s) => s.device.fw);
+  const maxSteps = useApp((s) => s.device.macroSteps);
   const seenApps = useApp((s) => s.seenApps);
   const original = entryOf(uid);
   const [draft, setDraft] = useState<Draft>(() => draftFrom(original));
@@ -81,7 +82,7 @@ function AssignForm({ uid }: { uid: string }) {
       else update({ mods: r.mods, key: r.usage, consumer: 0 });
     } else if (target === 'macro') {
       if (r.consumer !== undefined || !r.usage) return; // wait for a real key; media keys can't go in a macro
-      if (draft.macro.length >= MAX_MACRO_STEPS) return toast(`Macros hold up to ${MAX_MACRO_STEPS} steps`);
+      if (draft.macro.length >= maxSteps) return toast(`Macros hold up to ${maxSteps} steps`);
       update({ macro: [...draft.macro, [r.mods, r.usage]] });
     } else if (target === 'hold') {
       if (r.consumer !== undefined) return;
@@ -121,7 +122,7 @@ function AssignForm({ uid }: { uid: string }) {
 
   const addText = () => {
     const { steps, skipped } = Hid.textToSteps(macroText);
-    const room = MAX_MACRO_STEPS - draft.macro.length;
+    const room = Math.max(0, maxSteps - draft.macro.length);
     update({ macro: [...draft.macro, ...steps.slice(0, room)] });
     if (steps.length > room) toast(`Only ${room} more step${room === 1 ? '' : 's'} fit; the rest was cut`);
     if (skipped.length) toast(`Skipped characters with no US key: ${[...new Set(skipped)].join(' ')}`);
@@ -234,7 +235,8 @@ function AssignForm({ uid }: { uid: string }) {
             <Button variant="ghost" size="sm" className="h-8" onClick={() => update({ macro: [] })}>Clear</Button>
           </form>
           <p className="text-xs text-muted">
-            {draft.macro.length}/{MAX_MACRO_STEPS} steps.
+            {draft.macro.length}/{maxSteps} steps.
+            {draft.macro.length > maxSteps && ` This Keyword only takes the first ${maxSteps}; update its firmware for more.`}
             {fw && !can('macro') && " This Keyword's firmware doesn't support macros yet, so it won't be sent."}
           </p>
         </div>

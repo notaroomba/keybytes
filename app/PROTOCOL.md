@@ -71,10 +71,11 @@ Keybits relayed through other Keybits are reported as `KEY+ uid=<uid> at=X via=<
 
 The Keyword lists the features it supports in `HELLO`'s `caps`. The app only sends a command when its capability is listed, and hides or greys out the matching UI when it isn't.
 
-`KEYWORD v=<fw> proto=1 caps=<comma list> kb=<n>`
+`KEYWORD v=<fw> proto=1 caps=<comma list> kb=<n> macro=<n>`
 
 - `caps` can include `batt`, `hold`, `macro`, `flash` and `ota`. `ota` is listed only while the BLE stack runs on CPU2.
 - `kb` is the version of the Keybit image the Keyword carries. A Keybit reporting a lower `v` is shown as outdated.
+- `macro` is the most steps a `MACRO` takes (64 now). Firmware without it takes 16, and the app cuts macros to that.
 - `KEY+` may carry `v=<n>`, the Keybit firmware version (Keybit register 0x01).
 
 | Cap | Host → Keyword | Reply / unsolicited |
@@ -97,7 +98,9 @@ How each one behaves:
   - Held longer than that, the hold action stays pressed until release.
   - `mods=00 key=00` clears the hold action, and so do `UNMAP` and `CLEAR`.
 - **Macro.**
-  - Each `MMKK` is one tap: modifier byte, then key usage. There are up to 16 steps.
+  - Each `MMKK` is one tap: modifier byte, then key usage. There are up to `macro` steps from `HELLO` (16 on older firmware).
+  - A step takes 10 ms to type, so 64 steps is about 0.65 s.
+  - Long macros count against the 4 KB flash page the keymap is saved in. If it would outgrow it, the reply is `ERR keymap full`. That's at about 26 macros of 64 steps.
   - A macro replaces `MAP`/`MAPC` for that UID, and `UNMAP` clears it.
 - **`MAP?`** can answer with several lines for one key: a `MAP`, `MAPC` or `MACRO` line, followed by a `HOLD` line if a hold action is set.
 - **Programming a single key,** the app sends `UNMAP`, then the key's commands, then `SAVE`. That way a stale macro or hold never survives an edit.

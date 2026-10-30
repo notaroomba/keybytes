@@ -7,7 +7,7 @@
 
 #define NUS_CHUNK 20    /* fits the default 23 byte ATT MTU */
 #define TX_SIZE   1024
-#define RX_SIZE   256
+#define RX_SIZE   512     /* a whole MACRO line, in 20 byte writes */
 
 /* 6e40000x-b5a3-f393-e0a9-e50e24dcca9e, little endian, x at byte 12 */
 #define NUS_UUID(x) {0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0, 0x93, 0xf3, 0xa3, 0xb5, (x), 0x00, 0x40, 0x6e}

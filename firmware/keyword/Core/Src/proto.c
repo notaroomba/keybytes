@@ -179,8 +179,9 @@ static void Handle_Line(proto_port_t *port, char *cmd)
   if (strcmp(cmd, "HELLO") == 0)
   {
     /* kb: version of the Keybit image this keyword flashes onto new Keybits */
-    Reply(port, "KEYWORD v=%s proto=1 caps=%s%s kb=%u", KEYWORD_FW_VERSION, CAPS,
-          OTA_Available() ? ",ota" : "", keybit_image_version);
+    /* macro: most taps a MACRO takes */
+    Reply(port, "KEYWORD v=%s proto=1 caps=%s%s kb=%u macro=%d", KEYWORD_FW_VERSION, CAPS,
+          OTA_Available() ? ",ota" : "", keybit_image_version, KEYACT_MACRO_MAX);
   }
 #ifdef KEYWORD_DEBUG_CMDS
   else if (strcmp(cmd, "CRASH") == 0 && port->local)
@@ -558,7 +559,7 @@ static void Handle_Line(proto_port_t *port, char *cmd)
     }
     else if (a && a->kind == KEYACT_MACRO)
     {
-      /* 16 taps is 79 chars of seq, the line still fits PROTO_LINE_MAX */
+      /* 64 taps is 319 chars of seq, the line still fits PROTO_LINE_MAX */
       char seq_s[KEYACT_MACRO_MAX * 5];
       int len = 0;
       for (int i = 0; i < a->macro_len; i++)

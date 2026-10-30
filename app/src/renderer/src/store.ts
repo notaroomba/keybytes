@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import type { PickerList } from '../../shared/bridge';
 import { normalizeStore } from './lib/profiles.ts';
+import { MAX_MACRO_STEPS } from './lib/protocol.ts';
 import type { TransportKind } from './lib/transports.ts';
 import type { Compass } from './lib/layout.ts';
 import type { Side, Store } from './lib/types.ts';
@@ -34,6 +35,7 @@ export interface DeviceInfo {
   fw: string | null;
   caps: string[];
   kb: number | null;
+  macroSteps: number; // taps per macro the connected Keyword takes
   battery: Battery | null;
 }
 
@@ -111,7 +113,7 @@ export interface AppState {
   dropping: boolean;
 }
 
-export const emptyDevice = (): DeviceInfo => ({ fw: null, caps: [], kb: null, battery: null });
+export const emptyDevice = (): DeviceInfo => ({ fw: null, caps: [], kb: null, macroSteps: MAX_MACRO_STEPS, battery: null });
 
 export const initialOta = (): OtaState => ({
   busy: false, stage: 'pick', fileName: '', fileSize: 0, status: '', error: false, pct: null, stack: '', showDfu: false, hasDevice: false,

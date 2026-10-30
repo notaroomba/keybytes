@@ -10,7 +10,7 @@
 
 #define KEYWORD_FW_VERSION "0.1.0"
 
-#define PROTO_LINE_MAX 128
+#define PROTO_LINE_MAX 384   /* a MACRO line with 64 taps is 358 chars */
 #define PROTO_MAX_PORTS 2
 
 /* One per transport (NUS, USB CDC): its own line buffer and output. The

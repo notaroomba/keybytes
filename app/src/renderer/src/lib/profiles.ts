@@ -1,10 +1,10 @@
 // Keymap profiles and the app's saved state.
 import type { Entry, HostActionType, Profile, Settings, Step, Store } from './types.ts';
+import { MAX_MACRO_STEPS } from './protocol.ts';
 
 const FORMAT = 'keyword-profile';
 const LIBRARY_FORMAT = 'keyword-profile-library';
 export const HOST_TYPES: HostActionType[] = ['url', 'app', 'cmd', 'next-profile', 'profile'];
-const MAX_MACRO_STEPS = 16;
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',

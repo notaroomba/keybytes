@@ -282,7 +282,7 @@ function handleLine(line: string) {
   switch (msg.type) {
     case 'hello': {
       const first = !get().device.fw;
-      set((s) => ({ device: { ...s.device, fw: msg.fw, caps: [...msg.caps], kb: msg.kb } }));
+      set((s) => ({ device: { ...s.device, fw: msg.fw, caps: [...msg.caps], kb: msg.kb, macroSteps: msg.macroSteps } }));
       setStatus(`Connected over ${transport?.label}`, 'connected');
       if (msg.proto !== 1) log('!!', `protocol ${msg.proto}, app expects 1`);
       if (first) {
@@ -419,7 +419,7 @@ function syncKeys() {
 export function applyProfile(quiet: boolean) {
   if (!transport || !get().device.fw) return;
   const p = activeProfile();
-  void send(...profileCommands(p.keys, new Set(get().device.caps)));
+  void send(...profileCommands(p.keys, new Set(get().device.caps), get().device.macroSteps));
   if (!quiet) {
     activity(`Sent "${p.name}" to the Keyword`);
     toast(`Sent "${p.name}" to the Keyword`);
@@ -429,7 +429,7 @@ export function applyProfile(quiet: boolean) {
 /** Programs one key after an edit. UNMAP first clears any old macro or hold. */
 function syncKey(uid: string) {
   const m = entryOf(uid);
-  void send(cmd.unmap(uid), ...(m ? entryCommands(uid, m, new Set(get().device.caps)) : []), cmd.save());
+  void send(cmd.unmap(uid), ...(m ? entryCommands(uid, m, new Set(get().device.caps), get().device.macroSteps) : []), cmd.save());
 }
 
 export function flashKey(uid: string) {

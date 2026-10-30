@@ -12,7 +12,6 @@
 
 #define KEYS_PERIOD_MS 5
 #define MAP_MAGIC      0x50414D4BUL   /* "KMAP" */
-#define MAP_VERSION    5   /* 2: kind + code, 3: hold, 4: macros, 5: short (32-bit) UIDs */
 #define SEEN_MAX       16
 
 /* Owned by main.c's Keybit code, refreshed from its own poll calls in the
@@ -23,8 +22,7 @@ extern volatile uint32_t keybit_changed;
 extern keybit_remote_t keybit_remotes[KEYBIT_REMOTE_MAX];
 extern int keybit_remote_count;
 
-_Static_assert(sizeof(map_entry_t) % 8 == 0, "map entries are written as doublewords");
-_Static_assert(sizeof(map_image_t) <= FLASH_PAGE_SIZE, "keymap must fit its flash page");
+_Static_assert(KEYMAP_PAGE == FLASH_PAGE_SIZE, "the keymap is one flash page");
 
 static keybit_info_t present[KEYBIT_MAX];
 static int present_count;
@@ -52,11 +50,6 @@ static uint32_t Map_Page(void)
 static const map_image_t *Map_Flash(void)
 {
   return (const map_image_t *)(FLASH_BASE + Map_Page() * FLASH_PAGE_SIZE);
-}
-
-static uint32_t Map_Size(const map_image_t *m)
-{
-  return 8 + m->count * sizeof(map_entry_t);
 }
 
 const keybit_info_t *KEYMAP_Present(int *count)
@@ -120,6 +113,7 @@ static int Flash_Op(uint8_t erase, uint32_t addr_or_page, uint64_t data)
 #define PAGE_END(base) ((base) + FLASH_PAGE_SIZE)
 
 static uint8_t erase_due;     /* the page is full: erase it, then write the map */
+static uint8_t packed[KEYMAP_PAGE] __attribute__((aligned(8)));   /* the map as it gets written */
 
 /* The newest committed map in the page, and where the next one goes (0
  * if the page holds something we can't follow and needs erasing). */
@@ -132,10 +126,10 @@ static const map_image_t *Log_Scan(uint32_t *next)
   {
     const map_image_t *m = (const map_image_t *)pos;
     if (*(const uint64_t *)pos == UINT64_MAX) { *next = pos; break; }   /* erased: the end */
-    if (m->magic != MAP_MAGIC || m->count > KEYMAP_MAX) break;
-    uint32_t end = pos + Map_Size(m);
-    if (end + 8 > PAGE_END(base)) break;
-    if (m->version == MAP_VERSION && *(const uint64_t *)end == MAP_COMMIT) best = m;
+    uint32_t size = m->magic == MAP_MAGIC ? KEYMAP_Unpack((const uint8_t *)pos, PAGE_END(base) - 8 - pos, NULL) : 0;
+    if (!size) break;
+    uint32_t end = pos + size;
+    if (*(const uint64_t *)end == MAP_COMMIT) best = m;   /* version 5 too, read once after an update */
     pos = end + 8;   /* a map cut off before its commit is skipped, not reused */
   }
   return best;
@@ -144,12 +138,12 @@ static const map_image_t *Log_Scan(uint32_t *next)
 /* Program the map at addr, commit last. */
 static int Log_Write(uint32_t addr)
 {
-  uint32_t size = Map_Size(&keytable);
-  const uint64_t *src = (const uint64_t *)&keytable;
+  uint32_t size = KEYMAP_Pack(packed);
+  const uint64_t *src = (const uint64_t *)packed;
   int err = 0;
   for (uint32_t i = 0; i < size / 8 && !err; i++) err |= Flash_Op(0, addr + 8 * i, src[i]);
   if (!err) err |= Flash_Op(0, addr + size, MAP_COMMIT);
-  if (!err && memcmp((const void *)addr, &keytable, size) != 0) { keymap_save_why[0] = 3; err = -1; }
+  if (!err && memcmp((const void *)addr, packed, size) != 0) { keymap_save_why[0] = 3; err = -1; }
   return err;
 }
 
@@ -170,13 +164,13 @@ static void Flash_End(void)
 int KEYMAP_Save(void)
 {
   keytable.magic = MAP_MAGIC;
-  keytable.version = MAP_VERSION;
-  uint32_t size = Map_Size(&keytable), next;
+  keytable.version = KEYMAP_VERSION;
+  uint32_t size = KEYMAP_Pack(packed), next;
   /* Only ever the page just under CPU2's, far above the app. */
   if (Map_Page() < 0x80 || Map_Page() >= 0xFF) { keymap_save_why[0] = 4; return -1; }
 
   const map_image_t *last = Log_Scan(&next);
-  if (last && memcmp(last, &keytable, size) == 0) { erase_due = 0; return 0; }   /* nothing changed */
+  if (last && memcmp(last, packed, size) == 0) { erase_due = 0; return 0; }   /* nothing changed */
   if (next && next + size + 8 <= PAGE_END((uint32_t)Map_Flash()))
   {
     Flash_Begin();
@@ -225,7 +219,7 @@ static void Map_Load(void)
   const map_image_t *f = Log_Scan(&next);
   if (f)
   {
-    memcpy(&keytable, f, Map_Size(f));
+    KEYMAP_Unpack((const uint8_t *)f, PAGE_END((uint32_t)Map_Flash()) - 8 - (uint32_t)f, &keytable);
   }
   else
   {

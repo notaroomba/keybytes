@@ -16,11 +16,12 @@ test('SIDES with only some fields', () => {
 });
 
 test('parses HELLO reply', () => {
-  assert.deepStrictEqual(parseLine('KEYWORD v=0.1 proto=1'), { type: 'hello', fw: '0.1', proto: 1, caps: new Set(), kb: null });
+  assert.deepStrictEqual(parseLine('KEYWORD v=0.1 proto=1'), { type: 'hello', fw: '0.1', proto: 1, caps: new Set(), kb: null, macroSteps: 16 });
   const h = parseLine('KEYWORD v=0.2 proto=1 caps=batt,hold kb=3');
   assert.ok(h.type === 'hello');
   assert.deepStrictEqual([...h.caps], ['batt', 'hold']);
   assert.strictEqual(h.kb, 3);
+  assert.strictEqual((parseLine('KEYWORD v=0.1.0 proto=1 caps=macro kb=13 macro=64') as { macroSteps: number }).macroSteps, 64);
 });
 
 test('accepts 96-bit UIDs', () => {
@@ -89,6 +90,9 @@ test('optional features: battery, macro, hold, flash', () => {
   assert.deepStrictEqual(entryCommands('5F1821C1', e, new Set()), [], 'unsupported features are not sent');
   assert.deepStrictEqual(entryCommands('5F1821C1', { host: { type: 'url', value: 'x' } }, all), []);
   assert.strictEqual(cmd.macro('5F1821C1', Array<Step>(20).fill([0, 4])).split(',').length, 16);
+  const long = { macro: Array<Step>(70).fill([0, 4]) };
+  assert.strictEqual(entryCommands('5F1821C1', long, all, 64)[0].split(',').length, 64);
+  assert.strictEqual(entryCommands('5F1821C1', long, all)[0].split(',').length, 16, 'older firmware gets 16');
 });
 
 test('line buffer accepts a bare CR', () => {

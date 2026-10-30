@@ -27,7 +27,8 @@ export const OTA = {
   MAX_SIZE: 0x08100000 - 0x08007000,
 } as const;
 
-export const MAX_MACRO_STEPS = 16;
+export const MAX_MACRO_STEPS = 64; // the most a profile keeps; HELLO's macro= says what this Keyword takes
+export const OLD_MACRO_STEPS = 16; // firmware from before macro= in HELLO
 export const DEFAULT_HOLD_MS = 200;
 
 export const otaBaseCommand = (op: number, offset = 0) =>
@@ -113,8 +114,8 @@ export const cmd = {
   battery: () => 'BATT?',
   map: (uid: string, mods: number, key: number) => `MAP uid=${uid} mods=${hex2(mods)} key=${hex2(key)}`,
   mapConsumer: (uid: string, usage: number) => `MAPC uid=${uid} usage=${hex4(usage)}`,
-  macro: (uid: string, steps: Step[]) =>
-    `MACRO uid=${uid} seq=${steps.slice(0, MAX_MACRO_STEPS).map(([m, k]) => hex2(m) + hex2(k)).join(',')}`,
+  macro: (uid: string, steps: Step[], max = OLD_MACRO_STEPS) =>
+    `MACRO uid=${uid} seq=${steps.slice(0, max).map(([m, k]) => hex2(m) + hex2(k)).join(',')}`,
   hold: (uid: string, mods: number, key: number, ms?: number) =>
     `HOLD uid=${uid} mods=${hex2(mods)} key=${hex2(key)} ms=${Math.round(ms || DEFAULT_HOLD_MS)}`,
   mapQuery: (uid: string) => `MAP? uid=${uid}`,
@@ -134,11 +135,11 @@ export const hasHold = (m: Entry) => !!(m.hold && (m.hold.mods || m.hold.key));
  * Computer actions (run by the app) and empty entries need nothing.
  * caps is the set from HELLO; commands it doesn't list are left out.
  */
-export function entryCommands(uid: string, m: Entry, caps: ReadonlySet<string>): string[] {
+export function entryCommands(uid: string, m: Entry, caps: ReadonlySet<string>, macroSteps = OLD_MACRO_STEPS): string[] {
   const out: string[] = [];
   if (m.host) return out;
   if (m.macro?.length) {
-    if (caps.has('macro')) out.push(cmd.macro(uid, m.macro));
+    if (caps.has('macro')) out.push(cmd.macro(uid, m.macro, macroSteps));
   } else if (m.consumer) out.push(cmd.mapConsumer(uid, m.consumer));
   else if (m.mods || m.key) out.push(cmd.map(uid, m.mods || 0, m.key || 0));
   if (m.hold && hasHold(m) && caps.has('hold')) out.push(cmd.hold(uid, m.hold.mods || 0, m.hold.key || 0, m.hold.ms));
@@ -153,17 +154,17 @@ export function mapCommand(uid: string, m: Entry): string | null {
 }
 
 /** Commands that make the Keyword match a profile exactly. */
-export function profileCommands(keys: Record<string, Entry>, caps: ReadonlySet<string> = new Set()): string[] {
+export function profileCommands(keys: Record<string, Entry>, caps: ReadonlySet<string> = new Set(), macroSteps = OLD_MACRO_STEPS): string[] {
   const out = [cmd.clear()];
   for (const [uid, m] of Object.entries(keys)) {
-    if (isUid(uid)) out.push(...entryCommands(uid.toUpperCase(), m, caps));
+    if (isUid(uid)) out.push(...entryCommands(uid.toUpperCase(), m, caps, macroSteps));
   }
   out.push(cmd.save());
   return out;
 }
 
 export type Message =
-  | { type: 'hello'; fw: string; proto: number; caps: Set<string>; kb: number | null }
+  | { type: 'hello'; fw: string; proto: number; caps: Set<string>; kb: number | null; macroSteps: number }
   | { type: 'sides'; sides: Partial<Record<Side, boolean>> }
   | {
       type: 'keyAdd'; uid: string; at: Side | null; v: number | null; via?: string | null; depth?: number | null;
@@ -201,6 +202,7 @@ export function parseLine(line: string): Message {
         proto: int(f.proto),
         caps: new Set((f.caps || '').split(',').filter(Boolean)),
         kb: f.kb != null ? int(f.kb) : null,
+        macroSteps: int(f.macro) || OLD_MACRO_STEPS,
       };
     case 'SIDES': {
       const sides: Partial<Record<Side, boolean>> = {};

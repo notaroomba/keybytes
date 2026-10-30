@@ -217,7 +217,7 @@ export class DemoTransport implements Transport {
     for (const line of text.split('\n').map((s) => s.trim()).filter(Boolean)) {
       const [c, ...rest] = line.split(' ');
       const f = Object.fromEntries(rest.map((p) => p.split('=')));
-      if (c === 'HELLO') this.emit(`KEYWORD v=demo proto=1 caps=batt,hold,macro,flash,ota kb=${this.kb}`);
+      if (c === 'HELLO') this.emit(`KEYWORD v=demo proto=1 caps=batt,hold,macro,flash,ota kb=${this.kb} macro=64`);
       else if (c === 'SIDES?') this.emit(this.sidesLine());
       else if (c === 'BATT?') this.emit(this.battLine());
       else if (c === 'KEYS?') {

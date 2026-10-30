@@ -10,7 +10,7 @@
 
 #define KEYACT_TAP_MS       10    /* how long a tap stays in the reports */
 #define KEYACT_HOLD_MS_DEF  200
-#define KEYACT_MACRO_MAX    16
+#define KEYACT_MACRO_MAX    64   /* MACRO lines and the keymap page are sized for this */
 #define KEYACT_MACRO_STEP_MS 5    /* press, release, press...: a tap every 10 ms */
 
 enum { KEYACT_NONE = 0, KEYACT_KEY = 1, KEYACT_CONSUMER = 2, KEYACT_MACRO = 3 };

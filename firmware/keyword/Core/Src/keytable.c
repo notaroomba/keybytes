@@ -1,7 +1,25 @@
+#include <stddef.h>
 #include <string.h>
 #include "keytable.h"
 
 map_image_t keytable __attribute__((aligned(8)));
+
+#define REC_FIXED offsetof(map_entry_t, act.macro)
+_Static_assert(offsetof(map_entry_t, act.macro_len) == 22 && REC_FIXED == 23, "version 5 keymaps load by this layout");
+
+static uint32_t Rec_Size(uint16_t version, uint8_t macro_len)
+{
+  if (version == 5) return 56;
+  return (REC_FIXED + 2u * macro_len + 7) & ~7u;
+}
+
+/* Header, entries and the commit doubleword the log adds. */
+static uint32_t Saved_Size(void)
+{
+  uint32_t n = 16;
+  for (int i = 0; i < keytable.count; i++) n += Rec_Size(KEYMAP_VERSION, keytable.entries[i].act.macro_len);
+  return n;
+}
 
 static int Exact(const map_entry_t *e, const keyid_t *id)
 {
@@ -34,7 +52,7 @@ static keyact_t *Entry(const keyid_t *id)
   int i = Find(id);
   if (i < 0)
   {
-    if (keytable.count >= KEYMAP_MAX) return NULL;
+    if (keytable.count >= KEYMAP_MAX || Saved_Size() + Rec_Size(KEYMAP_VERSION, 0) > KEYMAP_PAGE) return NULL;
     i = keytable.count++;
     memset(&keytable.entries[i], 0, sizeof(map_entry_t));
   }
@@ -71,6 +89,9 @@ int KEYMAP_SetConsumer(const keyid_t *id, uint16_t usage)
 int KEYMAP_SetMacro(const keyid_t *id, const uint8_t seq[][2], uint8_t len)
 {
   if (len > KEYACT_MACRO_MAX) return -1;
+  int i = Find(id);
+  uint32_t was = i < 0 ? 0 : Rec_Size(KEYMAP_VERSION, keytable.entries[i].act.macro_len);
+  if (Saved_Size() - was + Rec_Size(KEYMAP_VERSION, len) > KEYMAP_PAGE) return -1;
   keyact_t *a = Entry(id);
   if (!a) return -1;
   a->kind = KEYACT_MACRO;
@@ -129,4 +150,44 @@ const uint8_t *KEYMAP_FullUid(uint32_t low)
     if (e->uid_len == UID_LEN && v == low) return e->uid;
   }
   return NULL;
+}
+
+uint32_t KEYMAP_Pack(uint8_t *out)
+{
+  uint32_t n = 8;
+  memcpy(out, &keytable, 8);
+  for (int i = 0; i < keytable.count; i++)
+  {
+    const map_entry_t *e = &keytable.entries[i];
+    uint32_t size = Rec_Size(KEYMAP_VERSION, e->act.macro_len);
+    memset(out + n, 0, size);
+    memcpy(out + n, e, REC_FIXED + 2u * e->act.macro_len);
+    n += size;
+  }
+  return n;
+}
+
+uint32_t KEYMAP_Unpack(const uint8_t *src, uint32_t max, map_image_t *out)
+{
+  map_image_t h;
+  if (max < 8) return 0;
+  memcpy(&h, src, 8);
+  uint8_t taps = h.version == 5 ? 16 : KEYACT_MACRO_MAX;
+  if ((h.version != 5 && h.version != KEYMAP_VERSION) || h.count > KEYMAP_MAX) return 0;
+  if (out) memcpy(out, &h, 8);
+  uint32_t n = 8;
+  for (int i = 0; i < h.count; i++)
+  {
+    if (n + REC_FIXED > max) return 0;
+    uint8_t len = src[n + offsetof(map_entry_t, act.macro_len)];
+    uint32_t size = Rec_Size(h.version, len);
+    if (len > taps || n + size > max) return 0;
+    if (out)
+    {
+      memset(&out->entries[i], 0, sizeof(map_entry_t));
+      memcpy(&out->entries[i], src + n, REC_FIXED + 2u * len);
+    }
+    n += size;
+  }
+  return n;
 }
