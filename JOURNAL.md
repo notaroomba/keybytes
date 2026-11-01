@@ -4,7 +4,7 @@
 
 # 11/1/2026 1 PM - Tough 2000 Cases
 
-_Time spent: ?h_
+_Time spent: 5h_
 
 So the cases I had printed before were pretty brittle, so I reprinted all of them out of Tough 2000 resin on the Form 4 and they came out way better. Heres the keyword with 5 keybits around it in the new cases
 
