@@ -137,14 +137,14 @@
         "zones": {
           "border_display_style": 2,
           "border_hatch_pitch": 0.5,
-          "corner_radius": 0.0,
-          "corner_smoothing": 0,
-          "fill_mode": 0,
-          "hatch_gap": 1.5,
+          "corner_radius": 0.5,
+          "corner_smoothing": 2,
+          "fill_mode": 1,
+          "hatch_gap": 0.5,
           "hatch_orientation": 0.0,
-          "hatch_smoothing_level": 0,
+          "hatch_smoothing_level": 3,
           "hatch_smoothing_value": 0.1,
-          "hatch_thickness": 1.0,
+          "hatch_thickness": 0.2,
           "min_clearance": 0.2,
           "min_island_area": 10.0,
           "min_thickness": 0.1,
@@ -307,7 +307,13 @@
         }
       ],
       "track_widths": [
-        0.0
+        0.0,
+        0.1,
+        0.15,
+        0.2,
+        0.25,
+        0.4,
+        0.5
       ],
       "tuning_pattern_settings": {
         "diff_pair_defaults": {
@@ -339,6 +345,10 @@
         {
           "diameter": 0.0,
           "drill": 0.0
+        },
+        {
+          "diameter": 0.55,
+          "drill": 0.3
         }
       ],
       "via_stack_presets": [],
@@ -623,9 +633,9 @@
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "priority": 2147483647,
         "schematic_color": "rgba(0, 0, 0, 0.000)",
-        "track_width": 0.2,
+        "track_width": 0.15,
         "tuning_profile": "",
-        "via_diameter": 0.6,
+        "via_diameter": 0.55,
         "via_drill": 0.3,
         "wire_width": 6
       }
@@ -782,7 +792,7 @@
         "uuid": "015bf1d6-3308-465f-9b3e-52eb309150ad"
       }
     ],
-    "used_designators": "",
+    "used_designators": "SW1,L1,R1-19,Q1-15,D1-3,ANT1-2,#PWR1-70,C2-11,X1,TP1-16,U1-6,U10-15",
     "variants": []
   },
   "sheets": [

@@ -4,6 +4,9 @@ import shutil
 import subprocess
 import sys
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
 def run_easyeda2kicad_from_file(input_file, output_dir="./lib/lcsc", python_exec="python"):
     input_file = os.path.expanduser(input_file)
     output_dir = os.path.expanduser(output_dir)
@@ -18,7 +21,15 @@ def run_easyeda2kicad_from_file(input_file, output_dir="./lib/lcsc", python_exec
     if not found:
         print(f"Warning: Python executable '{python_exec}' not found in PATH or as given path. Trying anyway.")
 
-    os.makedirs(output_dir, exist_ok=True)
+    # easyeda2kicad 1.x writes <dir>/easyeda2kicad.* if --output is an existing folder.
+    # We want <parent>/lcsc.{kicad_sym,pretty,3dshapes}, so make sure only the parent exists.
+    if os.path.isdir(output_dir):
+        try:
+            os.rmdir(output_dir)
+        except OSError:
+            print(f"Error: {output_dir} is a non-empty folder; easyeda2kicad would write into it.")
+            return 4
+    os.makedirs(os.path.dirname(os.path.abspath(output_dir)), exist_ok=True)
 
     with open(input_file, "r", encoding="utf-8") as f:
         # ignore blank lines and comments
@@ -29,9 +40,8 @@ def run_easyeda2kicad_from_file(input_file, output_dir="./lib/lcsc", python_exec
         return 0
 
     for idx, lcsc_id in enumerate(lines, start=1):
-        cmd = [
-            python_exec,
-            "-m", "easyeda2kicad",
+        base = ["easyeda2kicad"] if sys.platform == "darwin" else [python_exec, "-m", "easyeda2kicad"]
+        cmd = base + [
             "--full",
             f"--lcsc_id={lcsc_id}",
             f"--output={output_dir}",
@@ -46,13 +56,43 @@ def run_easyeda2kicad_from_file(input_file, output_dir="./lib/lcsc", python_exec
             print(f"❌ Executable not found: {e}")
             return 3
 
+    # easyeda2kicad writes 3D model paths relative to cwd (or absolute); anchor them to the
+    # project dir. The KiCad projects live one level down (hardware/keybit, hardware/keyword),
+    # so the library is at ${KIPRJMOD}/../<output_dir relative to this script>.
+    shapes = output_dir + ".3dshapes"
+    anchored = "${KIPRJMOD}/../" + os.path.relpath(shapes, HERE).replace(os.sep, "/")
+    written = {os.path.relpath(shapes).replace(os.sep, "/"), os.path.abspath(shapes).replace(os.sep, "/")}
+    pretty = output_dir + ".pretty"
+    for name in os.listdir(pretty) if os.path.isdir(pretty) else []:
+        path = os.path.join(pretty, name)
+        with open(path, "r", encoding="utf-8") as f:
+            text = f.read()
+        fixed = text
+        for w in written:
+            fixed = fixed.replace(f'(model "{w}/', f'(model "{anchored}/')
+        if fixed != text:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(fixed)
+
+    # some EasyEDA models come out fully transparent (invisible in KiCad's 3D viewer)
+    for name in os.listdir(shapes) if os.path.isdir(shapes) else []:
+        if not name.endswith(".wrl"):
+            continue
+        path = os.path.join(shapes, name)
+        with open(path, "r", encoding="utf-8") as f:
+            text = f.read()
+        fixed = text.replace("transparency 1.0", "transparency 0.0")
+        if fixed != text:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(fixed)
+
     print("✅ All commands completed.")
     return 0
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Run easyeda2kicad for a list of LCSC IDs.")
-    parser.add_argument("input_file", nargs="?", default="./hardware/lcsc.txt", help="Path to file with one LCSC ID per line")
-    parser.add_argument("output_dir", nargs="?", default="./hardware/lib/lcsc", help="Output directory")
+    parser.add_argument("input_file", nargs="?", default=os.path.join(HERE, "lcsc.txt"), help="Path to file with one LCSC ID per line")
+    parser.add_argument("output_dir", nargs="?", default=os.path.join(HERE, "lib", "lcsc"), help="Output directory")
     parser.add_argument("--python", dest="python_exec", default="python",
                         help="Python executable to use (default: 'python')")
     args = parser.parse_args(argv)
