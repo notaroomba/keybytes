@@ -39,7 +39,7 @@
 	(fp_line (start 1.00 -1.05) (end 5.50 -1.05) (layer F.CrtYd) (width 0.05))
 	(fp_line (start 5.50 -1.05) (end 5.50 2.94) (layer F.CrtYd) (width 0.05))
 	(fp_line (start 5.50 2.94) (end -1.27 2.94) (layer F.CrtYd) (width 0.05))
-	(model "/Users/roomba/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/SMD_KEYBOARD-SW.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/SMD_KEYBOARD-SW.wrl"
 		(offset (xyz 0.000 0.000 0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

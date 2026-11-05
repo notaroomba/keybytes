@@ -46,7 +46,7 @@
 	(fp_line (start -1.50 -1.50) (end 1.50 -1.50) (layer F.CrtYd) (width 0.05))
 	(fp_line (start 1.50 -1.50) (end 1.50 1.50) (layer F.CrtYd) (width 0.05))
 	(fp_line (start 1.50 1.50) (end -1.50 1.50) (layer F.CrtYd) (width 0.05))
-	(model "/Users/roomba/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/WFQFN-20_L3.0-W3.0-P0.40-TL-EP1.7.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/WFQFN-20_L3.0-W3.0-P0.40-TL-EP1.7.wrl"
 		(offset (xyz 0.000 0.000 0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

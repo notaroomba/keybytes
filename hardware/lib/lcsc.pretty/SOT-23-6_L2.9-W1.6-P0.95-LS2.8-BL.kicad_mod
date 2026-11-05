@@ -25,7 +25,7 @@
 	(fp_line (start 1.46 -0.81) (end 1.46 0.81) (layer F.CrtYd) (width 0.05))
 	(fp_line (start 1.46 0.81) (end -1.46 0.81) (layer F.CrtYd) (width 0.05))
 	(fp_line (start -1.46 0.81) (end -1.46 -0.81) (layer F.CrtYd) (width 0.05))
-	(model "/Users/roomba/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/SOT-23-6_L2.9-W1.6-H1.5-LS2.8-P0.95.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/SOT-23-6_L2.9-W1.6-H1.5-LS2.8-P0.95.wrl"
 		(offset (xyz 0.000 0.000 0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 270))

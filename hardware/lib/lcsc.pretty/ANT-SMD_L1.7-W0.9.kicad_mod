@@ -20,7 +20,7 @@
 	(fp_line (start 0.86 -0.46) (end 0.86 0.46) (layer F.CrtYd) (width 0.05))
 	(fp_line (start 0.86 0.46) (end -0.84 0.46) (layer F.CrtYd) (width 0.05))
 	(fp_poly (pts (xy 0.074016 -0.431114) (xy 0.350876 -0.431114) (xy 0.350876 0.462966) (xy 0.079096 0.462966) (xy 0.079096 0.409626) (xy 0.074016 -0.431114)) (stroke (width 0) (type solid)) (fill solid) (layer "F.SilkS"))
-	(model "/Users/roomba/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/ANT-SMD_L1.7-W0.9.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/ANT-SMD_L1.7-W0.9.wrl"
 		(offset (xyz 0.000 0.000 0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

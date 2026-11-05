@@ -24,7 +24,7 @@
 	(fp_line (start -2.54 -1.27) (end 2.54 -1.27) (layer F.CrtYd) (width 0.05))
 	(fp_line (start 2.54 -1.27) (end 2.54 1.27) (layer F.CrtYd) (width 0.05))
 	(fp_line (start 2.54 1.27) (end -2.54 1.27) (layer F.CrtYd) (width 0.05))
-	(model "/Users/roomba/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/HDR-SMD_2P-P2.54_XKB_X6511WVS-02H-C60D48R2.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/HDR-SMD_2P-P2.54_XKB_X6511WVS-02H-C60D48R2.wrl"
 		(offset (xyz 0.000 0.000 0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

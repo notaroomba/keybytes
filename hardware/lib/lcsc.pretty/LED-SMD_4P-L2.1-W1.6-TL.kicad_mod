@@ -26,7 +26,7 @@
 	(fp_line (start -0.80 -1.05) (end 0.80 -1.05) (layer F.CrtYd) (width 0.05))
 	(fp_line (start 0.80 -1.05) (end 0.80 1.05) (layer F.CrtYd) (width 0.05))
 	(fp_line (start 0.80 1.05) (end -0.80 1.05) (layer F.CrtYd) (width 0.05))
-	(model "/Users/roomba/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/LED-SMD_4P-L2.1-W1.6-H0.6.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/LED-SMD_4P-L2.1-W1.6-H0.6.wrl"
 		(offset (xyz 0.000 0.000 0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

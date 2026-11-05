@@ -24,7 +24,7 @@
 	(fp_line (start -0.50 -0.30) (end 0.50 -0.30) (layer F.CrtYd) (width 0.05))
 	(fp_line (start 0.50 -0.30) (end 0.50 0.30) (layer F.CrtYd) (width 0.05))
 	(fp_line (start 0.50 0.30) (end -0.50 0.30) (layer F.CrtYd) (width 0.05))
-	(model "/Users/roomba/Documents/GitHub/keybytes/hardware/lib/lcsc.3dshapes/DFN1006-3L_L1.0-W0.6-H0.4-LS1.0-BR.wrl"
+	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/DFN1006-3L_L1.0-W0.6-H0.4-LS1.0-BR.wrl"
 		(offset (xyz 0.000 0.000 0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 180))
