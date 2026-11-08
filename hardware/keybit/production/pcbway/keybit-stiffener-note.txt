@@ -1,0 +1,9 @@
+keybit - PCBWay order notes
+
+Board: 2-layer flex, polyimide core 25um, copper 1/3 oz (12um) both sides, coverlay both sides, ENIG, about 0.1mm total without stiffener.
+Stiffener: FR4 0.2mm on the TOP side (the side with the switch). Outline and cutouts are in "keybit-User_Drawings.gbr" (KiCad User.Drawings layer). Outer closed outlines are stiffener pieces (1 middle + 4 flaps), inner closed outlines are cutouts with no stiffener.
+Stiffener edges stop about 0.7mm or more before each fold line so the flaps can bend 90 degrees. Please keep them as drawn.
+The same note is on "keybit-User_Comments.gbr".
+Assembly: parts on both sides (most on the bottom). Two Mill-Max 3305-0-15-15-47-27-10-0 sockets are through-hole on the top (U12, U15): hand or selective solder, keep solder out of the socket.
+
+ANT1 (Kinghelm KH-1608-H08 chip antenna, bottom side): the chip has a black band on one end. The band end goes on pad 1 (the unconnected pad, marked by the filled silk block on the board). Pad 2 is the RF feed and must get the end WITHOUT the band.

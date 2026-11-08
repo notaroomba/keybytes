@@ -53,6 +53,10 @@ https://github.com/user-attachments/assets/b6abd347-b68b-40f1-8e2d-c50744b8104e
 - **USB-C** with ESD protection
 - **Ceramic Bluetooth antenna**
 
+## V2
+
+V2 is almost done! The new Keybit is a single cross shaped flex PCB with a CH592F in the middle, and the 4 flaps fold up into the case. Every side has magnet contacts that work no matter which way round a neighbour touches it, so keys can be rotated and staggered, and the switch goes into Mill-Max hot swap sockets. I'm also starting a hall effect Keybit in [`hardware/keybit-hall`](hardware/keybit-hall).
+
 ## Connecting Keybits
 
 Going around a keybit, the pogo pins on the N and W sides are 3.3V, SDA, GND, SCL and on the E and S sides they are SCL, GND, SDA, 3.3V. So two keybits only work together when an N or W side touches an E or S side, which gives every joint two ways a keybit can be turned and still work: the usual way, or a quarter turn so the other matching side faces its neighbour. The left and top of the keyword take an E or S side and the right takes an N or W side.
