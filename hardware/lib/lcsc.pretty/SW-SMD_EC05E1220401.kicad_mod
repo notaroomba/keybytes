@@ -33,7 +33,7 @@
 	(fp_circle (center -1.20 0.62) (end -1.08 0.62) (layer Cmts.User) (width 0.25))
 	(fp_circle (center 1.20 0.62) (end 1.33 0.62) (layer Cmts.User) (width 0.25))
 	(fp_circle (center 0.00 0.76) (end 0.51 0.76) (layer F.SilkS) (width 0.25))
-	(fp_circle (center -0.00 -3.01) (end 1.40 -3.01) (layer F.SilkS) (width 0.25))
+	(fp_circle (center 0.00 -2.07) (end 1.10 -2.07) (layer F.SilkS) (width 0.25))
 	(fp_arc (start 0.00 0.15) (end 3.30 -3.58) (angle -83.05) (layer F.SilkS) (width 0.25))
 	(fp_line (start -2.85 1.44) (end 2.85 1.44) (layer F.CrtYd) (width 0.05))
 	(fp_line (start 2.85 1.44) (end 2.85 -2.86) (layer F.CrtYd) (width 0.05))
