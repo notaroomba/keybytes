@@ -1547,142 +1547,6 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "lcsc:3305-0-15-15-47-27-10-0"
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "U"
-				(at 0 5.08 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "3305-0-15-15-47-27-10-0"
-				(at 0 -5.08 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" "lcsc:CONN-TH_3305-2-15-15-47-27-10-0"
-				(at 0 -7.62 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" "https://www.lcsc.com/datasheet/C17317022.pdf"
-				(at 0 -10.16 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Manufacturer" "Mill-Max Mfg. Corp."
-				(at 0 -12.7 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "MPN" "3305-0-15-15-47-27-10-0"
-				(at 0 -15.24 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "LCSC Part" "C17317022"
-				(at 0 -17.78 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "3305-0-15-15-47-27-10-0_0_1"
-				(rectangle
-					(start -1.27 2.54)
-					(end 3.81 -2.54)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-				(circle
-					(center 0 1.27)
-					(radius 0.38)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(pin unspecified line
-					(at -3.81 0 0)
-					(length 2.54)
-					(name "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
 		(symbol "lcsc:7E032000I01"
 			(exclude_from_sim no)
 			(in_bom yes)
@@ -1933,178 +1797,6 @@
 						)
 					)
 					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
-		(symbol "lcsc:HAL9303RSO"
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "U"
-				(at 0 6.35 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "HAL9303RSO"
-				(at 0 -6.35 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" "lcsc:SOT-23-3_L2.9-W1.6-P1.90-LS2.8-BL-A"
-				(at 0 -8.89 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" "https://www.lcsc.com/datasheet/C42387471.pdf"
-				(at 0 -11.43 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Manufacturer" "Hallwee(霍尔微电子)"
-				(at 0 -13.97 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "MPN" "HAL9303RSO"
-				(at 0 -16.51 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "LCSC Part" "C42387471"
-				(at 0 -19.05 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "HAL9303RSO_0_1"
-				(rectangle
-					(start -6.35 3.81)
-					(end 6.35 -3.81)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-				(circle
-					(center -5.08 2.54)
-					(radius 0.38)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(pin unspecified line
-					(at -8.89 1.27 0)
-					(length 2.54)
-					(name "VDD"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin unspecified line
-					(at -8.89 -1.27 0)
-					(length 2.54)
-					(name "GND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin unspecified line
-					(at 8.89 0 180)
-					(length 2.54)
-					(name "OUT"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -3439,6 +3131,232 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "lcsc:TMAG3001A2YBGR"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "U"
+				(at 0 7.62 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "TMAG3001A2YBGR"
+				(at 0 -7.62 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "lcsc:BGA-6_L1.3-W0.8-P0.40-TL_PTMAG3001A2YBGR"
+				(at 0 -10.16 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" "https://www.lcsc.com/datasheet/C31115089.pdf"
+				(at 0 -12.7 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Manufacturer" "TI(德州仪器)"
+				(at 0 -15.24 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "MPN" "TMAG3001A2YBGR"
+				(at 0 -17.78 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "LCSC Part" "C31115089"
+				(at 0 -20.32 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "TMAG3001A2YBGR_0_1"
+				(rectangle
+					(start -8.89 5.08)
+					(end 8.89 -5.08)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(circle
+					(center -7.62 3.81)
+					(radius 0.38)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(pin unspecified line
+					(at -11.43 2.54 0)
+					(length 2.54)
+					(name "VCC"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "A1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 11.43 2.54 180)
+					(length 2.54)
+					(name "ADDR"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "A2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at -11.43 0 0)
+					(length 2.54)
+					(name "~{INT}"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "B1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 11.43 0 180)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "B2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at -11.43 -2.54 0)
+					(length 2.54)
+					(name "SDA"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "C1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 11.43 -2.54 180)
+					(length 2.54)
+					(name "SCL"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "C2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "lcsc:XC6206P332MR"
 			(exclude_from_sim no)
 			(in_bom yes)
@@ -4204,7 +4122,7 @@
 		)
 		(uuid "59bf8f75-9fc7-4208-8dce-f506ed42008c")
 	)
-	(text "Key Switch"
+	(text "Hall Effect Sensor"
 		(exclude_from_sim no)
 		(at 351.79 213.36 0)
 		(effects
@@ -4311,12 +4229,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "056a3554-4de6-43d7-81cb-eb94fd07aafa")
-	)
-	(junction
-		(at 309.88 240.03)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "06ec4faf-cd70-4ff2-9e75-d0f9412f839d")
 	)
 	(junction
 		(at 161.29 92.71)
@@ -4499,10 +4411,22 @@
 		(uuid "7a762076-623c-431b-b789-1299df9b58f1")
 	)
 	(junction
+		(at 363.22 233.68)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "868e0dc4-1238-411c-b1cc-8e4ef8868545")
+	)
+	(junction
 		(at 210.82 57.15)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "88380da0-c268-43c0-83e1-752287bc4dbf")
+	)
+	(junction
+		(at 331.47 232.41)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "8be985aa-ef73-49c8-95a9-777b9c7fd2f9")
 	)
 	(junction
 		(at 83.82 67.31)
@@ -4696,12 +4620,6 @@
 		(color 0 0 0 0)
 		(uuid "fcb5a176-560d-4a9d-b4a9-3801cddc5ac9")
 	)
-	(junction
-		(at 309.88 229.87)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "ff78bd19-4980-481c-b4bb-2bd376258b4a")
-	)
 	(no_connect
 		(at 276.86 257.81)
 		(uuid "2a26e54c-a81e-4525-b24c-2e21361da7d6")
@@ -4729,6 +4647,10 @@
 	(no_connect
 		(at 346.71 74.93)
 		(uuid "7f9f8cc7-dc4f-42c4-b9e7-2d5438307083")
+	)
+	(no_connect
+		(at 339.09 234.95)
+		(uuid "8ccf40d8-8dc2-45ca-a4a7-980edfe3c1a2")
 	)
 	(no_connect
 		(at 346.71 72.39)
@@ -4984,16 +4906,6 @@
 	)
 	(wire
 		(pts
-			(xy 313.69 233.68) (xy 313.69 229.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "165f2233-11f9-4fd8-b75b-34d71c5cd410")
-	)
-	(wire
-		(pts
 			(xy 57.15 214.63) (xy 67.31 214.63)
 		)
 		(stroke
@@ -5041,6 +4953,16 @@
 			(type default)
 		)
 		(uuid "1950e8fb-367c-49fe-840f-958fd80a2dc9")
+	)
+	(wire
+		(pts
+			(xy 331.47 229.87) (xy 331.47 232.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "19fbbf48-e817-4370-8d26-6687173a6cd1")
 	)
 	(wire
 		(pts
@@ -5484,16 +5406,6 @@
 	)
 	(wire
 		(pts
-			(xy 316.23 233.68) (xy 313.69 233.68)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4405581c-6db7-4c46-a7f3-c8cb1e8e673f")
-	)
-	(wire
-		(pts
 			(xy 172.72 267.97) (xy 176.53 267.97)
 		)
 		(stroke
@@ -5704,16 +5616,6 @@
 	)
 	(wire
 		(pts
-			(xy 309.88 240.03) (xy 309.88 241.3)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "57137119-35c4-491c-b992-c46d40976e36")
-	)
-	(wire
-		(pts
 			(xy 82.55 49.53) (xy 82.55 44.45)
 		)
 		(stroke
@@ -5751,16 +5653,6 @@
 			(type default)
 		)
 		(uuid "581fda55-09c9-4382-9860-52f364b7a4d9")
-	)
-	(wire
-		(pts
-			(xy 331.47 57.15) (xy 346.71 57.15)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5a9828e5-04f7-43b3-9c45-e90858170aa8")
 	)
 	(wire
 		(pts
@@ -5821,6 +5713,16 @@
 			(type default)
 		)
 		(uuid "62073cf7-62fc-4d04-adfd-7a37d3529df0")
+	)
+	(wire
+		(pts
+			(xy 361.95 232.41) (xy 363.22 232.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6384d204-af07-44db-bc61-a079c4d12e7e")
 	)
 	(wire
 		(pts
@@ -5924,16 +5826,6 @@
 	)
 	(wire
 		(pts
-			(xy 360.68 229.87) (xy 355.6 229.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6b8d0734-0d7a-488b-80d8-4fd8787641c7")
-	)
-	(wire
-		(pts
 			(xy 212.09 229.87) (xy 212.09 218.44)
 		)
 		(stroke
@@ -5961,16 +5853,6 @@
 			(type default)
 		)
 		(uuid "6cd2ca88-cb3b-4c7d-a08d-cdef781d0c55")
-	)
-	(wire
-		(pts
-			(xy 359.41 236.22) (xy 360.68 236.22)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6ec493b5-2c61-4111-8760-c3698d20024f")
 	)
 	(wire
 		(pts
@@ -6094,6 +5976,16 @@
 	)
 	(wire
 		(pts
+			(xy 369.57 233.68) (xy 363.22 233.68)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "75f651b0-d437-41f7-89e8-952d0abd6d9c")
+	)
+	(wire
+		(pts
 			(xy 340.36 80.01) (xy 346.71 80.01)
 		)
 		(stroke
@@ -6124,16 +6016,6 @@
 	)
 	(wire
 		(pts
-			(xy 316.23 236.22) (xy 313.69 236.22)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7ccb7877-02da-43e1-8af5-d4d7ede187d1")
-	)
-	(wire
-		(pts
 			(xy 147.32 54.61) (xy 147.32 57.15)
 		)
 		(stroke
@@ -6154,16 +6036,6 @@
 	)
 	(wire
 		(pts
-			(xy 313.69 236.22) (xy 313.69 240.03)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7dd9bd17-3f6f-4c20-a8c3-c61f5b3a644a")
-	)
-	(wire
-		(pts
 			(xy 43.18 102.87) (xy 43.18 92.71)
 		)
 		(stroke
@@ -6171,6 +6043,16 @@
 			(type default)
 		)
 		(uuid "7e35037f-d00a-42db-8a52-dec01035a650")
+	)
+	(wire
+		(pts
+			(xy 331.47 242.57) (xy 331.47 241.3)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7e430def-8cfe-40a3-9e8b-d331a19397ef")
 	)
 	(polyline
 		(pts
@@ -6354,6 +6236,16 @@
 	)
 	(wire
 		(pts
+			(xy 361.95 234.95) (xy 363.22 234.95)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8f544318-cbd4-4e8b-b3f9-b38d4446a013")
+	)
+	(wire
+		(pts
 			(xy 67.31 49.53) (xy 67.31 44.45)
 		)
 		(stroke
@@ -6434,16 +6326,6 @@
 	)
 	(wire
 		(pts
-			(xy 309.88 231.14) (xy 309.88 229.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9214f645-1d61-4aef-a74c-8ba9cb30ad37")
-	)
-	(wire
-		(pts
 			(xy 161.29 92.71) (xy 161.29 87.63)
 		)
 		(stroke
@@ -6501,6 +6383,16 @@
 			(type default)
 		)
 		(uuid "96cef54c-bb41-4c64-afd7-7c49035c1cd3")
+	)
+	(wire
+		(pts
+			(xy 331.47 233.68) (xy 331.47 232.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "97788f8a-cc2a-4867-8ab5-53d2eb762683")
 	)
 	(wire
 		(pts
@@ -6624,16 +6516,6 @@
 	)
 	(wire
 		(pts
-			(xy 313.69 229.87) (xy 309.88 229.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a32137f6-9505-4d28-a57c-5462f8360d53")
-	)
-	(wire
-		(pts
 			(xy 53.34 127) (xy 53.34 130.81)
 		)
 		(stroke
@@ -6754,6 +6636,16 @@
 	)
 	(wire
 		(pts
+			(xy 363.22 233.68) (xy 363.22 232.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b0834632-0258-4aa5-9555-b658bd2f7fb7")
+	)
+	(wire
+		(pts
 			(xy 210.82 81.28) (xy 215.9 81.28)
 		)
 		(stroke
@@ -6791,6 +6683,16 @@
 			(type default)
 		)
 		(uuid "b3ead730-a8d9-4730-b412-1b8529450be2")
+	)
+	(wire
+		(pts
+			(xy 331.47 232.41) (xy 339.09 232.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b599bc11-edaf-45ba-8d69-5523347ec75f")
 	)
 	(wire
 		(pts
@@ -6891,16 +6793,6 @@
 			(type default)
 		)
 		(uuid "c1bae83b-3fff-43c3-a197-a5bf27a1c065")
-	)
-	(wire
-		(pts
-			(xy 309.88 228.6) (xy 309.88 229.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c27c99f0-37d2-45ec-8fdc-dbb56960101d")
 	)
 	(wire
 		(pts
@@ -7194,16 +7086,6 @@
 	)
 	(wire
 		(pts
-			(xy 345.44 234.95) (xy 334.01 234.95)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "e11996b1-c2d0-4093-a676-a1d1e7d3b2bb")
-	)
-	(wire
-		(pts
 			(xy 162.56 229.87) (xy 162.56 224.79)
 		)
 		(stroke
@@ -7271,16 +7153,6 @@
 			(type default)
 		)
 		(uuid "ebd0d695-2719-48ef-aed4-217cb8a244af")
-	)
-	(wire
-		(pts
-			(xy 359.41 237.49) (xy 359.41 236.22)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ec3ae158-b378-4442-9e49-0d7b920d0602")
 	)
 	(wire
 		(pts
@@ -7364,13 +7236,13 @@
 	)
 	(wire
 		(pts
-			(xy 313.69 240.03) (xy 309.88 240.03)
+			(xy 363.22 234.95) (xy 363.22 233.68)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "f512e2e7-41c4-4e73-b49a-db15a29a9490")
+		(uuid "f72f092e-a204-46fe-a3ee-378caafd7017")
 	)
 	(wire
 		(pts
@@ -7411,16 +7283,6 @@
 			(type default)
 		)
 		(uuid "fb4bae3e-abdf-4fa8-8884-ecc3768355fc")
-	)
-	(wire
-		(pts
-			(xy 309.88 240.03) (xy 309.88 238.76)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fb687400-8f6d-4ec0-8a1f-9e6cbae6a7a2")
 	)
 	(wire
 		(pts
@@ -7512,16 +7374,6 @@
 		)
 		(uuid "37272e60-1d69-41da-8d7f-dbbeb9d56f41")
 	)
-	(label "BTN"
-		(at 355.6 229.87 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "38d8cb25-712b-49bc-85a0-8ab473d8d2f0")
-	)
 	(label "SENSE_WEST"
 		(at 213.36 267.97 180)
 		(effects
@@ -7561,16 +7413,6 @@
 			(justify right bottom)
 		)
 		(uuid "59a4fcc0-b8ca-47ac-acba-e99100e9f736")
-	)
-	(label "HALL_OUT"
-		(at 331.47 57.15 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "5e91f331-c31d-4851-92a9-39d3eb8f378e")
 	)
 	(label "EN_NORTH"
 		(at 66.04 77.47 180)
@@ -7631,16 +7473,6 @@
 			(justify left bottom)
 		)
 		(uuid "85a6f36e-95dc-4ff6-9558-94c33b737493")
-	)
-	(label "HALL_OUT"
-		(at 345.44 234.95 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "99c355fa-a1d9-4355-b1fe-5c3cf702b41d")
 	)
 	(label "X32MO"
 		(at 387.35 85.09 180)
@@ -7891,7 +7723,7 @@
 			(uuid "d09c9a6b-5eb7-4f2c-97c7-2b435efacd30")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R12")
 					(unit 1)
@@ -7968,7 +7800,7 @@
 			(uuid "df532c89-2513-4a73-9ca5-ddccf216d891")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR035")
 					(unit 1)
@@ -8045,7 +7877,7 @@
 			(uuid "6d85f732-0021-4e85-a23c-70ee66b4eeac")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP1")
 					(unit 1)
@@ -8122,7 +7954,7 @@
 			(uuid "dbf8fa4e-c20a-4a1c-9fd1-9c16708f2aee")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP9")
 					(unit 1)
@@ -8200,7 +8032,7 @@
 			(uuid "063ed505-f9e2-446d-bf7e-c25e8ebcf23d")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR069")
 					(unit 1)
@@ -8277,7 +8109,7 @@
 			(uuid "c8a9faa2-170f-4e4e-80f6-3a987bd0a4d2")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR055")
 					(unit 1)
@@ -8354,7 +8186,7 @@
 			(uuid "16c796c8-a564-47b5-b520-525c0e9ec762")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR083")
 					(unit 1)
@@ -8431,303 +8263,9 @@
 			(uuid "59363500-4473-408a-80df-e4113f2331fe")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR033")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "lcsc:HAL9303RSO")
-		(at 325.12 234.95 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "0d92b213-4f90-41f2-bfb1-c36eb5fd38af")
-		(property "Reference" "U13"
-			(at 325.12 226.06 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "HAL9303RSO"
-			(at 325.12 228.6 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "lcsc:SOT-23-3_L2.9-W1.6-P1.90-LS2.8-BL-A"
-			(at 325.12 243.84 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" "https://www.lcsc.com/datasheet/C42387471.pdf"
-			(at 325.12 246.38 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 325.12 234.95 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Manufacturer" "Hallwee"
-			(at 325.12 248.92 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "MPN" "HAL9303RSO"
-			(at 325.12 251.46 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "LCSC Part" "C42387471"
-			(at 325.12 254 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Package" "SOT-23-3"
-			(at 325.12 234.95 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Type" "SMD"
-			(at 325.12 234.95 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "3"
-			(uuid "a1acdf21-91a1-4b4d-a3c0-50efcd49a4a5")
-		)
-		(pin "2"
-			(uuid "d0155a44-c081-4195-81ea-ca80209d294f")
-		)
-		(pin "1"
-			(uuid "3b07170b-5a77-419a-bc43-ea09c57060ca")
-		)
-		(instances
-			(project "keybit-rotary"
-				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
-					(reference "U13")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "lcsc:3305-0-15-15-47-27-10-0")
-		(at 364.49 236.22 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(in_pos_files no)
-		(dnp yes)
-		(fields_autoplaced yes)
-		(uuid "0e445b1b-1306-4121-9313-1cb5458b1aa3")
-		(property "Reference" "U12"
-			(at 369.57 234.9499 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "3305-0-15-15-47-27-10-0"
-			(at 369.57 237.4899 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "lcsc:CONN-TH_3305-2-15-15-47-27-10-0"
-			(at 364.49 243.84 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" "https://www.lcsc.com/datasheet/C17317022.pdf"
-			(at 364.49 246.38 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 364.49 236.22 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Manufacturer" "Mill-Max"
-			(at 364.49 248.92 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "MPN" "3305-0-15-15-47-27-10-0"
-			(at 364.49 251.46 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "LCSC Part" "C17317022"
-			(at 364.49 254 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Package" "Through-hole receptacle, 1.52mm min hole"
-			(at 364.49 236.22 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Type" "THT"
-			(at 364.49 236.22 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Digikey PN" "54-3305-0-15-15-47-27-10-0-ND"
-			(at 364.49 236.22 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Mouser PN" "575-3305015154720000"
-			(at 364.49 236.22 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "ccbc7b4a-2788-4c01-bd0e-449582b663a3")
-		)
-		(instances
-			(project "keybit-rotary"
-				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
-					(reference "U12")
 					(unit 1)
 				)
 			)
@@ -8865,9 +8403,134 @@
 			(uuid "494c0511-0ef0-452f-b6de-39beaad9b65b")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "lcsc:TMAG3001A2YBGR")
+		(at 350.52 234.95 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "1366acd6-4262-4710-a7eb-b7e204a1bbaa")
+		(property "Reference" "U10"
+			(at 350.52 224.79 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TMAG3001A2YBGR"
+			(at 350.52 227.33 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "lcsc:BGA-6_L1.3-W0.8-P0.40-TL_PTMAG3001A2YBGR"
+			(at 350.52 245.11 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://www.lcsc.com/datasheet/C31115089.pdf"
+			(at 350.52 247.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 350.52 234.95 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "TI(德州仪器)"
+			(at 350.52 250.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "TMAG3001A2YBGR"
+			(at 350.52 252.73 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C31115089"
+			(at 350.52 255.27 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "A1"
+			(uuid "cd8312ee-b7d7-4a19-a18a-a98544d13dee")
+		)
+		(pin "A2"
+			(uuid "1ee2d47d-4c92-4674-9623-8f143fd8270b")
+		)
+		(pin "B1"
+			(uuid "5575695b-ef51-4cc5-bb05-1c4ca2003cf0")
+		)
+		(pin "B2"
+			(uuid "6a3e3579-dce7-46ed-8fe9-6bae05426878")
+		)
+		(pin "C1"
+			(uuid "84cde76d-7622-47e0-b380-8c38edcf561a")
+		)
+		(pin "C2"
+			(uuid "ddc626d6-b0a4-4214-8030-dab31b105ed5")
+		)
+		(instances
+			(project "keybit-hall"
+				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
+					(reference "U10")
 					(unit 1)
 				)
 			)
@@ -8942,7 +8605,7 @@
 			(uuid "53946e4a-01bb-40b0-aeca-f171f6b563b0")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR081")
 					(unit 1)
@@ -9019,7 +8682,7 @@
 			(uuid "f04ad293-255d-4931-8835-55d1f2cd15b1")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR052")
 					(unit 1)
@@ -9096,7 +8759,7 @@
 			(uuid "88a6b806-9744-4bb6-82c2-7ffc539a4f81")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR071")
 					(unit 1)
@@ -9314,7 +8977,7 @@
 			(uuid "f95c947f-6a73-4fac-8791-860fc7263b02")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "U1")
 					(unit 1)
@@ -9391,7 +9054,7 @@
 			(uuid "63cadbd4-4ed6-451e-a855-c33a54ce9356")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR066")
 					(unit 1)
@@ -9468,7 +9131,7 @@
 			(uuid "b9fb0c6d-c724-4c7a-b3a4-5dd5feb8b8ff")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR096")
 					(unit 1)
@@ -9545,7 +9208,7 @@
 			(uuid "3d7ba293-6c89-44c0-8ba6-e1c306651336")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR072")
 					(unit 1)
@@ -9622,86 +9285,9 @@
 			(uuid "293f418a-76f7-4e9a-b1a8-74285aa60175")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP24")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:VCC")
-		(at 309.88 228.6 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "23e71677-9dae-4f24-a4cc-a2568bf3bfa2")
-		(property "Reference" "#PWR015"
-			(at 309.88 232.41 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "+3.3V"
-			(at 309.88 224.79 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 309.88 228.6 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 309.88 228.6 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"VCC\""
-			(at 309.88 228.6 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "e86d2f33-678e-4823-ad51-71f80b258d49")
-		)
-		(instances
-			(project "keybit-rotary"
-				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
-					(reference "#PWR015")
 					(unit 1)
 				)
 			)
@@ -9838,7 +9424,7 @@
 			(uuid "895f194e-0a5d-4e06-9d1c-762181338141")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q25")
 					(unit 1)
@@ -9916,7 +9502,7 @@
 			(uuid "fe857b97-18f0-46e2-b215-c4431bd1871a")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR0103")
 					(unit 1)
@@ -9993,7 +9579,7 @@
 			(uuid "c1a2c28f-b0c6-4d4b-8580-2f5951c49ec5")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP11")
 					(unit 1)
@@ -10070,7 +9656,7 @@
 			(uuid "091b66c3-75f7-4ca4-82a1-5ce3ec9ef446")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR088")
 					(unit 1)
@@ -10228,7 +9814,7 @@
 			(uuid "32bdb2fd-b14d-47bb-9842-ffe19b4d6fe5")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "C11")
 					(unit 1)
@@ -10367,7 +9953,7 @@
 			(uuid "1b4f57bc-557d-453f-9153-eb223fea6129")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q9")
 					(unit 1)
@@ -10514,7 +10100,7 @@
 			(uuid "02488560-3dfc-4f58-8e6d-e1348a42ebbc")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R21")
 					(unit 1)
@@ -10673,7 +10259,7 @@
 			(uuid "82af7771-6cbe-40b9-99cd-0069053d55c7")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "C10")
 					(unit 1)
@@ -10820,7 +10406,7 @@
 			(uuid "15a071b9-f7aa-4ede-9d2e-fa676db15bda")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R16")
 					(unit 1)
@@ -10897,7 +10483,7 @@
 			(uuid "e44231f5-4113-4615-a07d-9276e9da24d0")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR0102")
 					(unit 1)
@@ -11045,7 +10631,7 @@
 			(uuid "add8fb3d-6db1-4584-8324-90bde885e32b")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R30")
 					(unit 1)
@@ -11122,7 +10708,7 @@
 			(uuid "0536776c-f6bf-4da5-834b-dfc4f14395ba")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP7")
 					(unit 1)
@@ -11269,7 +10855,7 @@
 			(uuid "9a591695-a7f7-46a9-9f1b-785b77ec3c0d")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R31")
 					(unit 1)
@@ -11408,7 +10994,7 @@
 			(uuid "148b9d26-1fed-4517-93a8-5b4706a6d4c8")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q14")
 					(unit 1)
@@ -11565,7 +11151,7 @@
 			(uuid "64693e59-9283-4e3b-9981-eef8f1350698")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "U2")
 					(unit 1)
@@ -11642,7 +11228,7 @@
 			(uuid "a4fe5ef0-f788-486e-b746-8220e9b79ab9")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP23")
 					(unit 1)
@@ -11792,7 +11378,7 @@
 			(uuid "47327c56-e9ad-425c-9ee2-9c988d89e7f8")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q7")
 					(unit 1)
@@ -11931,7 +11517,7 @@
 			(uuid "f7e0ac9d-76de-43b3-8a82-8f0a00e12380")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q13")
 					(unit 1)
@@ -12008,7 +11594,7 @@
 			(uuid "8d4f5582-6668-4074-8049-641c0fffc3fe")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP19")
 					(unit 1)
@@ -12085,7 +11671,7 @@
 			(uuid "fff03b6c-088b-42b3-adcc-203ec465c22b")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR050")
 					(unit 1)
@@ -12162,7 +11748,7 @@
 			(uuid "47de2254-adca-4457-b73f-ad53eb09f810")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP18")
 					(unit 1)
@@ -12239,7 +11825,7 @@
 			(uuid "1ec97176-98bc-49b7-8110-14ab064bac0c")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR061")
 					(unit 1)
@@ -12390,7 +11976,7 @@
 			(uuid "8712e069-d72a-4e44-abc0-965025584600")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q10")
 					(unit 1)
@@ -12537,7 +12123,7 @@
 			(uuid "0730ec97-1ea5-4415-b179-d00434f69aa2")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R22")
 					(unit 1)
@@ -12677,7 +12263,7 @@
 			(uuid "e81387d5-2ed0-428c-95eb-7e9b20bbd455")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q23")
 					(unit 1)
@@ -12754,7 +12340,7 @@
 			(uuid "a9208d80-312d-4790-8159-90cc1a59ded3")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR057")
 					(unit 1)
@@ -12831,7 +12417,7 @@
 			(uuid "ba891cf0-1ee0-44f9-a453-c6baf36740ad")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR060")
 					(unit 1)
@@ -12981,7 +12567,7 @@
 			(uuid "70c5d362-e95b-4c60-ae65-47578ff94366")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q22")
 					(unit 1)
@@ -13058,7 +12644,7 @@
 			(uuid "0a916821-1c94-4131-8377-96bc91ed2195")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP6")
 					(unit 1)
@@ -13136,7 +12722,7 @@
 			(uuid "4630f73b-bde8-4726-b957-233e7af04faa")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR090")
 					(unit 1)
@@ -13213,7 +12799,7 @@
 			(uuid "83542a26-0c22-46dc-95eb-24c8e5717ac8")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR097")
 					(unit 1)
@@ -13360,7 +12946,7 @@
 			(uuid "92b95172-0702-4990-a084-1487a2886bfe")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R15")
 					(unit 1)
@@ -13437,7 +13023,7 @@
 			(uuid "5056818f-eb37-4021-9260-cc608ed3d0e4")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR048")
 					(unit 1)
@@ -13515,7 +13101,7 @@
 			(uuid "19f88325-4ed3-4b77-86b2-14087b5707d7")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR073")
 					(unit 1)
@@ -13593,7 +13179,7 @@
 			(uuid "dc722c8c-6766-47bd-a790-d83c615acb7d")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR086")
 					(unit 1)
@@ -13670,7 +13256,7 @@
 			(uuid "623a3289-36b8-4d98-9eb6-361a0f2128b4")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR07")
 					(unit 1)
@@ -13747,7 +13333,7 @@
 			(uuid "dcb56cf1-33b7-48f6-8df2-7ae188eebeab")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR058")
 					(unit 1)
@@ -13887,165 +13473,9 @@
 			(uuid "2fc01275-0b36-4297-ad62-45f6bd0c0812")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q5")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "lcsc:3305-0-15-15-47-27-10-0")
-		(at 364.49 229.87 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(in_pos_files no)
-		(dnp yes)
-		(fields_autoplaced yes)
-		(uuid "5dd174a3-301e-4aed-a234-ec35f53d775d")
-		(property "Reference" "U15"
-			(at 369.57 228.5999 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "3305-0-15-15-47-27-10-0"
-			(at 369.57 231.1399 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "lcsc:CONN-TH_3305-2-15-15-47-27-10-0"
-			(at 364.49 237.49 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" "https://www.lcsc.com/datasheet/C17317022.pdf"
-			(at 364.49 240.03 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 364.49 229.87 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Manufacturer" "Mill-Max"
-			(at 364.49 242.57 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "MPN" "3305-0-15-15-47-27-10-0"
-			(at 364.49 245.11 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "LCSC Part" "C17317022"
-			(at 364.49 247.65 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Package" "Through-hole receptacle, 1.52mm min hole"
-			(at 364.49 229.87 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Type" "THT"
-			(at 364.49 229.87 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Digikey PN" "54-3305-0-15-15-47-27-10-0-ND"
-			(at 364.49 229.87 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Mouser PN" "575-3305015154720000"
-			(at 364.49 229.87 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "0d5e3a34-1d94-4a23-895e-51eca7015621")
-		)
-		(instances
-			(project "keybit-rotary"
-				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
-					(reference "U15")
 					(unit 1)
 				)
 			)
@@ -14183,7 +13613,7 @@
 			(uuid "99fd55f7-31db-4ff8-afc7-aec85fbb543e")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q6")
 					(unit 1)
@@ -14260,7 +13690,7 @@
 			(uuid "537e475d-5b03-47df-b8d0-51c902177d6a")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR053")
 					(unit 1)
@@ -14337,7 +13767,7 @@
 			(uuid "20d3d84c-bb5a-4748-a58e-79fa34eb6144")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP4")
 					(unit 1)
@@ -14495,7 +13925,7 @@
 			(uuid "30b03ef5-0d20-44da-aa7b-e1bec5e45c0e")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "C8")
 					(unit 1)
@@ -14572,7 +14002,7 @@
 			(uuid "ba42eea1-2cd2-48f8-af4e-f7264a9d2e59")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP2")
 					(unit 1)
@@ -14712,7 +14142,7 @@
 			(uuid "286baa44-ec83-45d0-9664-d037fea9ed93")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q24")
 					(unit 1)
@@ -14789,7 +14219,7 @@
 			(uuid "fad903fd-0549-4ad7-b341-adf3710c9d25")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP16")
 					(unit 1)
@@ -14866,7 +14296,7 @@
 			(uuid "038042ee-cb06-43ba-a839-ce8baad6a0fb")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR05")
 					(unit 1)
@@ -15014,7 +14444,7 @@
 			(uuid "e0faed18-0a7e-477c-93a8-ac91fbd288e2")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R14")
 					(unit 1)
@@ -15091,7 +14521,7 @@
 			(uuid "8b1dd4e5-9956-486b-8b7f-90de7cd2d206")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR045")
 					(unit 1)
@@ -15247,7 +14677,7 @@
 			(uuid "b0294145-1cbb-4416-9240-d82b7495657e")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "U9")
 					(unit 1)
@@ -15324,7 +14754,7 @@
 			(uuid "251128a8-a879-4eb6-bca2-6ef376894560")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP28")
 					(unit 1)
@@ -15401,7 +14831,7 @@
 			(uuid "1e94431d-b4b6-416a-88b2-ca303858d0f4")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR077")
 					(unit 1)
@@ -15478,7 +14908,7 @@
 			(uuid "c0088c5c-45a0-4d0f-913d-618ec3cef1b6")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR059")
 					(unit 1)
@@ -15557,7 +14987,7 @@
 			(uuid "e3d56a00-4d7f-4c75-8d5c-fe8bc2089539")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR044")
 					(unit 1)
@@ -15635,7 +15065,7 @@
 			(uuid "82fdea76-1e76-47c4-aefa-1826e81515a9")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR056")
 					(unit 1)
@@ -15786,7 +15216,7 @@
 			(uuid "a5a29862-91d6-4482-aefb-d17d5c535e54")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q15")
 					(unit 1)
@@ -15863,7 +15293,7 @@
 			(uuid "34b3cff7-4216-43d5-8c31-7dfdb224c11b")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR085")
 					(unit 1)
@@ -15940,7 +15370,7 @@
 			(uuid "3cbef80d-7bdb-46ee-9344-028316e6b980")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR074")
 					(unit 1)
@@ -16018,7 +15448,7 @@
 			(uuid "08103ffc-1793-4b85-b23c-e86ee6175847")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR070")
 					(unit 1)
@@ -16095,7 +15525,7 @@
 			(uuid "4e531257-839f-47d0-8a5b-c3e934786c9b")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR028")
 					(unit 1)
@@ -16253,7 +15683,7 @@
 			(uuid "ff208be2-f2d5-40b4-b20b-f5cb4bdaa582")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "C4")
 					(unit 1)
@@ -16330,7 +15760,7 @@
 			(uuid "1dee9878-e2f3-4157-a6d4-cf656578b5ab")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR014")
 					(unit 1)
@@ -16409,7 +15839,7 @@
 			(uuid "e4c0cee0-80a2-4947-8656-cf09b6a712af")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR067")
 					(unit 1)
@@ -16556,7 +15986,7 @@
 			(uuid "2b048c71-10fe-420b-b923-851fa2a64324")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R17")
 					(unit 1)
@@ -16633,7 +16063,7 @@
 			(uuid "bc22a6a3-4712-48b6-98ef-e04f6748f992")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR093")
 					(unit 1)
@@ -16710,7 +16140,7 @@
 			(uuid "cb30e2f2-7e0c-4276-8622-77e140fff54c")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR08")
 					(unit 1)
@@ -16787,7 +16217,7 @@
 			(uuid "9319c171-3658-466d-9f99-a59e8e2beb65")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP8")
 					(unit 1)
@@ -16927,7 +16357,7 @@
 			(uuid "81ccc84c-0f3e-4804-a2fd-231cbc8919c2")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q17")
 					(unit 1)
@@ -17004,7 +16434,7 @@
 			(uuid "5da668fa-c10f-4407-8169-e1a5019cb0db")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP21")
 					(unit 1)
@@ -17081,7 +16511,7 @@
 			(uuid "25f9db70-aeb9-478b-b9ec-e49af1f8d5ec")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP22")
 					(unit 1)
@@ -17231,7 +16661,7 @@
 			(uuid "25d55e63-9a49-4122-9a16-af2c2893d027")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q16")
 					(unit 1)
@@ -17308,7 +16738,7 @@
 			(uuid "efd9aeba-b9ff-4501-a30f-e9197a67b020")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP3")
 					(unit 1)
@@ -17467,7 +16897,7 @@
 			(uuid "718a5151-efdc-4223-a680-fbfa04d3d05a")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "C5")
 					(unit 1)
@@ -17606,9 +17036,86 @@
 			(uuid "b09d483f-ad84-4a18-8a16-319be83fab74")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q8")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 369.57 233.68 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "8bad0922-cedf-4ad5-96d1-5f0e70a11a93")
+		(property "Reference" "#PWR0105"
+			(at 375.92 233.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 374.65 233.68 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 369.57 233.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 369.57 233.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 369.57 233.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "690823ec-c0dd-4933-bc73-da57aa86b30a")
+		)
+		(instances
+			(project "keybit-hall"
+				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
+					(reference "#PWR0105")
 					(unit 1)
 				)
 			)
@@ -17757,7 +17264,7 @@
 			(uuid "04137f3a-15a3-47b8-895d-07a0430aaf4e")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q27")
 					(unit 1)
@@ -17834,7 +17341,7 @@
 			(uuid "eb918ee3-ae2e-49b6-86a2-834489d60b24")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR049")
 					(unit 1)
@@ -17973,7 +17480,7 @@
 			(uuid "8c61f0d5-5777-4839-b3d2-3726dc9feaa4")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q20")
 					(unit 1)
@@ -18050,7 +17557,7 @@
 			(uuid "b554df3d-c9b1-45cd-ac2f-f6a26d89dce6")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR082")
 					(unit 1)
@@ -18127,7 +17634,7 @@
 			(uuid "a14195ae-241d-4119-aa14-c2e274478798")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR039")
 					(unit 1)
@@ -18283,7 +17790,7 @@
 			(uuid "e4f57c8a-a0fb-414e-9877-611df29077ff")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "U3")
 					(unit 1)
@@ -18440,7 +17947,7 @@
 			(uuid "b39c11c6-d092-4ac1-a4c9-aa34e27f532d")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "U6")
 					(unit 1)
@@ -18517,7 +18024,7 @@
 			(uuid "503a729f-95df-46bd-9f28-0ad76a5da0bc")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR038")
 					(unit 1)
@@ -18673,7 +18180,7 @@
 			(uuid "45e35e66-09ef-435b-97df-214b7a0d4be9")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "U7")
 					(unit 1)
@@ -18750,7 +18257,7 @@
 			(uuid "c9d8dcfc-b3c3-4c99-b91c-940ba1bc925d")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP15")
 					(unit 1)
@@ -18900,7 +18407,7 @@
 			(uuid "efc624ca-2000-4951-8093-24e4d961efa5")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q11")
 					(unit 1)
@@ -18977,7 +18484,7 @@
 			(uuid "fdd8cc04-7694-4f19-b5c2-f0d30cdb4082")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR054")
 					(unit 1)
@@ -19054,7 +18561,7 @@
 			(uuid "295b4839-86ca-47d7-847b-4025e45cf0c1")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR011")
 					(unit 1)
@@ -19205,7 +18712,7 @@
 			(uuid "216b4407-fcb0-4bc7-ab11-f665b9a69b1c")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q21")
 					(unit 1)
@@ -19282,7 +18789,7 @@
 			(uuid "e74cf6b8-97a7-41a8-9d2c-dd70015cdf1b")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR092")
 					(unit 1)
@@ -19359,7 +18866,7 @@
 			(uuid "5415c8af-70db-4a2b-9104-d4f043687ca5")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR075")
 					(unit 1)
@@ -19507,7 +19014,7 @@
 			(uuid "f7bdeec2-fb34-4bce-8e8b-e0f3a757d7c5")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R20")
 					(unit 1)
@@ -19584,7 +19091,7 @@
 			(uuid "7066e89e-b0b7-4ae5-ab39-132428b81b63")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR095")
 					(unit 1)
@@ -19724,86 +19231,9 @@
 			(uuid "f74c2fba-d54a-4786-bf92-d1348a107a5b")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q18")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 309.88 241.3 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "a13fb0ec-77f6-4f68-acf8-72cc8245403a")
-		(property "Reference" "#PWR030"
-			(at 309.88 247.65 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
-			(at 309.88 245.11 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 309.88 241.3 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 309.88 241.3 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 309.88 241.3 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "629ef681-7405-410a-bb77-0dca538c9850")
-		)
-		(instances
-			(project "keybit-rotary"
-				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
-					(reference "#PWR030")
 					(unit 1)
 				)
 			)
@@ -19879,7 +19309,7 @@
 			(uuid "3ce25ddc-9256-4ec9-a9d0-cdf0399792d4")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR043")
 					(unit 1)
@@ -20038,7 +19468,7 @@
 			(uuid "21522b56-7eff-4811-b123-e73e6354fcae")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "C9")
 					(unit 1)
@@ -20181,7 +19611,7 @@
 			(uuid "1e400efe-c5cb-47a9-8e23-d47c4bda13dc")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "D2")
 					(unit 1)
@@ -20258,7 +19688,7 @@
 			(uuid "2375ff85-6bd7-4dbb-98e2-657962febaf7")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP12")
 					(unit 1)
@@ -20405,7 +19835,7 @@
 			(uuid "f053ea75-3c57-42d3-921b-cb079eb12c19")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R19")
 					(unit 1)
@@ -20484,7 +19914,7 @@
 			(uuid "aae3710e-cb22-4542-808a-ebc35475d7f8")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR032")
 					(unit 1)
@@ -20561,7 +19991,7 @@
 			(uuid "48401409-915a-4542-a077-7e089d3ef62b")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR0100")
 					(unit 1)
@@ -20638,7 +20068,7 @@
 			(uuid "2a25e67c-e858-4b4f-a927-440072d243f3")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR068")
 					(unit 1)
@@ -20715,7 +20145,7 @@
 			(uuid "e5215274-bc6d-48ee-bf46-cb24364293a4")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP25")
 					(unit 1)
@@ -20793,7 +20223,7 @@
 			(uuid "a26aed0a-15f0-45e8-ba71-b618cf673d47")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR0104")
 					(unit 1)
@@ -20870,7 +20300,7 @@
 			(uuid "7b2cb5b5-d3f3-498d-94df-95a2806a7e04")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR025")
 					(unit 1)
@@ -21018,7 +20448,7 @@
 			(uuid "3586c285-dd67-4323-a13d-17b5969ccef3")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R18")
 					(unit 1)
@@ -21175,7 +20605,7 @@
 			(uuid "cfd06f01-562f-43c9-8491-ca21717a41bb")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "U4")
 					(unit 1)
@@ -21323,7 +20753,7 @@
 			(uuid "105c4289-42da-4644-a7d1-30b96860a2a6")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R11")
 					(unit 1)
@@ -21400,7 +20830,7 @@
 			(uuid "d3a77ca0-3530-4877-8c8c-fdf7b171b151")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR078")
 					(unit 1)
@@ -21478,7 +20908,7 @@
 			(uuid "f3c9213c-eb65-4905-bb55-a8098a32d25f")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR042")
 					(unit 1)
@@ -21625,7 +21055,7 @@
 			(uuid "e420bcdc-4565-46db-b596-14fbb5058979")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R23")
 					(unit 1)
@@ -21702,7 +21132,7 @@
 			(uuid "aca2e087-1b25-42aa-86c4-0ea089b53f80")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR064")
 					(unit 1)
@@ -21849,7 +21279,7 @@
 			(uuid "6780e52e-71ce-43c7-8fbd-cdd93ab34c93")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R28")
 					(unit 1)
@@ -21926,7 +21356,7 @@
 			(uuid "eedf4c35-4fcf-4665-81f5-97063459e93b")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR09")
 					(unit 1)
@@ -22074,7 +21504,7 @@
 			(uuid "fd9dca33-d62d-4ae9-b1f8-297a393936c9")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R26")
 					(unit 1)
@@ -22151,7 +21581,7 @@
 			(uuid "29f5a573-e2ad-4829-8c0b-f9e970b1acf1")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR079")
 					(unit 1)
@@ -22228,7 +21658,7 @@
 			(uuid "9a3d2562-6c01-4a98-b2c8-f506d79f5a95")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR051")
 					(unit 1)
@@ -22305,7 +21735,7 @@
 			(uuid "acd07632-89dd-444d-bb01-4f24fe5d649a")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP17")
 					(unit 1)
@@ -22382,9 +21812,86 @@
 			(uuid "daded2ff-bc9c-4825-ba5b-b5231d93aeb0")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR046")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 331.47 242.57 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "bde2b974-a1a0-4835-85b2-029fb80ceb3e")
+		(property "Reference" "#PWR0106"
+			(at 331.47 248.92 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 331.47 246.38 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 331.47 242.57 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 331.47 242.57 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 331.47 242.57 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "c0a69f63-0a6e-4b52-9b87-6cc169a6ac88")
+		)
+		(instances
+			(project "keybit-hall"
+				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
+					(reference "#PWR0106")
 					(unit 1)
 				)
 			)
@@ -22459,7 +21966,7 @@
 			(uuid "5163bae6-8de5-47b7-bcd0-1ee5431c51cb")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP26")
 					(unit 1)
@@ -22594,7 +22101,7 @@
 			(uuid "9e8052a6-3a0e-4cd0-8584-74e6a5b39417")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "ANT1")
 					(unit 1)
@@ -22673,7 +22180,7 @@
 			(uuid "798d86c6-8f8d-4d4d-bbcf-1cbfe4748b72")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR0101")
 					(unit 1)
@@ -22750,7 +22257,7 @@
 			(uuid "fcca251f-a3b5-4e63-8076-b45b812f40a2")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR091")
 					(unit 1)
@@ -22827,7 +22334,7 @@
 			(uuid "a9ebdce7-31ef-461c-a54d-28a2ba7958ee")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR080")
 					(unit 1)
@@ -22968,7 +22475,7 @@
 			(uuid "f6d420d2-5e0d-4f16-a9bc-39016417c1e0")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "X2")
 					(unit 1)
@@ -23115,7 +22622,7 @@
 			(uuid "68afb5c9-8ae7-49b8-873e-8d8bcedb3901")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R29")
 					(unit 1)
@@ -23192,7 +22699,7 @@
 			(uuid "c6a9b3cd-aa86-44e8-8310-a5fd5c3daa93")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR076")
 					(unit 1)
@@ -23339,7 +22846,7 @@
 			(uuid "76b66394-f28e-457e-a3ae-d6fdc53e00fa")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R13")
 					(unit 1)
@@ -23418,7 +22925,7 @@
 			(uuid "bd9a057a-e154-4644-9ca3-e5cf63cf8d3f")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR084")
 					(unit 1)
@@ -23557,7 +23064,7 @@
 			(uuid "f2b9c088-5218-4349-95a4-e76fe54bf11b")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q19")
 					(unit 1)
@@ -23634,7 +23141,7 @@
 			(uuid "0f1b9f87-5a05-494e-8462-da856ef73fbd")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR063")
 					(unit 1)
@@ -23711,7 +23218,7 @@
 			(uuid "d660eb54-5142-4c55-8f5f-cc9e0db0138b")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR062")
 					(unit 1)
@@ -23858,7 +23365,7 @@
 			(uuid "659fdea8-4c2b-4291-b964-64c547d5f42c")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R8")
 					(unit 1)
@@ -24017,7 +23524,7 @@
 			(uuid "73e22ff4-188f-4b0a-bd82-3e165014e436")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "U14")
 					(unit 1)
@@ -24165,7 +23672,7 @@
 			(uuid "b28b85e4-b399-4c32-be1e-dd1fe8369060")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R9")
 					(unit 1)
@@ -24243,7 +23750,7 @@
 			(uuid "1a71a1d2-4f40-4704-9c58-1f0eeb01ed1d")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR037")
 					(unit 1)
@@ -24320,7 +23827,7 @@
 			(uuid "00189fe5-214d-4e29-a791-a4050547498b")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR036")
 					(unit 1)
@@ -24397,7 +23904,7 @@
 			(uuid "9b8c3f2a-6695-459c-9916-7e40c741d2c0")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR089")
 					(unit 1)
@@ -24474,7 +23981,7 @@
 			(uuid "f6317b1e-d6a3-4ecd-b81a-03a81130043c")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP10")
 					(unit 1)
@@ -24551,168 +24058,9 @@
 			(uuid "a1dbaaf9-e7bd-4286-aa50-7eb1fa64c474")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR047")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C")
-		(at 309.88 234.95 0)
-		(mirror y)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "cec91e49-8661-4f6c-b096-3f7960ad7d78")
-		(property "Reference" "C6"
-			(at 306.832 233.68 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "100nF"
-			(at 306.832 236.22 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at 308.9148 238.76 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 309.88 234.95 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Unpolarized capacitor"
-			(at 309.88 234.95 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "LCSC Part" "C1525"
-			(at 309.88 234.95 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Manufacturer" "Samsung Electro-Mechanics"
-			(at 309.88 234.95 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "MPN" "CL05B104KO5NNNC"
-			(at 309.88 234.95 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Package" "0402"
-			(at 309.88 234.95 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Type" "SMD"
-			(at 309.88 234.95 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Digikey PN" "1276-1001-1-ND"
-			(at 309.88 234.95 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Mouser PN" "187-CL05B104KO5NNNC"
-			(at 309.88 234.95 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "006d648a-fdce-4e70-83b7-55753a629c40")
-		)
-		(pin "2"
-			(uuid "1d1e70a1-2661-48c1-92ca-5ab09ba5d9e1")
-		)
-		(instances
-			(project "keybit-rotary"
-				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
-					(reference "C6")
 					(unit 1)
 				)
 			)
@@ -24787,7 +24135,7 @@
 			(uuid "332b57ba-971f-4f35-9a5e-4922bed27c86")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR065")
 					(unit 1)
@@ -24864,9 +24212,168 @@
 			(uuid "657c7562-71ac-40bf-a6a1-4439d3fc9b36")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR034")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C")
+		(at 331.47 237.49 0)
+		(mirror y)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "d2fc1da3-b2fb-48b5-9187-269c103f9e26")
+		(property "Reference" "C12"
+			(at 328.422 236.22 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "100nF"
+			(at 328.422 238.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
+			(at 330.5048 241.3 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 331.47 237.49 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 331.47 237.49 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C1525"
+			(at 331.47 237.49 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "Samsung Electro-Mechanics"
+			(at 331.47 237.49 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "CL05B104KO5NNNC"
+			(at 331.47 237.49 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Package" "0402"
+			(at 331.47 237.49 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Type" "SMD"
+			(at 331.47 237.49 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Digikey PN" "1276-1001-1-ND"
+			(at 331.47 237.49 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Mouser PN" "187-CL05B104KO5NNNC"
+			(at 331.47 237.49 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "2477c680-2d5e-4454-90fb-3f64093fcc96")
+		)
+		(pin "2"
+			(uuid "36ccca62-5bf9-4c9c-b50a-7a208e759916")
+		)
+		(instances
+			(project "keybit-hall"
+				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
+					(reference "C12")
 					(unit 1)
 				)
 			)
@@ -25004,7 +24511,7 @@
 			(uuid "aa542d1e-a843-4600-8f20-bd47f76d2721")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q12")
 					(unit 1)
@@ -25161,7 +24668,7 @@
 			(uuid "619998d5-de31-4bfb-b90b-a40ce7b60304")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "U8")
 					(unit 1)
@@ -25238,7 +24745,7 @@
 			(uuid "13278f2a-19bb-4abf-abc3-23abf5bc6275")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR041")
 					(unit 1)
@@ -25315,7 +24822,7 @@
 			(uuid "a245efd6-df7b-46c8-90b1-825a69c7aa13")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR04")
 					(unit 1)
@@ -25463,7 +24970,7 @@
 			(uuid "c5e51dd1-d4d2-4b3a-9c22-8c7d2f3facb6")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R24")
 					(unit 1)
@@ -25608,7 +25115,7 @@
 			(uuid "0576d00c-1a2e-45a1-82d3-ad8701883d9c")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "L1")
 					(unit 1)
@@ -25686,7 +25193,7 @@
 			(uuid "1bb96ed5-df83-4242-ae1e-3b1108d14d27")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR087")
 					(unit 1)
@@ -25763,7 +25270,7 @@
 			(uuid "fd902e89-88db-4f6a-a8f7-a76d0307202b")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR094")
 					(unit 1)
@@ -25922,7 +25429,7 @@
 			(uuid "2c5c2ea8-13e8-4f9f-ae98-bff0755375e8")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "C3")
 					(unit 1)
@@ -25999,86 +25506,9 @@
 			(uuid "1d03df4b-b338-444b-a940-7d9606418c7f")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP20")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 359.41 237.49 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(in_pos_files no)
-		(dnp yes)
-		(uuid "e5333cf0-b4cd-4f14-9198-7eb54f2b350b")
-		(property "Reference" "#PWR012"
-			(at 359.41 243.84 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
-			(at 359.41 241.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 359.41 237.49 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 359.41 237.49 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 359.41 237.49 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "0e588935-8dd8-493a-980f-2e02900afa6f")
-		)
-		(instances
-			(project "keybit-rotary"
-				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
-					(reference "#PWR012")
 					(unit 1)
 				)
 			)
@@ -26215,7 +25645,7 @@
 			(uuid "1c432004-a57d-4fe1-afc7-1e9772e1a22c")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "Q26")
 					(unit 1)
@@ -26362,7 +25792,7 @@
 			(uuid "4110c1bd-94f2-4ee3-8549-d0ced9ecbd9f")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R25")
 					(unit 1)
@@ -26439,7 +25869,7 @@
 			(uuid "986be9a2-b3bc-49d5-9b84-e0a3d6a8fdc7")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP5")
 					(unit 1)
@@ -26516,7 +25946,7 @@
 			(uuid "8ea93a29-56d2-49b3-bed8-9fb6f1c463cd")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR098")
 					(unit 1)
@@ -26663,7 +26093,7 @@
 			(uuid "15f37d03-32d4-45ad-89c0-e9eea1f1ab03")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R10")
 					(unit 1)
@@ -26740,7 +26170,7 @@
 			(uuid "c8c0b3e4-49d2-454e-bcb1-48b7ecff5ad1")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR099")
 					(unit 1)
@@ -26817,7 +26247,7 @@
 			(uuid "6d68a832-0a8c-4663-b6f2-333af67fcdcb")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP13")
 					(unit 1)
@@ -26964,7 +26394,7 @@
 			(uuid "c0672ae4-05d3-4a91-b212-b3dccfdeb6cd")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "R27")
 					(unit 1)
@@ -27041,7 +26471,7 @@
 			(uuid "af76c26b-19fe-4a0d-ac72-55170b0952da")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR010")
 					(unit 1)
@@ -27118,7 +26548,7 @@
 			(uuid "268045d3-d946-4d3b-8fcf-173c2d629672")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP27")
 					(unit 1)
@@ -27195,7 +26625,7 @@
 			(uuid "06b83cf3-4c22-4041-bc7f-e5bc4bc2ad08")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR040")
 					(unit 1)
@@ -27274,7 +26704,7 @@
 			(uuid "906a6ec0-18f3-4bf0-bf88-a998f494f2f9")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "#PWR026")
 					(unit 1)
@@ -27351,7 +26781,7 @@
 			(uuid "c8fdcb87-ba4f-43ab-b780-f90b4b448ce8")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "TP14")
 					(unit 1)
@@ -27507,9 +26937,86 @@
 			(uuid "d09032a7-2237-408c-a1b0-bb1225f9600d")
 		)
 		(instances
-			(project "keybit-rotary"
+			(project "keybit-hall"
 				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
 					(reference "U5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:VCC")
+		(at 331.47 229.87 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "fca755f6-b78b-4372-ad83-961c276305ef")
+		(property "Reference" "#PWR015"
+			(at 331.47 233.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "+3.3V"
+			(at 331.47 226.06 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 331.47 229.87 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 331.47 229.87 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"VCC\""
+			(at 331.47 229.87 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "d26063d9-3bde-4bc2-ae34-7a713f8f631f")
+		)
+		(instances
+			(project "keybit-hall"
+				(path "/015bf1d6-3308-465f-9b3e-52eb309150ad"
+					(reference "#PWR015")
 					(unit 1)
 				)
 			)
