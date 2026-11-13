@@ -29,9 +29,11 @@ A truly modular keyboard with rearrangeable keys, magnetic cases and Bluetooth!
 
 <img src="assets/keybytes.jpg" alt="Keybytes" width="800"/>
 
-![Keybits snapping together](assets/journal/v2/keybit_snap.gif)
-
-*(v2 preview)*
+<p align="center">
+  <img src="assets/journal/v2/keybit_snap.gif" alt="Keybits snapping together"/>
+  <br>
+  <i>(v2 preview)</i>
+</p>
 
 ## Video Demo
 
