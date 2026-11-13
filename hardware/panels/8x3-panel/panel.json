@@ -1,0 +1,9 @@
+{
+  "layout": {"type": "plugin", "code": "layout.py.Layout", "hspace": "4.514286mm", "vspace": "3.266667mm"},
+  "tabs": {"type": "plugin", "code": "layout.py.Tabs"},
+  "cuts": {"type": "none"},
+  "framing": {"type": "none"},
+  "tooling": {"type": "none"},
+  "fiducials": {"type": "none"},
+  "post": {"millradius": "0mm", "reconstructarcs": true}
+}

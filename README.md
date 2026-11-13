@@ -11,7 +11,7 @@ A truly modular keyboard with rearrangeable keys, magnetic cases and Bluetooth!
 <div align="center">
 
 ![KiCad](https://img.shields.io/badge/kicad-%2300578F.svg?style=for-the-badge&logo=kicad&logoColor=white)
-![STM32](https://img.shields.io/badge/STM32-03234B?style=for-the-badge&logo=stmicroelectronics&logoColor=white)
+![CH592F](https://img.shields.io/badge/WCH%20CH592F-E60012?style=for-the-badge&logoColor=white)
 ![RISC-V](https://img.shields.io/badge/RISC--V-283272?style=for-the-badge&logo=riscv&logoColor=white)
 ![Onshape](https://img.shields.io/badge/onshape-%23217346.svg?style=for-the-badge&logo=onshape&logoColor=white)
 ![Blender](https://img.shields.io/badge/blender-%23F5792A.svg?style=for-the-badge&logo=blender&logoColor=white)
@@ -23,12 +23,15 @@ A truly modular keyboard with rearrangeable keys, magnetic cases and Bluetooth!
   <a href="#video-demo">Video Demo</a> •
   <a href="#connecting-keybits">Connecting Keybits</a> •
   <a href="#pcb">PCB</a> •
-  <a href="#case">Case</a> •
   <a href="#credits">Credits</a> •
   <a href="#license">License</a>
 </p>
 
 <img src="assets/keybytes.jpg" alt="Keybytes" width="800"/>
+
+![Keybits snapping together](assets/journal/v2/keybit_snap.gif)
+
+*(v2 preview)*
 
 ## Video Demo
 
@@ -41,59 +44,58 @@ https://github.com/user-attachments/assets/b6abd347-b68b-40f1-8e2d-c50744b8104e
 ## Key Features
 
 - **Rearrangeable layout** where every key is its own 1u PCB
-- **CH32V003** RISC-V microcontroller on every key
-- **STM32WB55RGV6** main board with Bluetooth and USB
-- **Pogo pins on all 4 sides** of every key for power and I2C
-- **Magnetic cases** to hold the modules together
-- **Key programming** from the main board over pogo pins
-- **2MB QSPI flash** (W25Q16JV) to store the key firmware
-- **Battery charging** with the BQ25895 and solder pads for a 1S LiPo
-- **Buck-Boost converter** (TPS631000)
-- **RGB status LED**
-- **USB-C** with ESD protection
-- **Ceramic Bluetooth antenna**
+- **CH592F** RISC-V microcontroller with BLE and USB on every key
+- **Cross shaped 2 layer flex PCB** that folds up into the case, with FR4 stiffeners
+- **Magnet contacts** on all 4 sides, 6 per side (1x2mm N52) on a 2.38mm grid
+- **Any rotation** and 0/25/50/75% stagger between keys
+- **Polarity independent** sides, a small FET bridge on each side sorts out VBUS and GND
+- **WS2812 RGB LED** on every key
+- **Mill-Max 3305** hot swap sockets
+- **Hall variant** with a TMAG3001 3-axis hall sensor, so the same board can be a hall key, a knob or a joystick
+- **Keyword** main board with a CH592F, BLE and USB-C
+- **Battery charging** with the BQ25185 for a small LiPo
+- **USB-C** with ESD protection (USBLC6)
+- **Pogo pin flashing** of every Keybit from the Keyword, then OTA updates
+- **Flex spacers** (1u, 0.75u and 0.5u) to pass power across gaps
 
-## V2
+## V1
 
-V2 is almost done! The new Keybit is a single cross shaped flex PCB with a CH592F in the middle, and the 4 flaps fold up into the case. Every side has magnet contacts that work no matter which way round a neighbour touches it, so keys can be rotated and staggered, and the switch goes into Mill-Max hot swap sockets. I'm also starting a hall effect Keybit in [`hardware/keybit-hall`](hardware/keybit-hall).
+V1 had a CH32V003 on every key with pogo pins on all 4 sides and an STM32WB55 Keyword split into two stacked PCBs. It lives in the [`v1`](https://github.com/notaroomba/keybytes/tree/v1) branch.
 
 ## Connecting Keybits
 
-Going around a keybit, the pogo pins on the N and W sides are 3.3V, SDA, GND, SCL and on the E and S sides they are SCL, GND, SDA, 3.3V. So two keybits only work together when an N or W side touches an E or S side, which gives every joint two ways a keybit can be turned and still work: the usual way, or a quarter turn so the other matching side faces its neighbour. The left and top of the keyword take an E or S side and the right takes an N or W side.
+The side contacts are the magnets themselves. Every side has 6 contact magnets on a 2.38mm grid with the A and B nets alternating, so two keybits connect no matter which way round they are and at any 0/25/50/75% stagger. Each side has a small FET bridge that connects whichever net is higher to VBUS and the other one to GND, so polarity doesn't matter either.
 
-If every keybit is the same way round any shape works, like a square with the keyword in one corner. A keybit turned the wrong way gets 3.3V on its SCL and GND on its SDA, so it gets no power and nothing behind it shows up until it's turned.
+**Flashing keybits:** the 4 pogo pins on top of the keyword (GND, TIO, TCK, 3V3) line up with the pads on the bottom of every keybit, so a keybit gets flashed by pressing it onto the keyword. After that it updates over OTA.
 
-**Status LED:**
-
-- **White** idle
-- **White fast blinks** a keybit joined, touching the keyword or further out
-- **Blue** flashing the keybit on the programming pins
-- **Green blinks then green** that keybit is flashed or already up to date
-- **Solid red** flashing it gave up
-- **Red blinking** a keybit on the keyword is turned the wrong way
-- **Red double blink** a keybit somewhere has a neighbour turned the wrong way
-
-**Updating keybits:** the keyword carries the keybit firmware. After updating the keyword, put every keybit on the programming pins once and wait for green. Keybits on different firmware versions don't talk to each other, so do all of them.
+The v2 firmware for the CH592F is still in progress. The v1 status LED codes are in the [`v1`](https://github.com/notaroomba/keybytes/tree/v1) branch.
 
 ## PCB
 
-Designed in KiCad! There are two boards, the Keybit and the Keyword, and both are 1u (19.05mm x 19.05mm).
+Designed in KiCad! There are two main boards, the Keybit and the Keyword, plus passive flex spacers (1u, 0.75u and 0.5u) that pass power across gaps.
 
 ### Keybit
 
-A single key with a Cherry MX switch and a CH32V003. Every side has pogo pins for 3.3V, GND and I2C so it can connect to the keyword or to other keybits, and the pads on the corners are for programming.
+A single key on a cross shaped 2 layer flex PCB with a CH592F in the middle, a WS2812 RGB LED and Mill-Max 3305 hot swap sockets for the switch. The 4 flaps fold up into the case and have FR4 stiffeners, and each one has 6 contact magnets and a FET bridge for power. The pads on the bottom are for flashing it from the keyword. The hall variant has a TMAG3001 3-axis hall sensor, so the same board can be a hall key, a knob (in the encoder case) or a joystick.
 
 **Schematic:**
 
-<img src="assets/journal/keybit_schematic.png" alt="Keybit Schematic" width="800"/>
+<img src="assets/readme/keybit-schematic.png" alt="Keybit Schematic" width="800"/>
+
+<img src="assets/readme/keybit-hall-schematic.png" alt="Keybit Hall Schematic" width="800"/>
 
 **Layout:**
 
 <img src="assets/readme/keybit-layout.png" alt="Keybit Layout" width="800"/>
 
+**3D View:**
+
+<img src="assets/readme/keybit-3d-angle.png" alt="Keybit 3D View" width="800"/>
+<img src="assets/readme/keybit-3d-bottom.png" alt="Keybit 3D View" width="800"/>
+
 ### Keyword
 
-The main board that the keybits connect to. It is split into two PCBs that stack on top of each other. The top one has the STM32WB55RGV6, the antenna and the flash, and the bottom one has the USB-C, the charger and the buck-boost converter. The 3 pogo pins on the top are for programming the keybits.
+The main board that the keybits connect to. It is now one flex board with a CH592F for BLE and USB-C, a BQ25185 charger for a small LiPo and a USBLC6 for ESD protection. The 4 SMD pogo pins on the top (GND, TIO, TCK, 3V3) are for flashing the keybits.
 
 **Schematic:**
 
@@ -108,11 +110,9 @@ The main board that the keybits connect to. It is split into two PCBs that stack
 <img src="assets/readme/keyword-3d-angle.png" alt="Keyword 3D View" width="800"/>
 <img src="assets/readme/keyword-3d-bottom.png" alt="Keyword 3D View" width="800"/>
 
-## Case
+### Manufacturing
 
-Custom designed cases in [Onshape](https://cad.onshape.com/documents/16fd731b2222007142e5340e/w/1583a55f05f5e1a2f8aaf622/e/787b8ffe055f15084c3845af), the STEP files are in the [`cad`](cad) folder.
-
-<img src="assets/readme/keyboard.png" alt="Keybit and Keyword cases assembled in Onshape" width="600"/>
+Everything is panelized for JLC flex PCBA. The files are in [`production/panels`](production/panels): `8x3-panel` is the full order, `2x3-test-panel` is a smaller test order and `spacer-panel` is the bare flex spacers.
 
 ## Credits
 
@@ -121,9 +121,11 @@ This project uses:
 - [KiCad](https://www.kicad.org/)
 - [OnShape](https://www.onshape.com/) for case design
 - [Blender](https://www.blender.org/) for 3D renders
-- [STM32CubeMX](https://www.st.com/en/development-tools/stm32cubemx.html)
+- [ch32fun](https://github.com/cnlohr/ch32fun) and the WCH SDK for the CH592F
+- [Formlabs](https://formlabs.com/) for resin printing
 - [Hack Club Forge](https://forge.hackclub.com/)
 - [JLCPCB](https://jlcpcb.com/) for PCB fabrication and assembly
+- [JLCCNC](https://jlccnc.com/) for the encoder knob
 
 ## You may also like...
 

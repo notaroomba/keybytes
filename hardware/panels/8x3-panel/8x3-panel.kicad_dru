@@ -1,0 +1,1178 @@
+(version 1)
+
+(rule "Board_0-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_0-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_0-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_0-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_0-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_0-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_0-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_0-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_0-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_0-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_0-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_0-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_1-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_1-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_1-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_1-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_1-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_1-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_1-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_1-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_1-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_1-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_1-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_1-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_2-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_2-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_2-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_2-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_2-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_2-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_2-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_2-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_2-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_2-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_2-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_2-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_3-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_3-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_3-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_3-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_3-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_3-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_3-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_3-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_3-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_3-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_3-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_3-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_4-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_4-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_4-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_4-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_4-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_4-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_4-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_4-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_4-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_4-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_4-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_4-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_5-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_5-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_5-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_5-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_5-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_5-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_5-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_5-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_5-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_5-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_5-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_5-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_6-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_6-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_6-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_6-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_6-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_6-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_6-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_6-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_6-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_6-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_6-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_6-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_7-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_7-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_7-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_7-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_7-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_7-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_7-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_7-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_7-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_7-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_7-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_7-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_8-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_8-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_8-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_8-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_8-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_8-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_8-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_8-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_8-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_8-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_8-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_8-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_9-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_9-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_9-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_9-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_9-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_9-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_9-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_9-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_9-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_9-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_9-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_9-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_10-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_10-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_10-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_10-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_10-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_10-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_10-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_10-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_10-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_10-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_10-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_10-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_11-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_11-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_11-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_11-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_11-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_11-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_11-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_11-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_11-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_11-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_11-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_11-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_12-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_12-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_12-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_12-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_12-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_12-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_12-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_12-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_12-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_12-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_12-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_12-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_13-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_13-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_13-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_13-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_13-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_13-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_13-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_13-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_13-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_13-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_13-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_13-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_14-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_14-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_14-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_14-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_14-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_14-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_14-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_14-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_14-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_14-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_14-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_14-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_15-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_15-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_15-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_15-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_15-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_15-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_15-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_15-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_15-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_15-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_15-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_15-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_16-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_16-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_16-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_16-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_16-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_16-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_16-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_16-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_16-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_16-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_16-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_16-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_17-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_17-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_17-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_17-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_17-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_17-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_17-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_17-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_17-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_17-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_17-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_17-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_18-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_18-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_18-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_18-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_18-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_18-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_18-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_18-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_18-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_18-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_18-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_18-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_19-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_19-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_19-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_19-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_19-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_19-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_19-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_19-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_19-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_19-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_19-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_19-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_20-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_20-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_20-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_20-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_20-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_20-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_20-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_20-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_20-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_20-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_20-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_20-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_21-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_21-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_21-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_21-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_21-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_21-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_21-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_21-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_21-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_21-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_21-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_21-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_22-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_22-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_22-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_22-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_22-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_22-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_22-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_22-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_22-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_22-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_22-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_22-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
+(rule "Board_23-JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "Board_23-JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "Board_23-JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "Board_23-JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "Board_23-JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "Board_23-JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "Board_23-JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "Board_23-JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "Board_23-JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "Board_23-JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "Board_23-JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "Board_23-JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))

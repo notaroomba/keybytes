@@ -1,0 +1,54 @@
+(version 1)
+# JLCPCB flex PCB capabilities (jlcpcb.com/capabilities/flex-pcb-capabilities, read 2026-11-04)
+# Assumes 2-layer flex, 25 um PI, 1/3 oz (12 um) copper, regular vias, laser outline.
+
+# --- Copper: 1/3 oz = 3/3 mil (0.076 mm). 0.5 oz would be 3.5/3.5 mil (0.09 mm), 1 oz 4/4 mil (0.102 mm).
+(rule "JLC flex: track width"
+	(constraint track_width (min 0.076mm)))
+(rule "JLC flex: copper clearance"
+	(constraint clearance (min 0.076mm)))
+
+# --- Exposed pad to trace >= 0.15 mm; via ring to trace >= 0.1 mm
+(rule "JLC flex: pad to track"
+	(condition "A.Type == 'Pad' && B.Type == 'Track'")
+	(constraint clearance (min 0.15mm)))
+(rule "JLC flex: via to track"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint clearance (min 0.1mm)))
+
+# --- Vias: regular 0.3 mm hole / 0.55 mm pad (extreme 0.10/0.30 costs extra)
+(rule "JLC flex: via size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.3mm))
+	(constraint via_diameter (min 0.55mm))
+	(constraint annular_width (min 0.1mm)))
+
+# --- Plated through-hole pads: annular ring >= 0.18 mm (0.25 recommended)
+(rule "JLC flex: PTH annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# --- Holes: 0.1-6.5 mm; plated slots >= 0.5 mm
+(rule "JLC flex: hole size"
+	(constraint hole_size (min 0.1mm) (max 6.5mm)))
+(rule "JLC flex: plated slot"
+	(condition "A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+	(constraint hole_size (min 0.5mm)))
+
+# --- NPTH / slots to copper >= 0.2 mm
+(rule "JLC flex: NPTH to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Laser outline: copper to board edge / slots >= 0.3 mm
+(rule "JLC flex: copper to edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# --- Silkscreen: height >= 1 mm, line >= 0.15 mm, to pads >= 0.15 mm
+(rule "JLC flex: silk text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 1mm))
+	(constraint text_thickness (min 0.15mm)))
+(rule "JLC flex: silk to pad"
+	(layer "?.Silkscreen")
+	(constraint silk_clearance (min 0.15mm)))
